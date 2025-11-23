@@ -222,7 +222,7 @@ export default function ManageTest() {
 
   const columns = [
     { field: "id", headerName: "ID", flex: 0.3 },
-    { field: "name", headerName: "Tiêu đề", flex: 1, flex: 0.4 },
+    { field: "name", headerName: "Tiêu đề", flex: 0.4 },
     { 
       field: "description", 
       headerName: "Mô tả", 
