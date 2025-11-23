@@ -264,7 +264,7 @@ export default function Navbar() {
                   {/* Add the Test button for admin */}
                   <Button
                     variant="contained"
-                    onClick={() => navigate("/test")}
+                    onClick={() => navigate("/tests")}
                     sx={{
                       backgroundColor: "#4038d2ff",
                       color: "#fff",
@@ -297,7 +297,7 @@ export default function Navbar() {
                   {/* Add the Test button for regular users */}
                   <Button
                     variant="contained"
-                    onClick={() => navigate("/test")}
+                    onClick={() => navigate("/tests")}
                     sx={{
                       backgroundColor: "#4038d2ff",
                       color: "#fff",

@@ -42,7 +42,7 @@ export default function AppRouter() {
         <Route path="/course/:courseId/lesson/:lessonId/quiz/:quizId" element={<QuizPage />} />
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/following" element={<FollowedPage />} />
-        <Route path="/test" element={<TestPage/>} />
+        <Route path="/tests" element={<TestPage/>} />
         <Route path="/test/:testId" element={<TestDetailPage/>} />
 
 

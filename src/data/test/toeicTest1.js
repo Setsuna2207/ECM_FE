@@ -1,11 +1,9 @@
 export const toeicPlacementTest = {
-  testId: "placement_toeic_001",
-  title: "TOEIC Placement Test",
   description: "Comprehensive English placement test covering Listening, Reading, Vocabulary, Grammar, and Writing",
   duration: 90, // minutes
   totalQuestions: 50,
   passingScore: 60, // percentage
-  
+
   sections: [
     {
       sectionId: 1,
@@ -86,7 +84,7 @@ export const toeicPlacementTest = {
         }
       ]
     },
-    
+
     {
       sectionId: 2,
       title: "Reading Comprehension",
@@ -165,7 +163,7 @@ export const toeicPlacementTest = {
         }
       ]
     },
-    
+
     {
       sectionId: 3,
       title: "Vocabulary",
@@ -304,7 +302,7 @@ export const toeicPlacementTest = {
         }
       ]
     },
-    
+
     {
       sectionId: 4,
       title: "Grammar",
@@ -443,7 +441,7 @@ export const toeicPlacementTest = {
         }
       ]
     },
-    
+
     {
       sectionId: 5,
       title: "Writing",
@@ -495,7 +493,7 @@ export const toeicPlacementTest = {
       ]
     }
   ],
-  
+
   // Scoring guidelines
   scoring: {
     total: 100,

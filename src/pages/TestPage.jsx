@@ -1,469 +1,307 @@
-import React, { useEffect, useState, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  Box,
+  Container,
+  Grid,
   Typography,
   Button,
-  Radio,
-  RadioGroup,
+  Menu,
+  Box,
+  FormGroup,
   FormControlLabel,
+  Checkbox,
+  Divider,
+  Paper,
+  Pagination,
+  Stack,
   Card,
   CardContent,
-  CircularProgress,
-  Paper,
-  TextField,
-  Grid,
+  CardActions,
   Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
 } from "@mui/material";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import QuizIcon from "@mui/icons-material/Quiz";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { mockTests } from "../data/mockTest";
-import { getTestById } from "../data/test/testRegistry";
 
-export default function TestDetailPage() {
-  const { testId } = useParams();
-  const [test, setTest] = useState(null);
-  const [allQuestions, setAllQuestions] = useState([]);
-  const [answers, setAnswers] = useState({});
-  const [score, setScore] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [openResultDialog, setOpenResultDialog] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(null);
+export default function TestPage() {
   const navigate = useNavigate();
-  
-  const questionRefs = useRef({});
 
-  useEffect(() => {
-    // Find test from mockTests
-    const selectedTest = mockTests.find(t => t.testId === testId);
+  // Category filter state
+  const [selectedCategory, setSelectedCategory] = useState(null);
+
+  // Filter state
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [selectedFilters, setSelectedFilters] = useState({
+    duration: true,
+    questions: false,
+    asc: false,
+    desc: true,
+  });
+  const [appliedFilters, setAppliedFilters] = useState({
+    duration: true,
+    questions: false,
+    asc: false,
+    desc: true,
+  });
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const testsPerPage = 6;
+
+  const open = Boolean(anchorEl);
+  const handleClick = (event) => setAnchorEl(event.currentTarget);
+  const handleClose = () => setAnchorEl(null);
+
+  const handleCheckboxChange = (event) => {
+    const { name, checked } = event.target;
+    if (name === "duration" || name === "questions") {
+      setSelectedFilters((prev) => ({
+        ...prev,
+        duration: name === "duration" ? checked : false,
+        questions: name === "questions" ? checked : false,
+      }));
+    } else if (name === "asc" || name === "desc") {
+      setSelectedFilters((prev) => ({
+        ...prev,
+        asc: name === "asc" ? checked : false,
+        desc: name === "desc" ? checked : false,
+      }));
+    }
+  };
+
+  const handleApply = () => {
+    setAppliedFilters(selectedFilters);
+    setPage(1);
+    setAnchorEl(null);
+  };
+
+  const handleReset = () => {
+    const defaultFilters = {
+      duration: true,
+      questions: false,
+      asc: false,
+      desc: true,
+    };
+    setSelectedFilters(defaultFilters);
+    setAppliedFilters(defaultFilters);
+    setPage(1);
+    setAnchorEl(null);
+  };
+
+  // Sort tests
+  const sortedTests = useMemo(() => {
+    let tests = [...mockTests];
     
-    if (!selectedTest) {
-      setLoading(false);
+    // Filter by category first
+    if (selectedCategory) {
+      tests = tests.filter(t => t.category?.toLowerCase() === selectedCategory.toLowerCase());
+    }
+    
+    // Then sort
+    return tests.sort((a, b) => {
+      if (appliedFilters.duration) {
+        return appliedFilters.asc
+          ? a.duration - b.duration
+          : b.duration - a.duration;
+      } else if (appliedFilters.questions) {
+        return appliedFilters.asc
+          ? a.totalQuestions - b.totalQuestions
+          : b.totalQuestions - a.totalQuestions;
+      }
+      return 0;
+    });
+  }, [appliedFilters, selectedCategory]);
+
+  // Pagination
+  const pageCount = Math.ceil(sortedTests.length / testsPerPage);
+  const paginatedTests = sortedTests.slice(
+    (page - 1) * testsPerPage,
+    page * testsPerPage
+  );
+
+  const handlePageChange = (event, value) => {
+    setPage(value);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleStartTest = (testId) => {
+    const user = JSON.parse(localStorage.getItem("currentUser"));
+    if (!user) {
+      alert("Bạn cần đăng nhập để làm bài test.");
       return;
     }
-
-    // Get test data from registry
-    const testData = getTestById(testId);
-    
-    if (testData) {
-      setTest(testData);
-      
-      // Flatten all questions from all sections
-      const questions = [];
-      testData.sections.forEach(section => {
-        section.questions.forEach(q => {
-          questions.push({
-            ...q,
-            sectionTitle: section.title,
-            sectionId: section.sectionId
-          });
-        });
-      });
-      setAllQuestions(questions);
-      setTimeRemaining(testData.duration * 60); // Convert to seconds
-    }
-    
-    setLoading(false);
-  }, [testId]);
-
-  // Timer countdown
-  useEffect(() => {
-    if (timeRemaining === null || timeRemaining <= 0 || score !== null) return;
-
-    const timer = setInterval(() => {
-      setTimeRemaining(prev => {
-        if (prev <= 1) {
-          handleSubmit();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [timeRemaining, score]);
-
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    navigate(`/test/${testId}`);
   };
 
-  const handleAnswer = (questionId, answer) => {
-    setAnswers(prev => ({ ...prev, [questionId]: answer }));
-  };
+return (
+  <>
+    <Navbar />
 
-  const scrollToQuestion = (questionId) => {
-    questionRefs.current[questionId]?.scrollIntoView({ 
-      behavior: 'smooth', 
-      block: 'center' 
-    });
-  };
+    {/* Header Section */}
+    <Box sx={{ backgroundColor: "#111", color: "white", py: 6 }}>
+      <Container>
+        <Typography variant="h3" fontWeight="bold" gutterBottom>
+          Bài kiểm tra trình độ
+        </Typography>
+        <Typography variant="body1" color="#ddd">
+          Làm bài test để xác định trình độ tiếng Anh của bạn và nhận được khuyến nghị khóa học phù hợp
+        </Typography>
+      </Container>
+    </Box>
 
-  const handleSubmit = () => {
-    if (window.confirm("Bạn có chắc muốn nộp bài?")) {
-      let totalScore = 0;
-      let maxScore = 0;
-
-      allQuestions.forEach(q => {
-        maxScore += q.points || 2;
-        
-        if (q.type === "multiple-choice") {
-          if (answers[q.questionId] === q.correctAnswer) {
-            totalScore += q.points || 2;
-          }
-        } else if (q.type === "essay" || q.type === "short-response") {
-          // For essay questions, assign partial credit if answered
-          if (answers[q.questionId] && answers[q.questionId].trim().length > 0) {
-            totalScore += (q.points || 5) * 0.7; // 70% credit for completion
-          }
-        }
-      });
-
-      const percentage = Math.round((totalScore / maxScore) * 100);
-      setScore({ total: totalScore, max: maxScore, percentage });
-      setOpenResultDialog(true);
-      
-      // Save result to localStorage
-      const testResults = JSON.parse(localStorage.getItem("testResults")) || [];
-      testResults.push({
-        testId: test.testId,
-        title: test.title,
-        score: totalScore,
-        maxScore: maxScore,
-        percentage: percentage,
-        date: new Date().toISOString(),
-      });
-      localStorage.setItem("testResults", JSON.stringify(testResults));
-      
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  };
-
-  const getAnswerStatus = (questionId) => {
-    return answers[questionId] !== undefined ? "answered" : "unanswered";
-  };
-
-  if (loading) {
-    return (
-      <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (!test) {
-    return (
-      <>
-        <Navbar />
-        <Box textAlign="center" mt={10}>
-          <Typography variant="h5">Không tìm thấy bài test!</Typography>
-          <Button 
-            variant="contained" 
-            sx={{ mt: 2 }} 
-            onClick={() => navigate("/tests")}
-          >
-            Quay lại danh sách test
-          </Button>
-        </Box>
-        <Footer />
-      </>
-    );
-  }
-
-  return (
-    <>
-      <Navbar />
-      
-      <Box sx={{ display: "flex", gap: 3, maxWidth: 1400, mx: "auto", mt: 4, mb: 8, px: 3 }}>
-        {/* LEFT SIDE - Questions */}
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography variant="h4" fontWeight="bold" gutterBottom>
-            {test.title}
-          </Typography>
-          <Typography variant="body1" color="text.secondary" mb={3}>
-            {test.description}
+    <Container sx={{ mt: 4, mb: 4 }}>
+      {!selectedCategory ? (
+        <Box sx={{ textAlign: "center", py: 6 }}>
+          <Typography variant="h4" fontWeight="bold" mb={4}>
+            Chọn loại bài test
           </Typography>
 
-          {/* Questions by Section */}
-          {test.sections.map(section => (
-            <Box key={section.sectionId} mb={4}>
-              <Paper sx={{ p: 2, mb: 2, backgroundColor: "#f5f5f5" }}>
-                <Typography variant="h5" fontWeight="600">
-                  {section.title}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {section.description}
-                </Typography>
-                {section.mediaUrl && (
-                  <Box mt={2}>
-                    <audio controls style={{ width: "100%", maxWidth: 500 }}>
-                      <source src={section.mediaUrl} type="audio/mpeg" />
-                    </audio>
-                  </Box>
-                )}
-              </Paper>
-
-              {section.questions.map((q) => (
-                <Card
-                  key={q.questionId}
-                  ref={el => questionRefs.current[q.questionId] = el}
-                  sx={{
-                    mb: 3,
-                    p: 2,
-                    borderRadius: 2,
-                    border: score !== null 
-                      ? (q.type === "multiple-choice" && answers[q.questionId] === q.correctAnswer)
-                        ? "2px solid #4caf50"
-                        : "2px solid #ddd"
-                      : "1px solid #ddd",
-                  }}
-                >
-                  <CardContent>
-                    <Box display="flex" justifyContent="space-between" alignItems="start" mb={1}>
-                      <Typography variant="subtitle1" fontWeight="600">
-                        Câu {q.questionId}: {q.question}
-                      </Typography>
-                      <Chip 
-                        label={`${q.points} điểm`} 
-                        size="small" 
-                        color="primary"
-                        variant="outlined"
-                      />
-                    </Box>
-
-                    {q.passage && (
-                      <Paper sx={{ p: 2, mb: 2, backgroundColor: "#f9f9f9" }}>
-                        <Typography variant="body2">{q.passage}</Typography>
-                      </Paper>
-                    )}
-
-                    {q.audioTimestamp && (
-                      <Typography variant="caption" color="text.secondary" display="block" mb={1}>
-                        🎧 Nghe đoạn: {q.audioTimestamp}
-                      </Typography>
-                    )}
-
-                    {/* Multiple Choice */}
-                    {q.type === "multiple-choice" && (
-                      <RadioGroup
-                        value={answers[q.questionId] ?? ""}
-                        onChange={(e) => handleAnswer(q.questionId, parseInt(e.target.value))}
-                      >
-                        {q.options.map((opt, i) => (
-                          <FormControlLabel
-                            key={i}
-                            value={i}
-                            control={<Radio />}
-                            label={opt}
-                            disabled={score !== null}
-                          />
-                        ))}
-                      </RadioGroup>
-                    )}
-
-                    {/* Essay / Short Response */}
-                    {(q.type === "essay" || q.type === "short-response") && (
-                      <TextField
-                        fullWidth
-                        multiline
-                        rows={q.type === "essay" ? 6 : 3}
-                        placeholder={`Viết câu trả lời (${q.minWords}-${q.maxWords} từ)...`}
-                        value={answers[q.questionId] || ""}
-                        onChange={(e) => handleAnswer(q.questionId, e.target.value)}
-                        disabled={score !== null}
-                        sx={{ mt: 1 }}
-                      />
-                    )}
-
-                    {/* Sentence Completion */}
-                    {q.type === "sentence-completion" && (
-                      <TextField
-                        fullWidth
-                        placeholder="Điền câu trả lời..."
-                        value={answers[q.questionId] || ""}
-                        onChange={(e) => handleAnswer(q.questionId, e.target.value)}
-                        disabled={score !== null}
-                        sx={{ mt: 1 }}
-                      />
-                    )}
-
-                    {/* Error Correction */}
-                    {q.type === "error-correction" && (
-                      <TextField
-                        fullWidth
-                        multiline
-                        rows={2}
-                        placeholder="Viết câu đã sửa lỗi..."
-                        value={answers[q.questionId] || ""}
-                        onChange={(e) => handleAnswer(q.questionId, e.target.value)}
-                        disabled={score !== null}
-                        sx={{ mt: 1 }}
-                      />
-                    )}
-
-                    {score !== null && q.type === "multiple-choice" && (
-                      <Typography
-                        variant="body2"
-                        sx={{ mt: 1, color: answers[q.questionId] === q.correctAnswer ? "green" : "error.main" }}
-                      >
-                        {answers[q.questionId] === q.correctAnswer
-                          ? "✅ Đúng"
-                          : `❌ Sai (Đáp án đúng: ${q.options[q.correctAnswer]})`}
-                      </Typography>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </Box>
-          ))}
-        </Box>
-
-        {/* RIGHT SIDE - Sticky Navigation Panel */}
-        <Box sx={{ width: 320, flexShrink: 0 }}>
-          <Paper
-            elevation={3}
+          <Box
             sx={{
-              position: "sticky",
-              top: 80,
-              p: 2,
-              borderRadius: 2,
-              maxHeight: "calc(100vh - 100px)",
-              overflow: "auto",
+              display: "grid",
+              gridTemplateColumns: "repeat(2, 1fr)",
+              gap: 3,
+              maxWidth: 600,
+              mx: "auto",
             }}
           >
-            {/* Timer */}
-            {score === null && (
-              <Box sx={{ mb: 2, p: 2, backgroundColor: "#f5f5f5", borderRadius: 2, textAlign: "center" }}>
-                <Typography variant="h6" fontWeight="600">
-                  ⏱️ Thời gian còn lại
-                </Typography>
-                <Typography 
-                  variant="h4" 
-                  color={timeRemaining < 300 ? "error" : "primary"} 
-                  fontWeight="bold"
-                >
-                  {formatTime(timeRemaining)}
-                </Typography>
-              </Box>
-            )}
+            <Button variant="contained" onClick={() => setSelectedCategory("TOEIC")} sx={{ height: 140 }}>
+              TOEIC
+            </Button>
 
-            {/* Audio Player (if available) */}
-            {test.sections.some(s => s.mediaUrl) && score === null && (
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" fontWeight="600" mb={1}>
-                  🎧 Audio
-                </Typography>
-                <Paper sx={{ p: 1, backgroundColor: "#f9f9f9" }}>
-                  <audio controls style={{ width: "100%" }}>
-                    <source src={test.sections.find(s => s.mediaUrl)?.mediaUrl} type="audio/mpeg" />
-                  </audio>
-                </Paper>
-              </Box>
-            )}
+            <Button variant="contained" onClick={() => setSelectedCategory("IELTS")} sx={{ height: 140 }}>
+              IELTS
+            </Button>
 
-            {/* Question Navigation */}
-            <Typography variant="subtitle2" fontWeight="600" mb={1}>
-              Danh sách câu hỏi
-            </Typography>
-            <Grid container spacing={1}>
-              {allQuestions.map((q) => {
-                const status = getAnswerStatus(q.questionId);
-                return (
-                  <Grid item xs={3} key={q.questionId}>
-                    <Button
-                      variant={status === "answered" ? "contained" : "outlined"}
-                      color={status === "answered" ? "success" : "default"}
-                      onClick={() => scrollToQuestion(q.questionId)}
-                      sx={{
-                        minWidth: 0,
-                        width: "100%",
-                        aspectRatio: "1",
-                        fontWeight: 600,
-                      }}
-                    >
-                      {q.questionId}
-                    </Button>
-                  </Grid>
-                );
-              })}
-            </Grid>
+            <Button variant="contained" onClick={() => setSelectedCategory("TOEFL")} sx={{ height: 140 }}>
+              TOEFL
+            </Button>
 
-            {/* Progress Summary */}
-            <Box sx={{ mt: 2, p: 2, backgroundColor: "#f5f5f5", borderRadius: 2 }}>
-              <Typography variant="body2" fontWeight="600">
-                Tiến độ: {Object.keys(answers).length} / {allQuestions.length}
+            <Button variant="contained" onClick={() => setSelectedCategory("GENERAL")} sx={{ height: 140 }}>
+              GENERAL
+            </Button>
+          </Box>
+        </Box>
+      ) : (
+        <>
+          {/* Back + Filter */}
+          <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
+            <Box display="flex" alignItems="center" gap={2}>
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setSelectedCategory(null);
+                  setPage(1);
+                }}
+              >
+                ← Quay lại
+              </Button>
+
+              <Typography variant="h5" fontWeight="bold">
+                Bài test {selectedCategory}
               </Typography>
             </Box>
 
-            {/* Submit Button */}
-            {score === null && (
-              <Button
-                variant="contained"
-                color="primary"
-                fullWidth
-                size="large"
-                onClick={handleSubmit}
-                sx={{ 
-                  mt: 2, 
-                  borderRadius: 2, 
-                  py: 1.5,
-                  backgroundColor: "#4038d2ff",
-                  "&:hover": { backgroundColor: "#73169aff" }
-                }}
-              >
-                Nộp bài
-              </Button>
-            )}
-          </Paper>
-        </Box>
-      </Box>
-
-      {/* Result Dialog */}
-      <Dialog open={openResultDialog} onClose={() => setOpenResultDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>🎉 Kết quả bài test</DialogTitle>
-        <DialogContent>
-          <Box textAlign="center" py={2}>
-            <Typography variant="h3" fontWeight="bold" color="primary" mb={2}>
-              {score?.percentage}%
-            </Typography>
-            <Typography variant="h6" mb={1}>
-              Điểm: {score?.total?.toFixed(1)} / {score?.max}
-            </Typography>
-            
-            {test.scoring?.levels.map(level => {
-              if (score?.percentage >= level.min && score?.percentage <= level.max) {
-                return (
-                  <Box key={level.level} mt={3}>
-                    <Chip 
-                      label={level.level} 
-                      color="primary" 
-                      size="large"
-                      sx={{ fontSize: 16, py: 2, px: 1 }}
-                    />
-                    <Typography variant="body1" mt={2} color="text.secondary">
-                      💡 Khuyến nghị: {level.recommendation}
-                    </Typography>
-                  </Box>
-                );
-              }
-              return null;
-            })}
+            <Button variant="outlined" onClick={handleClick}>
+              Bộ lọc
+            </Button>
           </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenResultDialog(false)}>Đóng</Button>
-          <Button variant="contained" onClick={() => navigate("/courses")}>
-            Xem khóa học
-          </Button>
-        </DialogActions>
-      </Dialog>
 
-      <Footer />
-    </>
-  );
+          {/* Filter Menu */}
+          <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>
+            <Paper elevation={0} sx={{ p: 2 }}>
+              <FormGroup>
+                <Typography fontWeight="bold">Sắp xếp theo:</Typography>
+                <Box display="flex" gap={2}>
+                  <FormControlLabel
+                    control={<Checkbox checked={selectedFilters.duration} name="duration" onChange={handleCheckboxChange} />}
+                    label="Thời gian"
+                  />
+                  <FormControlLabel
+                    control={<Checkbox checked={selectedFilters.questions} name="questions" onChange={handleCheckboxChange} />}
+                    label="Số câu hỏi"
+                  />
+                </Box>
+              </FormGroup>
+
+              <FormGroup sx={{ mt: 1 }}>
+                <Typography fontWeight="bold">Thứ tự:</Typography>
+                <Box display="flex" gap={2}>
+                  <FormControlLabel
+                    control={<Checkbox checked={selectedFilters.asc} name="asc" onChange={handleCheckboxChange} />}
+                    label="Tăng dần"
+                  />
+                  <FormControlLabel
+                    control={<Checkbox checked={selectedFilters.desc} name="desc" onChange={handleCheckboxChange} />}
+                    label="Giảm dần"
+                  />
+                </Box>
+              </FormGroup>
+
+              <Divider sx={{ my: 2 }} />
+
+              <Box display="flex" justifyContent="space-between">
+                <Button onClick={handleReset}>Mặc định</Button>
+                <Button onClick={handleApply}>Áp dụng</Button>
+              </Box>
+            </Paper>
+          </Menu>
+
+          {/* LIST TEST */}
+          {paginatedTests.length > 0 ? (
+            <>
+              <Grid container spacing={3}>
+                {paginatedTests.map((test) => (
+                  <Grid key={test.testId} item xs={12} sm={6} md={4}>
+                    <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+                      <CardContent sx={{ flexGrow: 1 }}>
+                        <Typography variant="h6" fontWeight="bold">
+                          {test.title}
+                        </Typography>
+
+                        <Typography variant="body2" color="text.secondary">
+                          {test.description}
+                        </Typography>
+
+                        <Box display="flex" gap={1} mt={2}>
+                          <Chip icon={<AccessTimeIcon />} label={`${test.duration} phút`} size="small" />
+                          <Chip icon={<QuizIcon />} label={`${test.totalQuestions} câu`} size="small" />
+                        </Box>
+
+                        {test.level && (
+                          <Chip label={test.level} size="small" sx={{ mt: 1 }} />
+                        )}
+                      </CardContent>
+
+                      <CardActions sx={{ p: 2 }}>
+                        <Button fullWidth variant="contained" onClick={() => handleStartTest(test.testId)}>
+                          Bắt đầu làm bài
+                        </Button>
+                      </CardActions>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+
+              {pageCount > 1 && (
+                <Stack alignItems="center" mt={4}>
+                  <Pagination count={pageCount} page={page} onChange={handlePageChange} color="primary" />
+                </Stack>
+              )}
+            </>
+          ) : (
+            <Typography mt={2} color="text.secondary">
+              Không tìm thấy bài test nào.
+            </Typography>
+          )}
+        </>
+      )}
+    </Container>
+
+    <Footer />
+  </>
+);
+
 }

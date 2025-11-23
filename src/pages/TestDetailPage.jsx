@@ -24,7 +24,7 @@ import Footer from "../components/Footer";
 import { mockTests } from "../data/mockTest";
 import { getTestById } from "../data/test/testRegistry";
 
-export default function TestPage() {
+export default function TestDetailPage() {
   const { testId } = useParams();
   const [test, setTest] = useState(null);
   const [allQuestions, setAllQuestions] = useState([]);
@@ -38,8 +38,12 @@ export default function TestPage() {
   const questionRefs = useRef({});
 
   useEffect(() => {
+    console.log("TestID from URL:", testId);
+    console.log("All mock tests:", mockTests);
+    
     // Find test from mockTests
     const selectedTest = mockTests.find(t => t.testId === testId);
+    console.log("Selected test:", selectedTest);
     
     if (!selectedTest) {
       setLoading(false);
@@ -48,6 +52,7 @@ export default function TestPage() {
 
     // Get test data from registry
     const testData = getTestById(testId);
+    console.log("Test data from registry:", testData);
     
     if (testData) {
       setTest(testData);
@@ -127,6 +132,19 @@ export default function TestPage() {
       const percentage = Math.round((totalScore / maxScore) * 100);
       setScore({ total: totalScore, max: maxScore, percentage });
       setOpenResultDialog(true);
+      
+      // Save result to localStorage
+      const testResults = JSON.parse(localStorage.getItem("testResults")) || [];
+      testResults.push({
+        testId: test.testId,
+        title: test.title,
+        score: totalScore,
+        maxScore: maxScore,
+        percentage: percentage,
+        date: new Date().toISOString(),
+      });
+      localStorage.setItem("testResults", JSON.stringify(testResults));
+      
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
@@ -145,9 +163,20 @@ export default function TestPage() {
 
   if (!test) {
     return (
-      <Box textAlign="center" mt={10}>
-        <Typography variant="h5">Không tìm thấy bài test!</Typography>
-      </Box>
+      <>
+        <Navbar />
+        <Box textAlign="center" mt={10}>
+          <Typography variant="h5">Không tìm thấy bài test!</Typography>
+          <Button 
+            variant="contained" 
+            sx={{ mt: 2 }} 
+            onClick={() => navigate("/tests")}
+          >
+            Quay lại danh sách test
+          </Button>
+        </Box>
+        <Footer />
+      </>
     );
   }
 
@@ -184,7 +213,7 @@ export default function TestPage() {
                 )}
               </Paper>
 
-              {section.questions.map((q, index) => (
+              {section.questions.map((q) => (
                 <Card
                   key={q.questionId}
                   ref={el => questionRefs.current[q.questionId] = el}
@@ -318,14 +347,18 @@ export default function TestPage() {
                 <Typography variant="h6" fontWeight="600">
                   ⏱️ Thời gian còn lại
                 </Typography>
-                <Typography variant="h4" color="primary" fontWeight="bold">
+                <Typography 
+                  variant="h4" 
+                  color={timeRemaining < 300 ? "error" : "primary"} 
+                  fontWeight="bold"
+                >
                   {formatTime(timeRemaining)}
                 </Typography>
               </Box>
             )}
 
             {/* Audio Player (if available) */}
-            {test.sections.some(s => s.mediaUrl) && (
+            {test.sections.some(s => s.mediaUrl) && score === null && (
               <Box sx={{ mb: 2 }}>
                 <Typography variant="subtitle2" fontWeight="600" mb={1}>
                   🎧 Audio
@@ -380,7 +413,13 @@ export default function TestPage() {
                 fullWidth
                 size="large"
                 onClick={handleSubmit}
-                sx={{ mt: 2, borderRadius: 2, py: 1.5 }}
+                sx={{ 
+                  mt: 2, 
+                  borderRadius: 2, 
+                  py: 1.5,
+                  backgroundColor: "#4038d2ff",
+                  "&:hover": { backgroundColor: "#73169aff" }
+                }}
               >
                 Nộp bài
               </Button>
@@ -401,7 +440,7 @@ export default function TestPage() {
               Điểm: {score?.total?.toFixed(1)} / {score?.max}
             </Typography>
             
-            {test.scoring.levels.map(level => {
+            {test.scoring?.levels.map(level => {
               if (score?.percentage >= level.min && score?.percentage <= level.max) {
                 return (
                   <Box key={level.level} mt={3}>
