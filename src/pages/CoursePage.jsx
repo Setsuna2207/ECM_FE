@@ -1,3 +1,4 @@
+// src/pages/CoursePage.jsx
 import { useParams } from "react-router-dom";
 import { useState, useMemo } from "react";
 import {
@@ -85,7 +86,7 @@ export default function CoursePage() {
     setAnchorEl(null);
   };
 
-  // ✅ Thêm dữ liệu phụ: số bài và rating
+  // --- Dữ liệu phụ: số bài và rating ---
   const coursesWithStats = useMemo(() => {
     return mockCourses.map((course) => {
       const lessonCount = mockLessons.filter(
@@ -105,21 +106,15 @@ export default function CoursePage() {
     });
   }, []);
 
-  // ✅ Lọc và sắp xếp lại theo categories mới
+  // --- Lọc và sắp xếp ---
   const filteredCourses = useMemo(() => {
-    // Lọc theo tên category (trong mảng categories)
     const filtered = coursesWithStats.filter((c) =>
-      c.categories?.some(
-        (cat) => cat.name.toUpperCase() === normalized
-      )
+      c.categories?.some((cat) => cat.name.toUpperCase() === normalized)
     );
 
-    // Sắp xếp
     return filtered.sort((a, b) => {
       if (appliedFilters.rating) {
-        return appliedFilters.asc
-          ? a.rating - b.rating
-          : b.rating - a.rating;
+        return appliedFilters.asc ? a.rating - b.rating : b.rating - a.rating;
       } else if (appliedFilters.lessons) {
         return appliedFilters.asc
           ? a.lessonCount - b.lessonCount
@@ -129,7 +124,7 @@ export default function CoursePage() {
     });
   }, [coursesWithStats, normalized, appliedFilters]);
 
-  // ✅ Phân trang
+  // --- Phân trang ---
   const pageCount = Math.ceil(filteredCourses.length / coursesPerPage);
   const paginatedCourses = filteredCourses.slice(
     (page - 1) * coursesPerPage,
@@ -308,31 +303,15 @@ export default function CoursePage() {
               ))}
             </Grid>
 
-            {/* Chuyển trang */}
-            {pageCount > 0 && (
-              <Stack alignItems="center" mt={4}>
-                <Pagination
-                  count={pageCount}
-                  page={page}
-                  onChange={handlePageChange}
-                  color="primary"
-                  shape="rounded"
-                  size="large"
-                  showFirstButton
-                  showLastButton
-                  sx={{
-                    "& .MuiPaginationItem-root": {
-                      fontWeight: "bold",
-                      color: "#6C63FF",
-                    },
-                    "& .Mui-selected": {
-                      backgroundColor: "#6C63FF !important",
-                      color: "#fff",
-                    },
-                  }}
-                />
-              </Stack>
-            )}
+            {/* Pagination - luôn hiển thị tối thiểu 1 */}
+            <Stack alignItems="center" mt={4}>
+              <Pagination
+                count={pageCount || 1} // hiển thị tối thiểu 1
+                page={page}
+                onChange={handlePageChange}
+                color="primary"
+              />
+            </Stack>
           </>
         ) : (
           <Typography variant="body1" color="text.secondary" mt={2}>

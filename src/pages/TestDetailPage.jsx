@@ -31,56 +31,44 @@ export default function TestDetailPage() {
   const [answers, setAnswers] = useState({});
   const [score, setScore] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [openResultDialog, setOpenResultDialog] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(null);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [listenCount, setListenCount] = useState(0);
+  const [isForcedSubmit, setIsForcedSubmit] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [openResultDialog, setOpenResultDialog] = useState(false);
   const navigate = useNavigate();
-  
-  const questionRefs = useRef({});
 
+  const questionRefs = useRef({});
+  const audioRef = useRef(null);
+
+  // Load test data
   useEffect(() => {
-    console.log("TestID from URL:", testId);
-    console.log("All mock tests:", mockTests);
-    
-    // Find test from mockTests
-    const selectedTest = mockTests.find(t => t.testId === testId);
-    console.log("Selected test:", selectedTest);
-    
+    const selectedTest = mockTests.find((t) => t.testId === testId);
     if (!selectedTest) {
       setLoading(false);
       return;
     }
-
-    // Get test data from registry
     const testData = getTestById(testId);
-    console.log("Test data from registry:", testData);
-    
     if (testData) {
       setTest(testData);
-      
-      // Flatten all questions from all sections
       const questions = [];
-      testData.sections.forEach(section => {
-        section.questions.forEach(q => {
-          questions.push({
-            ...q,
-            sectionTitle: section.title,
-            sectionId: section.sectionId
-          });
+      testData.sections.forEach((section) => {
+        section.questions.forEach((q) => {
+          questions.push({ ...q, sectionTitle: section.title, sectionId: section.sectionId });
         });
       });
       setAllQuestions(questions);
-      setTimeRemaining(testData.duration * 60); // Convert to seconds
+      setTimeRemaining(testData.duration * 60);
     }
-    
     setLoading(false);
   }, [testId]);
 
   // Timer countdown
   useEffect(() => {
-    if (timeRemaining === null || timeRemaining <= 0 || score !== null) return;
-
+    if (!hasStarted || timeRemaining === null || timeRemaining <= 0 || score !== null) return;
     const timer = setInterval(() => {
-      setTimeRemaining(prev => {
+      setTimeRemaining((prev) => {
         if (prev <= 1) {
           handleSubmit();
           return 0;
@@ -88,70 +76,86 @@ export default function TestDetailPage() {
         return prev - 1;
       });
     }, 1000);
-
     return () => clearInterval(timer);
-  }, [timeRemaining, score]);
+  }, [hasStarted, timeRemaining, score]);
+
+  // Anti-cheat: detect tab change
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden" && score === null && !isSubmitting) {
+        alert("Bài thi đã bị hủy do thao tác ngoài tab!");
+        setIsForcedSubmit(true);
+        navigate("/tests");
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [score, isSubmitting, navigate]);
+
+  const startTest = () => {
+    if (!hasStarted) setHasStarted(true);
+  };
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   const handleAnswer = (questionId, answer) => {
-    setAnswers(prev => ({ ...prev, [questionId]: answer }));
+    setAnswers((prev) => ({ ...prev, [questionId]: answer }));
+    startTest();
   };
 
   const scrollToQuestion = (questionId) => {
-    questionRefs.current[questionId]?.scrollIntoView({ 
-      behavior: 'smooth', 
-      block: 'center' 
-    });
+    questionRefs.current[questionId]?.scrollIntoView({ behavior: "smooth", block: "center" });
+    startTest();
   };
 
-  const handleSubmit = () => {
-    if (window.confirm("Bạn có chắc muốn nộp bài?")) {
-      let totalScore = 0;
-      let maxScore = 0;
-
-      allQuestions.forEach(q => {
-        maxScore += q.points || 2;
-        
-        if (q.type === "multiple-choice") {
-          if (answers[q.questionId] === q.correctAnswer) {
-            totalScore += q.points || 2;
-          }
-        } else if (q.type === "essay" || q.type === "short-response") {
-          // For essay questions, assign partial credit if answered
-          if (answers[q.questionId] && answers[q.questionId].trim().length > 0) {
-            totalScore += (q.points || 5) * 0.7; // 70% credit for completion
-          }
-        }
-      });
-
-      const percentage = Math.round((totalScore / maxScore) * 100);
-      setScore({ total: totalScore, max: maxScore, percentage });
-      setOpenResultDialog(true);
-      
-      // Save result to localStorage
-      const testResults = JSON.parse(localStorage.getItem("testResults")) || [];
-      testResults.push({
-        testId: test.testId,
-        title: test.title,
-        score: totalScore,
-        maxScore: maxScore,
-        percentage: percentage,
-        date: new Date().toISOString(),
-      });
-      localStorage.setItem("testResults", JSON.stringify(testResults));
-      
-      window.scrollTo({ top: 0, behavior: "smooth" });
+  const handleSubmit = (forceSubmit = false) => {
+    if (forceSubmit) {
+      setIsForcedSubmit(true);
+      navigate("/tests");
+      return;
     }
+
+    if (!window.confirm("Bạn có chắc muốn nộp bài?")) return;
+
+    setIsSubmitting(true);
+
+    let totalScore = 0;
+    let maxScore = 0;
+
+    allQuestions.forEach((q) => {
+      maxScore += q.points || 2;
+      if (q.type === "multiple-choice") {
+        if (answers[q.questionId] === q.correctAnswer) totalScore += q.points || 2;
+      } else if (q.type === "essay" || q.type === "short-response") {
+        if (answers[q.questionId] && answers[q.questionId].trim().length > 0) {
+          totalScore += (q.points || 5) * 0.7;
+        }
+      }
+    });
+
+    const percentage = Math.round((totalScore / maxScore) * 100);
+    setScore({ total: totalScore, max: maxScore, percentage });
+    setIsSubmitting(false);
+    setOpenResultDialog(true);
+
+    const testResults = JSON.parse(localStorage.getItem("testResults")) || [];
+    testResults.push({
+      testId: test.testId,
+      title: test.title,
+      score: totalScore,
+      maxScore: maxScore,
+      percentage: percentage,
+      date: new Date().toISOString(),
+    });
+    localStorage.setItem("testResults", JSON.stringify(testResults));
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const getAnswerStatus = (questionId) => {
-    return answers[questionId] !== undefined ? "answered" : "unanswered";
-  };
+  const getAnswerStatus = (questionId) => (answers[questionId] !== undefined ? "answered" : "unanswered");
 
   if (loading) {
     return (
@@ -167,11 +171,7 @@ export default function TestDetailPage() {
         <Navbar />
         <Box textAlign="center" mt={10}>
           <Typography variant="h5">Không tìm thấy bài test!</Typography>
-          <Button 
-            variant="contained" 
-            sx={{ mt: 2 }} 
-            onClick={() => navigate("/tests")}
-          >
+          <Button variant="contained" sx={{ mt: 2 }} onClick={() => navigate("/tests")}>
             Quay lại danh sách test
           </Button>
         </Box>
@@ -183,19 +183,20 @@ export default function TestDetailPage() {
   return (
     <>
       <Navbar />
-      
-      <Box sx={{ display: "flex", gap: 3, maxWidth: 1400, mx: "auto", mt: 4, mb: 8, px: 3 }}>
+      <Box sx={{ display: { xs: "block", md: "flex" }, gap: 3, maxWidth: 1400, mx: "auto", mt: 4, mb: 8, px: 3 }}>
         {/* LEFT SIDE - Questions */}
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography variant="h4" fontWeight="bold" gutterBottom>
             {test.title}
           </Typography>
-          <Typography variant="body1" color="text.secondary" mb={3}>
-            {test.description}
+          <Typography variant="body1" color="text.primary" mb={1}>
+            {test.description} <br />
+            Bài kiểm tra sẽ tính giờ khi bạn bắt đầu trả lời câu hỏi hoặc nghe audio.
+            Khi hết thời gian, bài kiểm tra sẽ tự động nộp. <br />
+            Lưu ý: Bạn chỉ có thể nghe audio tối đa 2 lần trong suốt quá trình làm bài.
           </Typography>
 
-          {/* Questions by Section */}
-          {test.sections.map(section => (
+          {test.sections.map((section) => (
             <Box key={section.sectionId} mb={4}>
               <Paper sx={{ p: 2, mb: 2, backgroundColor: "#f5f5f5" }}>
                 <Typography variant="h5" fontWeight="600">
@@ -204,28 +205,22 @@ export default function TestDetailPage() {
                 <Typography variant="body2" color="text.secondary">
                   {section.description}
                 </Typography>
-                {section.mediaUrl && (
-                  <Box mt={2}>
-                    <audio controls style={{ width: "100%", maxWidth: 500 }}>
-                      <source src={section.mediaUrl} type="audio/mpeg" />
-                    </audio>
-                  </Box>
-                )}
               </Paper>
 
               {section.questions.map((q) => (
                 <Card
                   key={q.questionId}
-                  ref={el => questionRefs.current[q.questionId] = el}
+                  ref={(el) => (questionRefs.current[q.questionId] = el)}
                   sx={{
                     mb: 3,
                     p: 2,
-                    borderRadius: 2,
-                    border: score !== null 
-                      ? (q.type === "multiple-choice" && answers[q.questionId] === q.correctAnswer)
-                        ? "2px solid #4caf50"
-                        : "2px solid #ddd"
-                      : "1px solid #ddd",
+                    borderRadius: 4,
+                    border:
+                      score !== null && !isForcedSubmit
+                        ? q.type === "multiple-choice" && answers[q.questionId] === q.correctAnswer
+                          ? "2px solid #4caf50"
+                          : "2px solid #ddd"
+                        : "1px solid #ddd",
                   }}
                 >
                   <CardContent>
@@ -233,12 +228,7 @@ export default function TestDetailPage() {
                       <Typography variant="subtitle1" fontWeight="600">
                         Câu {q.questionId}: {q.question}
                       </Typography>
-                      <Chip 
-                        label={`${q.points} điểm`} 
-                        size="small" 
-                        color="primary"
-                        variant="outlined"
-                      />
+                      <Chip label={`${q.points} điểm`} size="small" color="primary" variant="outlined" />
                     </Box>
 
                     {q.passage && (
@@ -247,31 +237,17 @@ export default function TestDetailPage() {
                       </Paper>
                     )}
 
-                    {q.audioTimestamp && (
-                      <Typography variant="caption" color="text.secondary" display="block" mb={1}>
-                        🎧 Nghe đoạn: {q.audioTimestamp}
-                      </Typography>
-                    )}
-
-                    {/* Multiple Choice */}
                     {q.type === "multiple-choice" && (
                       <RadioGroup
                         value={answers[q.questionId] ?? ""}
                         onChange={(e) => handleAnswer(q.questionId, parseInt(e.target.value))}
                       >
                         {q.options.map((opt, i) => (
-                          <FormControlLabel
-                            key={i}
-                            value={i}
-                            control={<Radio />}
-                            label={opt}
-                            disabled={score !== null}
-                          />
+                          <FormControlLabel key={i} value={i} control={<Radio />} label={opt} disabled={score !== null} />
                         ))}
                       </RadioGroup>
                     )}
 
-                    {/* Essay / Short Response */}
                     {(q.type === "essay" || q.type === "short-response") && (
                       <TextField
                         fullWidth
@@ -285,33 +261,7 @@ export default function TestDetailPage() {
                       />
                     )}
 
-                    {/* Sentence Completion */}
-                    {q.type === "sentence-completion" && (
-                      <TextField
-                        fullWidth
-                        placeholder="Điền câu trả lời..."
-                        value={answers[q.questionId] || ""}
-                        onChange={(e) => handleAnswer(q.questionId, e.target.value)}
-                        disabled={score !== null}
-                        sx={{ mt: 1 }}
-                      />
-                    )}
-
-                    {/* Error Correction */}
-                    {q.type === "error-correction" && (
-                      <TextField
-                        fullWidth
-                        multiline
-                        rows={2}
-                        placeholder="Viết câu đã sửa lỗi..."
-                        value={answers[q.questionId] || ""}
-                        onChange={(e) => handleAnswer(q.questionId, e.target.value)}
-                        disabled={score !== null}
-                        sx={{ mt: 1 }}
-                      />
-                    )}
-
-                    {score !== null && q.type === "multiple-choice" && (
+                    {score !== null && !isForcedSubmit && q.type === "multiple-choice" && (
                       <Typography
                         variant="body2"
                         sx={{ mt: 1, color: answers[q.questionId] === q.correctAnswer ? "green" : "error.main" }}
@@ -329,45 +279,32 @@ export default function TestDetailPage() {
         </Box>
 
         {/* RIGHT SIDE - Sticky Navigation Panel */}
-        <Box sx={{ width: 320, flexShrink: 0 }}>
+        <Box sx={{ width: { xs: "100%", md: 400 }, flexShrink: 0, mt: { xs: 4, md: 0 } }}>
           <Paper
             elevation={3}
             sx={{
-              position: "sticky",
+              position: { xs: "relative", md: "sticky" },
               top: 80,
               p: 2,
-              borderRadius: 2,
+              borderRadius: 4,
               maxHeight: "calc(100vh - 100px)",
               overflow: "auto",
             }}
           >
+            {/* Sticky Navigation Title */}
+            <Typography variant="h6" fontWeight="600" mb={2} textAlign="center">
+              {score === null ? "Danh sách câu hỏi" : "Kết quả bài thi"}
+            </Typography>
+
             {/* Timer */}
             {score === null && (
-              <Box sx={{ mb: 2, p: 2, backgroundColor: "#f5f5f5", borderRadius: 2, textAlign: "center" }}>
+              <Box sx={{ mb: 2, p: 2, backgroundColor: "#f5f5f5", borderRadius: 4, textAlign: "center" }}>
                 <Typography variant="h6" fontWeight="600">
                   ⏱️ Thời gian còn lại
                 </Typography>
-                <Typography 
-                  variant="h4" 
-                  color={timeRemaining < 300 ? "error" : "primary"} 
-                  fontWeight="bold"
-                >
+                <Typography variant="h4" color={timeRemaining < 300 ? "error" : "primary"} fontWeight="bold">
                   {formatTime(timeRemaining)}
                 </Typography>
-              </Box>
-            )}
-
-            {/* Audio Player (if available) */}
-            {test.sections.some(s => s.mediaUrl) && score === null && (
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" fontWeight="600" mb={1}>
-                  🎧 Audio
-                </Typography>
-                <Paper sx={{ p: 1, backgroundColor: "#f9f9f9" }}>
-                  <audio controls style={{ width: "100%" }}>
-                    <source src={test.sections.find(s => s.mediaUrl)?.mediaUrl} type="audio/mpeg" />
-                  </audio>
-                </Paper>
               </Box>
             )}
 
@@ -379,49 +316,77 @@ export default function TestDetailPage() {
               {allQuestions.map((q) => {
                 const status = getAnswerStatus(q.questionId);
                 return (
-                  <Grid item xs={3} key={q.questionId}>
+                  <Grid item xs={2} key={q.questionId}>
                     <Button
                       variant={status === "answered" ? "contained" : "outlined"}
                       color={status === "answered" ? "success" : "default"}
                       onClick={() => scrollToQuestion(q.questionId)}
                       sx={{
-                        minWidth: 0,
                         width: "100%",
                         aspectRatio: "1",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        alignItems: "center",
                         fontWeight: 600,
+                        textAlign: "center",
+                        fontSize: 14,
                       }}
                     >
-                      {q.questionId}
+                      <Typography variant="subtitle2">{q.questionId}</Typography>
+                      {q.title && <Typography variant="caption">{q.title}</Typography>}
                     </Button>
                   </Grid>
                 );
               })}
             </Grid>
 
-            {/* Progress Summary */}
-            <Box sx={{ mt: 2, p: 2, backgroundColor: "#f5f5f5", borderRadius: 2 }}>
-              <Typography variant="body2" fontWeight="600">
-                Tiến độ: {Object.keys(answers).length} / {allQuestions.length}
-              </Typography>
-            </Box>
+            {/* Progress */}
+            {score === null && (
+              <Box sx={{ mt: 2, p: 2, backgroundColor: "#f5f5f5", borderRadius: 4 }}>
+                <Typography variant="body2" fontWeight="600">
+                  Tiến độ: {Object.keys(answers).length} / {allQuestions.length}
+                </Typography>
+              </Box>
+            )}
 
-            {/* Submit Button */}
+            {/* Submit */}
             {score === null && (
               <Button
                 variant="contained"
                 color="primary"
                 fullWidth
                 size="large"
-                onClick={handleSubmit}
-                sx={{ 
-                  mt: 2, 
-                  borderRadius: 2, 
+                onClick={() => handleSubmit()}
+                sx={{
+                  mt: 2,
+                  borderRadius: 4,
                   py: 1.5,
                   backgroundColor: "#4038d2ff",
-                  "&:hover": { backgroundColor: "#73169aff" }
+                  "&:hover": { backgroundColor: "#73169aff" },
                 }}
               >
                 Nộp bài
+              </Button>
+            )}
+
+            {/* Return Button */}
+            {score !== null && (
+              <Button
+                variant="contained"
+                color="secondary"
+                fullWidth
+                size="large"
+                onClick={() => navigate("/tests")} // Navigate back to the test list
+                sx={{
+                  mt: 2,
+                  borderRadius: 4,
+                  py: 1.5,
+                  backgroundColor: "#4038d2ff",
+                  "&:hover": { backgroundColor: "#73169aff" },
+                }}
+              >
+                Trở về
               </Button>
             )}
           </Paper>
@@ -430,43 +395,56 @@ export default function TestDetailPage() {
 
       {/* Result Dialog */}
       <Dialog open={openResultDialog} onClose={() => setOpenResultDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>🎉 Kết quả bài test</DialogTitle>
+        <DialogTitle>
+          <Box textAlign="center">
+            {score?.percentage >= 85 ? "🌟 Xuất sắc!" : score?.percentage >= 70 ? "👍 Khá tốt" : "⚠️ Cần cải thiện"}
+          </Box>
+        </DialogTitle>
         <DialogContent>
-          <Box textAlign="center" py={2}>
-            <Typography variant="h3" fontWeight="bold" color="primary" mb={2}>
+          <Box
+            textAlign="center"
+            py={4}
+            px={2}
+            sx={{
+              background: "linear-gradient(135deg, #e0f7fa 0%, #e1bee7 100%)",
+              borderRadius: 3,
+              boxShadow: 3,
+            }}
+          >
+            <Typography variant="h2" fontWeight="bold" color="primary" mb={2}>
               {score?.percentage}%
             </Typography>
-            <Typography variant="h6" mb={1}>
+            <Typography variant="h5" mb={1}>
               Điểm: {score?.total?.toFixed(1)} / {score?.max}
             </Typography>
-            
-            {test.scoring?.levels.map(level => {
-              if (score?.percentage >= level.min && score?.percentage <= level.max) {
-                return (
-                  <Box key={level.level} mt={3}>
-                    <Chip 
-                      label={level.level} 
-                      color="primary" 
-                      size="large"
-                      sx={{ fontSize: 16, py: 2, px: 1 }}
-                    />
-                    <Typography variant="body1" mt={2} color="text.secondary">
-                      💡 Khuyến nghị: {level.recommendation}
-                    </Typography>
-                  </Box>
-                );
-              }
-              return null;
-            })}
+
+            {/* Optional: thêm đánh giá */}
+            <Typography variant="body1" color="text.secondary" mb={2}>
+              {score?.percentage >= 85
+                ? "Bạn làm bài rất tốt, tiếp tục phát huy!"
+                : score?.percentage >= 70
+                  ? "Bạn làm khá tốt, còn một chút cải thiện là ổn."
+                  : "Bạn nên ôn tập lại và thử lại lần sau."}
+            </Typography>
+
+            <Chip
+              label={score?.percentage >= 85 ? "Xuất sắc" : score?.percentage >= 70 ? "Khá" : "Cần cải thiện"}
+              color={score?.percentage >= 85 ? "success" : score?.percentage >= 70 ? "warning" : "error"}
+              size="large"
+              sx={{ fontSize: 16, py: 1, px: 2 }}
+            />
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenResultDialog(false)}>Đóng</Button>
-          <Button variant="contained" onClick={() => navigate("/courses")}>
-            Xem khóa học
+        <DialogActions sx={{ justifyContent: "center", mb: 2 }}>
+          <Button variant="contained" onClick={() => navigate("/tests")} sx={{ mx: 1 }}>
+            Về danh sách bài kiểm tra
+          </Button>
+          <Button variant="outlined" onClick={() => setOpenResultDialog(false)} sx={{ mx: 1 }}>
+            Đóng
           </Button>
         </DialogActions>
       </Dialog>
+
 
       <Footer />
     </>

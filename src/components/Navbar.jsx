@@ -322,7 +322,7 @@ export default function Navbar() {
                       "&:hover": { backgroundColor: "#73169aff" },
                     }}
                   >
-                    Hồ sơ cá nhân
+                    Hồ sơ
                   </Button>
                 </>
               )}

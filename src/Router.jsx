@@ -13,7 +13,7 @@ import LessonPage from "./pages/LessonPage";
 import QuizPage from "./pages/QuizPage";
 import HistoryPage from "./pages/HistoryPage";
 import FollowedPage from "./pages/FollowingPage";
-import TestPage from "./pages/TestDetailPage";
+import TestPage from "./pages/TestPage";
 import TestDetailPage from "./pages/TestDetailPage";
 
 // Khu vực quản trị
@@ -25,6 +25,7 @@ import ManageCourses from "./pages/admin/courses";
 import ManageCategory from "./pages/admin/categories";
 import ManageQuizz from "./pages/admin/quizzes";
 import ManageUser from "./pages/admin/users";
+import ManageTests from "./pages/admin/tests";
 
 export default function AppRouter() {
   return (
@@ -55,6 +56,7 @@ export default function AppRouter() {
           <Route path="categories" element={<ManageCategory />} />
           <Route path="quizzes" element={<ManageQuizz />} />
           <Route path="users" element={<ManageUser />} />
+          <Route path="tests" element={<ManageTests />} />
         </Route>
       </Routes>
     </Router>
