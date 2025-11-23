@@ -1,10 +1,12 @@
 import toeicPlacementTest from './toeicTest1';
+import toeicReadingTest from './toeicTest2';
 
 // For now, we'll use the same test structure for all tests
 // You can create separate test files later
 export const testRegistry = {
   "placement_toeic_001": toeicPlacementTest,
   "toeic_basic_001": toeicPlacementTest, // Temporarily use same structure
+  "toeic_reading_001": toeicReadingTest,
   "ielts_placement_001": toeicPlacementTest, // Temporarily use same structure
   "ielts_academic_001": toeicPlacementTest, // Temporarily use same structure
   "toefl_placement_001": toeicPlacementTest, // Temporarily use same structure

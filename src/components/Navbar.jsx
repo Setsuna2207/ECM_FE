@@ -15,10 +15,11 @@ import {
   Avatar,
 } from "@mui/material";
 import { ExpandMore, Search } from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom"; // Import useLocation
 
 export default function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation(); // Get the current location
 
   const categories = {
     LEVEL: ["TOEIC", "IELTS", "TOEFL", "GENERAL"],
@@ -35,27 +36,35 @@ export default function Navbar() {
     setCurrentUser(savedUser);
   }, []);
 
-  const handleExploreClick = (event) => setAnchorEl(event.currentTarget);
-  const handleCloseExplore = () => {
-    setAnchorEl(null);
-    setSelectedLevel(null);
+  const isInTestRoute = location.pathname.startsWith("/test/"); // Check if the user is in a test route
+
+  const handleInteraction = (callback) => {
+    if (isInTestRoute) {
+      const confirmLeave = window.confirm("Thao tác sẽ hủy bài thi của bạn. Bạn có chắc chắn muốn tiếp tục?");
+      if (!confirmLeave) return;
+    }
+    callback();
   };
+
+  const handleExploreClick = (event) => handleInteraction(() => setAnchorEl(event.currentTarget));
+  const handleCloseExplore = () => setAnchorEl(null);
   const openExplore = Boolean(anchorEl);
 
-  const handleLevelClick = (level) => {
+  const handleLevelClick = (level) => handleInteraction(() => {
     navigate(`/courses/${level.toLowerCase()}`);
     handleCloseExplore();
-  };
-  const handleSkillClick = (skill) => {
+  });
+
+  const handleSkillClick = (skill) => handleInteraction(() => {
     navigate(`/courses/${skill.toLowerCase()}`);
     handleCloseExplore();
-  };
+  });
 
-  const handleLogout = () => {
+  const handleLogout = () => handleInteraction(() => {
     localStorage.removeItem("currentUser");
     setCurrentUser(null);
     navigate("/");
-  };
+  });
 
   return (
     <AppBar
@@ -75,7 +84,7 @@ export default function Navbar() {
             src="/src/assets/ECM.png"
             alt="ECM Logo"
             sx={{ height: 55, cursor: "pointer" }}
-            onClick={() => navigate("/")}
+            onClick={() => handleInteraction(() => navigate("/"))}
           />
 
           <Button
@@ -195,7 +204,9 @@ export default function Navbar() {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              if (searchTerm.trim()) navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
+              handleInteraction(() => {
+                if (searchTerm.trim()) navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
+              });
             }}
           >
             <TextField
@@ -226,7 +237,7 @@ export default function Navbar() {
             <>
               <Button
                 variant="outlined"
-                onClick={() => navigate("/login")}
+                onClick={() => handleInteraction(() => navigate("/login"))}
                 sx={{
                   borderColor: "#4038d2ff",
                   color: "#4038d2ff",
@@ -243,7 +254,7 @@ export default function Navbar() {
               </Button>
               <Button
                 variant="contained"
-                onClick={() => navigate("/register")}
+                onClick={() => handleInteraction(() => navigate("/register"))}
                 sx={{
                   backgroundColor: "#4038d2ff",
                   borderRadius: 3,
@@ -261,10 +272,9 @@ export default function Navbar() {
             <>
               {currentUser.access === "admin" ? (
                 <>
-                  {/* Add the Test button for admin */}
                   <Button
                     variant="contained"
-                    onClick={() => navigate("/tests")}
+                    onClick={() => handleInteraction(() => navigate("/tests"))}
                     sx={{
                       backgroundColor: "#4038d2ff",
                       color: "#fff",
@@ -279,7 +289,7 @@ export default function Navbar() {
 
                   <Button
                     variant="contained"
-                    onClick={() => navigate("/admin")}
+                    onClick={() => handleInteraction(() => navigate("/admin"))}
                     sx={{
                       backgroundColor: "#4038d2ff",
                       color: "#fff",
@@ -294,10 +304,9 @@ export default function Navbar() {
                 </>
               ) : (
                 <>
-                  {/* Add the Test button for regular users */}
                   <Button
                     variant="contained"
-                    onClick={() => navigate("/tests")}
+                    onClick={() => handleInteraction(() => navigate("/tests"))}
                     sx={{
                       backgroundColor: "#4038d2ff",
                       color: "#fff",
@@ -312,7 +321,7 @@ export default function Navbar() {
 
                   <Button
                     variant="contained"
-                    onClick={() => navigate("/profile")}
+                    onClick={() => handleInteraction(() => navigate("/profile"))}
                     sx={{
                       backgroundColor: "#4038d2ff",
                       color: "#fff",

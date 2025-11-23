@@ -193,7 +193,7 @@ export default function TestDetailPage() {
             {test.description} <br />
             Bài kiểm tra sẽ tính giờ khi bạn bắt đầu trả lời câu hỏi hoặc nghe audio.
             Khi hết thời gian, bài kiểm tra sẽ tự động nộp. <br />
-            Lưu ý: Bạn chỉ có thể nghe audio tối đa 2 lần trong suốt quá trình làm bài.
+            Lưu ý: Audio chỉ được nghe tối đa 2 lần trong suốt quá trình làm bài.
           </Typography>
 
           {test.sections.map((section) => (

@@ -1,0 +1,1151 @@
+export const toeicReadingTest = {
+  description: "Complete TOEIC Reading test covering Grammar, Vocabulary, and Reading Comprehension",
+  duration: 120,
+  totalQuestions: 100,
+  passingScore: 60,
+
+  sections: [
+    {
+      sectionId: 1,
+      title: "Part 5: Incomplete Sentences",
+      description: "Choose the best answer to complete each sentence",
+      duration: 15,
+      questions: [
+        {
+          questionId: 1,
+          type: "multiple-choice",
+          question: "Its _______ into Brazil has given Darrow Textiles Ltd. an advantage over much of its competition.",
+          options: ["expansion", "process", "creation", "action"],
+          correctAnswer: 0,
+          points: 1
+        },
+        {
+          questionId: 2,
+          type: "multiple-choice",
+          question: "Employees at NC media co., Ltd. _______ donate to local charities by hosting fund-raising parties.",
+          options: ["regularity", "regularize", "regularities", "regularly"],
+          correctAnswer: 3,
+          points: 1
+        },
+        {
+          questionId: 3,
+          type: "multiple-choice",
+          question: "From winning an Olympic gold medal in 2000 to becoming an NBA champion in 2008, Kevin Garnet has shown _______ to be one of the most talented players.",
+          options: ["he", "him", "himself", "his"],
+          correctAnswer: 2,
+          points: 1
+        },
+        {
+          questionId: 4,
+          type: "multiple-choice",
+          question: "An accurate _______ of surveys is imperative to building a good understanding of customer needs.",
+          options: ["opportunity", "contract", "destination", "analysis"],
+          correctAnswer: 3,
+          points: 1
+        },
+        {
+          questionId: 5,
+          type: "multiple-choice",
+          question: "QIB will work _______ to maintain sustainable growth and expansion plans.",
+          options: ["Persisted", "Persistent", "Persistently", "Persistence"],
+          correctAnswer: 2,
+          points: 1
+        },
+        {
+          questionId: 6,
+          type: "multiple-choice",
+          question: "The president has just realized that the launch of our new product must be postponed owing to _______ conditions in the market.",
+          options: ["unwilling", "unfavorable", "opposing", "reluctant"],
+          correctAnswer: 1,
+          points: 1
+        },
+        {
+          questionId: 7,
+          type: "multiple-choice",
+          question: "A letter _______ by a copy of the press release was mailed to the public relations department yesterday.",
+          options: ["accompanies", "accompanying", "accompanied", "will accompany"],
+          correctAnswer: 2,
+          points: 1
+        },
+        {
+          questionId: 8,
+          type: "multiple-choice",
+          question: "The announcement of John Stanton's retirement was not well received by most of the staff members, but Leslie, his long time friend and colleague, was extremely _______ to hear that Mr Stanton will now be able to enjoy some leisure time.",
+          options: ["happiest", "happily", "happier", "happy"],
+          correctAnswer: 3,
+          points: 1
+        },
+        {
+          questionId: 9,
+          type: "multiple-choice",
+          question: "Nevada Jobfind Inc. is planning to host a career fair for college graduates seeking _______ in the healthcare sector.",
+          options: ["employ", "employment", "employee", "employing"],
+          correctAnswer: 1,
+          points: 1
+        },
+        {
+          questionId: 10,
+          type: "multiple-choice",
+          question: "The manager has asked Mr. Lim to submit his final report on the sales of the new washing machine _______ April 30th.",
+          options: ["with", "toward", "between", "by"],
+          correctAnswer: 3,
+          points: 1
+        },
+        {
+          questionId: 11,
+          type: "multiple-choice",
+          question: "Following the visit to your production facility in Hong Kong next week, we _______ a comprehensive factory automation program to meet your company's needs.",
+          options: ["will create", "was created", "having created", "had been creating"],
+          correctAnswer: 0,
+          points: 1
+        },
+        {
+          questionId: 12,
+          type: "multiple-choice",
+          question: "Any employers or contractors who are found to have _______ safety laws will be subject to a heavy fine.",
+          options: ["complied", "observed", "breached", "adhered"],
+          correctAnswer: 2,
+          points: 1
+        },
+        {
+          questionId: 13,
+          type: "multiple-choice",
+          question: "Mr. Tanaka decided to resign, because a significant drop in customer satisfaction has had an adverse impact on sales _______.",
+          options: ["grower", "grow", "grown", "growth"],
+          correctAnswer: 3,
+          points: 1
+        },
+        {
+          questionId: 14,
+          type: "multiple-choice",
+          question: "_______ his appointment as our head of accounting services, Paul Robinson was working as a high-powered merchant banker in London.",
+          options: ["Since", "Prior to", "Except", "Because"],
+          correctAnswer: 1,
+          points: 1
+        },
+        {
+          questionId: 15,
+          type: "multiple-choice",
+          question: "We believe that the popularity of _______ products is the result of a combination of beauty and functionality.",
+          options: ["Us", "We", "Our", "Ours"],
+          correctAnswer: 2,
+          points: 1
+        },
+        {
+          questionId: 16,
+          type: "multiple-choice",
+          question: "_______ his falling out with his former employer, Mr. Lee still meets with some of his old co-workers from time to time.",
+          options: ["Subsequently", "However", "Meanwhile", "Despite"],
+          correctAnswer: 3,
+          points: 1
+        },
+        {
+          questionId: 17,
+          type: "multiple-choice",
+          question: "Library users must remove all _______ belongings when they leave the library for more than a half hour.",
+          options: ["unlimited", "personal", "accurate", "believable"],
+          correctAnswer: 1,
+          points: 1
+        },
+        {
+          questionId: 18,
+          type: "multiple-choice",
+          question: "Personnel changes within the marketing department _______ no surprise, as it completely failed to meet the target on the most recent project.",
+          options: ["made of", "came as", "spoke of", "came across"],
+          correctAnswer: 1,
+          points: 1
+        },
+        {
+          questionId: 19,
+          type: "multiple-choice",
+          question: "_______ anyone wish to access the information the status of his or her order, the password should be entered.",
+          options: ["If", "Should", "Whether", "As though"],
+          correctAnswer: 1,
+          points: 1
+        },
+        {
+          questionId: 20,
+          type: "multiple-choice",
+          question: "The latest training _______ contains tips on teaching a second language to international students.",
+          options: ["method", "guide", "staff", "role"],
+          correctAnswer: 1,
+          points: 1
+        },
+        {
+          questionId: 21,
+          type: "multiple-choice",
+          question: "The more we spent with the sales team, the more _______ we were with their innovative marketing skills.",
+          options: ["impression", "impress", "impresses", "impressed"],
+          correctAnswer: 3,
+          points: 1
+        },
+        {
+          questionId: 22,
+          type: "multiple-choice",
+          question: "_______ Mega Foods imports only one kind of cheese now, the company will be importing a total of five varieties by next year.",
+          options: ["Until", "Once", "Unless", "Although"],
+          correctAnswer: 3,
+          points: 1
+        },
+        {
+          questionId: 23,
+          type: "multiple-choice",
+          question: "Anyone _______ experiences complications with the new software is encouraged to bring this matter to Mr. Gruber's attention in room 210.",
+          options: ["Who", "Which", "Whom", "whose"],
+          correctAnswer: 0,
+          points: 1
+        },
+        {
+          questionId: 24,
+          type: "multiple-choice",
+          question: "Fast _______ in computer technology have made it possible for the public to access a second-to-none amount of news and information.",
+          options: ["Inspections", "Belongings", "Advances", "Commitments"],
+          correctAnswer: 2,
+          points: 1
+        },
+        {
+          questionId: 25,
+          type: "multiple-choice",
+          question: "Whether it is _______ to register for a student discount card depends on the needs of the individual.",
+          options: ["necessary", "necessarily", "necessitate", "necessity"],
+          correctAnswer: 0,
+          points: 1
+        },
+        {
+          questionId: 26,
+          type: "multiple-choice",
+          question: "As space is limited, be sure to contact Bill in the personnel department a minimum of three days in advance to _______ for a workshop.",
+          options: ["approve", "express", "register", "record"],
+          correctAnswer: 2,
+          points: 1
+        },
+        {
+          questionId: 27,
+          type: "multiple-choice",
+          question: "Ms. Walters was _______ to make a presentation on how to increase revenue when I entered the room.",
+          options: ["nearly", "off", "close", "about"],
+          correctAnswer: 3,
+          points: 1
+        },
+        {
+          questionId: 28,
+          type: "multiple-choice",
+          question: "Considering her ability, dedication, and expertise, I am _______ that Ms. Yoko will be the most suitable person for the position of marketing manager.",
+          options: ["Confident", "Obvious", "Noticeable", "Intelligent"],
+          correctAnswer: 0,
+          points: 1
+        },
+        {
+          questionId: 29,
+          type: "multiple-choice",
+          question: "_______ the workload is very high at the moment, all the team members are optimistic that they will be able to finish the required work on time.",
+          options: ["Even though", "According to", "As if", "In order for"],
+          correctAnswer: 0,
+          points: 1
+        },
+        {
+          questionId: 30,
+          type: "multiple-choice",
+          question: "Because the store was _______ located, it had a huge advantage in exposing its goods to the public, which had an impact on its increase in sales.",
+          options: ["center", "central", "centrally", "centered"],
+          correctAnswer: 2,
+          points: 1
+        },
+        {
+          questionId: 31,
+          type: "multiple-choice",
+          question: "_______ the city council has approved the urban renewal project, we need to recruit several new workers.",
+          options: ["If so", "Rather than", "Owing to", "Given that"],
+          correctAnswer: 3,
+          points: 1
+        },
+        {
+          questionId: 32,
+          type: "multiple-choice",
+          question: "The technicians _______ tested all air-conditioning units to ensure that the cooling system is running smoothly.",
+          options: ["systematically", "exceedingly", "increasingly", "lastly"],
+          correctAnswer: 0,
+          points: 1
+        },
+        {
+          questionId: 33,
+          type: "multiple-choice",
+          question: "We have _______ confidence in the product's ability to provide unrivaled protection in an exposed blast environment.",
+          options: ["productive", "eventual", "informative", "absolute"],
+          correctAnswer: 3,
+          points: 1
+        },
+        {
+          questionId: 34,
+          type: "multiple-choice",
+          question: "The marketers make an _______ of products that attract a wide variety of potential customers.",
+          options: ["array", "alleviation", "origin", "extension"],
+          correctAnswer: 0,
+          points: 1
+        },
+        {
+          questionId: 35,
+          type: "multiple-choice",
+          question: "Newer branches can be opened worldwide _______ we can properly translate our marketing goals.",
+          options: ["as soon as", "right away", "promptly", "in time for"],
+          correctAnswer: 0,
+          points: 1
+        },
+        {
+          questionId: 36,
+          type: "multiple-choice",
+          question: "Despite the fact that the new _______ was developed by MIN Communications, its parent company received all the credit for it.",
+          options: ["technology", "technologies", "technological", "technologists"],
+          correctAnswer: 0,
+          points: 1
+        },
+        {
+          questionId: 37,
+          type: "multiple-choice",
+          question: "Greg O'Leary has been leading research in our laboratories _______ over eighteen years.",
+          options: ["in", "for", "up", "from"],
+          correctAnswer: 1,
+          points: 1
+        },
+        {
+          questionId: 38,
+          type: "multiple-choice",
+          question: "Library and information science majors should be reminded of the seminar beginning _______ at 6:00 p.m in room 212B.",
+          options: ["promptly", "prompts", "prompter", "prompted"],
+          correctAnswer: 0,
+          points: 1
+        },
+        {
+          questionId: 39,
+          type: "multiple-choice",
+          question: "The meteorological agency recommended that tourists to the region be _______ dressed for frigid conditions.",
+          options: ["suitable", "suitably", "suitability", "suitableness"],
+          correctAnswer: 1,
+          points: 1
+        },
+        {
+          questionId: 40,
+          type: "multiple-choice",
+          question: "The letter from Ms. Win seems to have disappeared without a _______.",
+          options: ["whisper", "peep", "trace", "flash"],
+          correctAnswer: 2,
+          points: 1
+        }
+      ]
+    },
+    {
+      sectionId: 2,
+      title: "Part 6: Text Completion",
+      description: "Read the texts and choose the best answer to complete each blank",
+      duration: 10,
+      questions: [
+        {
+          questionId: 41,
+          type: "multiple-choice",
+          passage: "A long time ago, this part of the town used to be a place where people came to relax and get away from their stress. Although this was _____(41)_____ a shelter for people to escape, it has now become a chaotic and noisy market area.",
+          question: "Choose the best answer for blank (41)",
+          options: ["just", "once", "such", "likely"],
+          correctAnswer: 1,
+          points: 1
+        },
+        {
+          questionId: 42,
+          type: "multiple-choice",
+          passage: "Up until a few years ago, it wasn't as bad as it is now. Although it is true that some people in the neighborhood supported the expansion of the market a few years ago, now most of them _____(42)_____ that it has gotten out of control and created many serious problems for the area.",
+          question: "Choose the best answer for blank (42)",
+          options: ["would have agreed", "would agree", "has agree", "were agreeing"],
+          correctAnswer: 1,
+          points: 1
+        },
+        {
+          questionId: 43,
+          type: "multiple-choice",
+          passage: "_____(43)_____, it might have already gotten too far out of control. What we really need right now is not a mere intervention by civilians but strong action from the mayor's office.",
+          question: "Choose the best answer for blank (43)",
+          options: ["In fact", "In spite of", "On the other hand", "Even though"],
+          correctAnswer: 0,
+          points: 1
+        },
+        {
+          questionId: 44,
+          type: "multiple-choice",
+          passage: "Want to discover the latest trends in International Business? Sign up for our free workshops, to be held October 2-6. Employees are encouraged to sign up early for workshops, as the number of participants is _____(44)_____ to 50 per session.",
+          question: "Choose the best answer for blank (44)",
+          options: ["limiting", "limited", "limitedly", "limitation"],
+          correctAnswer: 1,
+          points: 1
+        },
+        {
+          questionId: 45,
+          type: "multiple-choice",
+          passage: "Provided that seats remain available, employees can easily register for sessions. If a session is _____(45)_____, however, staff can request that they be contacted if a space opens up.",
+          question: "Choose the best answer for blank (45)",
+          options: ["valid", "full", "finished", "over"],
+          correctAnswer: 1,
+          points: 1
+        },
+        {
+          questionId: 46,
+          type: "multiple-choice",
+          passage: "The upcoming sessions _____(46)_____ on the 5th floor of the Stafford Suite building.",
+          question: "Choose the best answer for blank (46)",
+          options: ["have been held", "will be held", "are being held", "were being held"],
+          correctAnswer: 1,
+          points: 1
+        },
+        {
+          questionId: 47,
+          type: "multiple-choice",
+          passage: "With the expansion of the Wellness Recreation Center, projected to open Fall 2011, the Recreational Sports Department will be able to build on our current tradition of offering students a wide _____(47)_____ of healthy activities at all ability levels.",
+          question: "Choose the best answer for blank (47)",
+          options: ["part", "extension", "variety", "limit"],
+          correctAnswer: 2,
+          points: 1
+        },
+        {
+          questionId: 48,
+          type: "multiple-choice",
+          passage: "_____(48)_____ of the many activities we currently offer, the City of Laredo and TAMIU community are planning to participate in an array of youth activities beginning Summer 2010.",
+          question: "Choose the best answer for blank (48)",
+          options: ["Beside", "Or else", "And then", "Accordingly"],
+          correctAnswer: 0,
+          points: 1
+        },
+        {
+          questionId: 49,
+          type: "multiple-choice",
+          passage: "Activities would include softball, soccer, basketball, and other recreational events. If you are interested in _____(49)_____ your son/daughter in our youth camp, please contact us at 326-3015 for more information.",
+          question: "Choose the best answer for blank (49)",
+          options: ["registering", "joining", "agreeing", "running"],
+          correctAnswer: 0,
+          points: 1
+        },
+        {
+          questionId: 50,
+          type: "multiple-choice",
+          passage: "Security Inc. is the most trusted name in the sales and service of financial equipment and automated teller machines. All employees at Security Inc. are _____(50)_____ to customer service and your complete satisfaction.",
+          question: "Choose the best answer for blank (50)",
+          options: ["dedicated", "using", "instructed", "dependent"],
+          correctAnswer: 0,
+          points: 1
+        },
+        {
+          questionId: 51,
+          type: "multiple-choice",
+          passage: "Security Inc. can assemble a unique financial equipment package across multiple manufacturers' product lines or tailor a financial equipment service program to _____(51)_____ your specific business needs.",
+          question: "Choose the best answer for blank (51)",
+          options: ["hope", "tend", "make up", "meet"],
+          correctAnswer: 3,
+          points: 1
+        },
+        {
+          questionId: 52,
+          type: "multiple-choice",
+          passage: "This diversity in product and service offerings, combined with our unrivaled knowledge in the sale and service of automated teller machines, provides a _____(52)_____ edge and real value for our customers.",
+          question: "Choose the best answer for blank (52)",
+          options: ["excellent", "competitive", "comparable", "commensurate"],
+          correctAnswer: 1,
+          points: 1
+        }
+      ]
+    },
+    {
+      sectionId: 3,
+      title: "Part 7: Reading Comprehension (Single Passages)",
+      description: "Read the passages and answer the questions",
+      duration: 30,
+      questions: [
+        {
+          questionId: 53,
+          type: "multiple-choice",
+          passage: "RICH TO APPEAR AS THE FIRST GUEST ON THE RACHEL RATIGAN SHOW\n\nAdrienne Rich, who is an alumna of Jackson Madison High School will be appearing on the BBC's new talk show, The Rachel Ratigan Show, this Saturday night. The Rachel Ratigan Show is premiering this week and Rich is honored to be the first guest on the show. She will be interviewed about her second novel, A Woman Observed, which depicts a 35-year-old divorced woman living in a city as observed through the eyes of other characters. The book has hit No. 14 on the New York Times Bestseller List and has been praised by critics as the most commercially successful feminist novel this year. To watch the show, tune in to channel 4 at 9 P.M. this Saturday.",
+          question: "What is the purpose of the announcement?",
+          options: [
+            "To criticize a feminist novel",
+            "To describe a guest of a television show",
+            "To introduce a newly launched television program",
+            "To raise sales of a novel"
+          ],
+          correctAnswer: 1,
+          points: 1
+        },
+        {
+          questionId: 54,
+          type: "multiple-choice",
+          passage: "RICH TO APPEAR AS THE FIRST GUEST ON THE RACHEL RATIGAN SHOW\n\nAdrienne Rich, who is an alumna of Jackson Madison High School will be appearing on the BBC's new talk show, The Rachel Ratigan Show, this Saturday night. The Rachel Ratigan Show is premiering this week and Rich is honored to be the first guest on the show. She will be interviewed about her second novel, A Woman Observed, which depicts a 35-year-old divorced woman living in a city as observed through the eyes of other characters. The book has hit No. 14 on the New York Times Bestseller List and has been praised by critics as the most commercially successful feminist novel this year. To watch the show, tune in to channel 4 at 9 P.M. this Saturday.",
+          question: "What can be inferred about Adrienne Rich?",
+          options: [
+            "She has written a Geography.",
+            "She hasn't yet graduated from high school.",
+            "Her writing is fictional.",
+            "Her book has been strictly criticized."
+          ],
+          correctAnswer: 2,
+          points: 1
+        },
+        {
+          questionId: 55,
+          type: "multiple-choice",
+          passage: "Beginning this year, Renaissance Strategy Inc. will provide financial aid to full-time employees with children in school. Financial aid is available to candidates from elementary school to college, but homeschooling is not included. There are also certain requirements that you must meet in order to be eligible for financial aid. Eligible candidates must be enrolled as full-time students and maintain passing grades. Candidates must also submit a copy of proof of enrollment along with application forms which you can find at the front of the administration division. How much aid your child receives will depend on your financial need and on the amount of other aid you receive. Aid will be paid directly to the school on a yearly basis. If you need more information or have any questions about the program, please call 123-5656.",
+          question: "What is the announcement intended for?",
+          options: [
+            "Giving information on government financial aid",
+            "Motivating employees to pursue an academic career",
+            "Strengthening the scholarship eligibility requirements",
+            "Supporting the children of employees"
+          ],
+          correctAnswer: 3,
+          points: 1
+        },
+        {
+          questionId: 56,
+          type: "multiple-choice",
+          passage: "Beginning this year, Renaissance Strategy Inc. will provide financial aid to full-time employees with children in school. Financial aid is available to candidates from elementary school to college, but homeschooling is not included. There are also certain requirements that you must meet in order to be eligible for financial aid. Eligible candidates must be enrolled as full-time students and maintain passing grades. Candidates must also submit a copy of proof of enrollment along with application forms which you can find at the front of the administration division. How much aid your child receives will depend on your financial need and on the amount of other aid you receive. Aid will be paid directly to the school on a yearly basis. If you need more information or have any questions about the program, please call 123-5656.",
+          question: "What is NOT indicated about applying for financial aid?",
+          options: [
+            "The sum of financial support received is determined by a recipient's performance.",
+            "Candidates must be full-time students.",
+            "A certificate to show status of enrollment is essential.",
+            "Candidates who are homeschooled are not eligible."
+          ],
+          correctAnswer: 0,
+          points: 1
+        },
+                {
+          questionId: 57,
+          type: "multiple-choice",
+          passage: "Dear Sirs,\n\nFour months ago, I signed up for a premium membership at Fitness First at a monthly fee of $55. When I signed up, I was told that I was free to cancel my membership at any time, for any reason, with no extra payment.\n\nSince I joined, I have been extremely disappointed in the Fitness First's facilities and staff. The locker rooms and swimming pools are poorly maintained and extremely dirty. The Jacuzzi has been out of order for more than a month and repairs on it have not even begun. The Pilates class schedule has been changed several times, without notice, and the instructor never seemed to be fully devoted to the class.\n\nI telephoned Fitness First and was told that - contrary to what I was told verbally when signing up - I would have to pay a \"processing fee\" of $75 to end my membership. One week later, I received a bill in the mail saying I still owed the processing fee. I refuse to pay this fee.\n\nIf you continue billing me, I will be discussing the matter with my lawyer. In addition, I will be filing formal complaints with the City Business Bureau and the Health Department about the unsanitary condition of your facilities.\n\nI suggest you discuss the matter with your billing department immediately.\n\nJulia Londale",
+          question: "What is the main point of this letter?",
+          options: [
+            "To discuss a membership upgrade",
+            "To suggest improvement of the facilities",
+            "To inform a health club of disapproval about a cancellation fee",
+            "To ask the gym to accept a refund request"
+          ],
+          correctAnswer: 2,
+          points: 1
+        },
+        {
+          questionId: 58,
+          type: "multiple-choice",
+          passage: "Dear Sirs,\n\nFour months ago, I signed up for a premium membership at Fitness First at a monthly fee of $55. When I signed up, I was told that I was free to cancel my membership at any time, for any reason, with no extra payment.\n\nSince I joined, I have been extremely disappointed in the Fitness First's facilities and staff. The locker rooms and swimming pools are poorly maintained and extremely dirty. The Jacuzzi has been out of order for more than a month and repairs on it have not even begun. The Pilates class schedule has been changed several times, without notice, and the instructor never seemed to be fully devoted to the class.\n\nI telephoned Fitness First and was told that - contrary to what I was told verbally when signing up - I would have to pay a \"processing fee\" of $75 to end my membership. One week later, I received a bill in the mail saying I still owed the processing fee. I refuse to pay this fee.\n\nIf you continue billing me, I will be discussing the matter with my lawyer. In addition, I will be filing formal complaints with the City Business Bureau and the Health Department about the unsanitary condition of your facilities.\n\nI suggest you discuss the matter with your billing department immediately.\n\nJulia Londale",
+          question: "Why is Ms. Londale unhappy with her club membership?",
+          options: [
+            "The gym didn't provide enough information initially.",
+            "The club facilities are poorly managed and maintained.",
+            "The fee has been increased unexpectedly.",
+            "The receptionist was very rude to her."
+          ],
+          correctAnswer: 1,
+          points: 1
+        },
+        {
+          questionId: 59,
+          type: "multiple-choice",
+          passage: "Dear Sirs,\n\nFour months ago, I signed up for a premium membership at Fitness First at a monthly fee of $55. When I signed up, I was told that I was free to cancel my membership at any time, for any reason, with no extra payment.\n\nSince I joined, I have been extremely disappointed in the Fitness First's facilities and staff. The locker rooms and swimming pools are poorly maintained and extremely dirty. The Jacuzzi has been out of order for more than a month and repairs on it have not even begun. The Pilates class schedule has been changed several times, without notice, and the instructor never seemed to be fully devoted to the class.\n\nI telephoned Fitness First and was told that - contrary to what I was told verbally when signing up - I would have to pay a \"processing fee\" of $75 to end my membership. One week later, I received a bill in the mail saying I still owed the processing fee. I refuse to pay this fee.\n\nIf you continue billing me, I will be discussing the matter with my lawyer. In addition, I will be filing formal complaints with the City Business Bureau and the Health Department about the unsanitary condition of your facilities.\n\nI suggest you discuss the matter with your billing department immediately.\n\nJulia Londale",
+          question: "How does Ms. Londale feel about being charged the processing fee?",
+          options: [
+            "She understands that it is part of the contract.",
+            "She is happy that the fee wasn't as high as she expected.",
+            "She is angry that she was told differently when she joined.",
+            "She felt that it was not an important matter."
+          ],
+          correctAnswer: 2,
+          points: 1
+        },
+        {
+          questionId: 60,
+          type: "multiple-choice",
+          passage: "Dear Sirs,\n\nFour months ago, I signed up for a premium membership at Fitness First at a monthly fee of $55. When I signed up, I was told that I was free to cancel my membership at any time, for any reason, with no extra payment.\n\nSince I joined, I have been extremely disappointed in the Fitness First's facilities and staff. The locker rooms and swimming pools are poorly maintained and extremely dirty. The Jacuzzi has been out of order for more than a month and repairs on it have not even begun. The Pilates class schedule has been changed several times, without notice, and the instructor never seemed to be fully devoted to the class.\n\nI telephoned Fitness First and was told that - contrary to what I was told verbally when signing up - I would have to pay a \"processing fee\" of $75 to end my membership. One week later, I received a bill in the mail saying I still owed the processing fee. I refuse to pay this fee.\n\nIf you continue billing me, I will be discussing the matter with my lawyer. In addition, I will be filing formal complaints with the City Business Bureau and the Health Department about the unsanitary condition of your facilities.\n\nI suggest you discuss the matter with your billing department immediately.\n\nJulia Londale",
+          question: "What is Ms. Londale least likely to do if she gets a request for the processing fee again?",
+          options: [
+            "Consult a lawyer",
+            "Make a formal complaint",
+            "Report it to the Health Department",
+            "Pay the processing fee"
+          ],
+          correctAnswer: 3,
+          points: 1
+        },
+        {
+          questionId: 61,
+          type: "multiple-choice",
+          passage: "Following up its successful Sushi Workshop in July, the Japan-America Society of Greater Long Island presents sushi chef Maksui from Kenichi for an advanced sushi workshop on Sunday, October 25th at the Tri-fold Clubhouse (410 Guadalupe St.) from 1:30 p.m. to 3:30 p.m. This workshop will allow attendees of the previous workshop to build on their sushi-making skills. This is not a free event. The cost for current JGA members is $35. If you're a nonmember, the cost is $40 (Please bring exact change in cash). Although the cost includes all the ingredients necessary to make sushi, you will need to bring your own knife and a towel or cloth of some sort. Please note that registration is required in order to attend this class. Space is limited. Send a registration request to jga-events@jga.org by Thursday, October 22. 48 hours' notice is required in order to cancel.",
+          question: "What is the main purpose of the notice?",
+          options: [
+            "To inform readers of a useful website",
+            "To describe the Japan-America Society of Greater Long Island",
+            "To instruct people how to write poetry",
+            "To announce an upcoming workshop"
+          ],
+          correctAnswer: 3,
+          points: 1
+        },
+        {
+          questionId: 62,
+          type: "multiple-choice",
+          passage: "Following up its successful Sushi Workshop in July, the Japan-America Society of Greater Long Island presents sushi chef Maksui from Kenichi for an advanced sushi workshop on Sunday, October 25th at the Tri-fold Clubhouse (410 Guadalupe St.) from 1:30 p.m. to 3:30 p.m. This workshop will allow attendees of the previous workshop to build on their sushi-making skills. This is not a free event. The cost for current JGA members is $35. If you're a nonmember, the cost is $40 (Please bring exact change in cash). Although the cost includes all the ingredients necessary to make sushi, you will need to bring your own knife and a towel or cloth of some sort. Please note that registration is required in order to attend this class. Space is limited. Send a registration request to jga-events@jga.org by Thursday, October 22. 48 hours' notice is required in order to cancel.",
+          question: "What information is NOT given in the notice?",
+          options: [
+            "The workshop instructor's name",
+            "Late registration instructions",
+            "Cancellation instructions",
+            "Things to bring to the workshop"
+          ],
+          correctAnswer: 1,
+          points: 1
+        },
+        {
+          questionId: 63,
+          type: "multiple-choice",
+          passage: "Following up its successful Sushi Workshop in July, the Japan-America Society of Greater Long Island presents sushi chef Maksui from Kenichi for an advanced sushi workshop on Sunday, October 25th at the Tri-fold Clubhouse (410 Guadalupe St.) from 1:30 p.m. to 3:30 p.m. This workshop will allow attendees of the previous workshop to build on their sushi-making skills. This is not a free event. The cost for current JGA members is $35. If you're a nonmember, the cost is $40 (Please bring exact change in cash). Although the cost includes all the ingredients necessary to make sushi, you will need to bring your own knife and a towel or cloth of some sort. Please note that registration is required in order to attend this class. Space is limited. Send a registration request to jga-events@jga.org by Thursday, October 22. 48 hours' notice is required in order to cancel.",
+          question: "According to the notice, who is the workshop tailored to?",
+          options: [
+            "Intermediate sushi chefs",
+            "Beginner sushi chefs",
+            "New JGA members",
+            "All JGA members"
+          ],
+          correctAnswer: 0,
+          points: 1
+        },
+        {
+          questionId: 64,
+          type: "multiple-choice",
+          passage: "LBA - Local Businesses of Albany\n121 S. Main St., Albany, NY 12019\nNovember 9\n\nDear Ms. LeChevre,\n\nWe would like to invite you to participate in our upcoming meeting, to be held on Wednesday, November 17 at 6:00 p.m. at the Hilton Suites. During this meeting we plan to hold an election for the next LBA president, who will serve for the coming year. Past presidents will be present to explain the importance of the position and to help facilitate the voting process. This year we have four members interested in running for this position; please note that their professional profiles are attached. Make sure to review these profiles prior to the meeting. There will be a question-and-answer session with this year's candidates before voting begins.\n\nWe are anticipating a large turnout at this year's election, and hope that you will be able to join us on this important day. If, for some reason, you are unable to attend, we ask that you send in your vote using the attached mail-in ballot. You can send the form to Local Businesses of Albany, 121 S. Main St., Albany, NY 12019. Please make sure that your ballot arrives by November 17.\n\nOur bylaws state that a majority of the LBA's members must vote in the upcoming election in order for us to officially inaugurate a new president. Because of this, we ask that you make voting a priority and either attend the meeting or send in your ballot by mail.\n\nSincerely,\nDavid Smith",
+          question: "Why is the LBA holding a meeting?",
+          options: [
+            "To review its bylaws",
+            "To revise its voting procedures",
+            "To inspire new members to join",
+            "To choose a new president"
+          ],
+          correctAnswer: 3,
+          points: 1
+        },
+        {
+          questionId: 65,
+          type: "multiple-choice",
+          passage: "LBA - Local Businesses of Albany\n121 S. Main St., Albany, NY 12019\nNovember 9\n\nDear Ms. LeChevre,\n\nWe would like to invite you to participate in our upcoming meeting, to be held on Wednesday, November 17 at 6:00 p.m. at the Hilton Suites. During this meeting we plan to hold an election for the next LBA president, who will serve for the coming year. Past presidents will be present to explain the importance of the position and to help facilitate the voting process. This year we have four members interested in running for this position; please note that their professional profiles are attached. Make sure to review these profiles prior to the meeting. There will be a question-and-answer session with this year's candidates before voting begins.\n\nWe are anticipating a large turnout at this year's election, and hope that you will be able to join us on this important day. If, for some reason, you are unable to attend, we ask that you send in your vote using the attached mail-in ballot. You can send the form to Local Businesses of Albany, 121 S. Main St., Albany, NY 12019. Please make sure that your ballot arrives by November 17.\n\nOur bylaws state that a majority of the LBA's members must vote in the upcoming election in order for us to officially inaugurate a new president. Because of this, we ask that you make voting a priority and either attend the meeting or send in your ballot by mail.\n\nSincerely,\nDavid Smith",
+          question: "If Ms. LeChevre cannot attend the meeting, what should she do?",
+          options: [
+            "Complete a mail-in ballot",
+            "Send an apology letter to the president",
+            "Make a financial contribution to the LBA",
+            "Run for president"
+          ],
+          correctAnswer: 0,
+          points: 1
+        },
+        {
+          questionId: 66,
+          type: "multiple-choice",
+          passage: "LBA - Local Businesses of Albany\n121 S. Main St., Albany, NY 12019\nNovember 9\n\nDear Ms. LeChevre,\n\nWe would like to invite you to participate in our upcoming meeting, to be held on Wednesday, November 17 at 6:00 p.m. at the Hilton Suites. During this meeting we plan to hold an election for the next LBA president, who will serve for the coming year. Past presidents will be present to explain the importance of the position and to help facilitate the voting process. This year we have four members interested in running for this position; please note that their professional profiles are attached. Make sure to review these profiles prior to the meeting. There will be a question-and-answer session with this year's candidates before voting begins.\n\nWe are anticipating a large turnout at this year's election, and hope that you will be able to join us on this important day. If, for some reason, you are unable to attend, we ask that you send in your vote using the attached mail-in ballot. You can send the form to Local Businesses of Albany, 121 S. Main St., Albany, NY 12019. Please make sure that your ballot arrives by November 17.\n\nOur bylaws state that a majority of the LBA's members must vote in the upcoming election in order for us to officially inaugurate a new president. Because of this, we ask that you make voting a priority and either attend the meeting or send in your ballot by mail.\n\nSincerely,\nDavid Smith",
+          question: "What is attached to the letter?",
+          options: [
+            "LBA's budget status",
+            "A annual calendar of events",
+            "Profiles of those running for president",
+            "A directory of small businesses"
+          ],
+          correctAnswer: 2,
+          points: 1
+        },
+        {
+          questionId: 67,
+          type: "multiple-choice",
+          passage: "LBA - Local Businesses of Albany\n121 S. Main St., Albany, NY 12019\nNovember 9\n\nDear Ms. LeChevre,\n\nWe would like to invite you to participate in our upcoming meeting, to be held on Wednesday, November 17 at 6:00 p.m. at the Hilton Suites. During this meeting we plan to hold an election for the next LBA president, who will serve for the coming year. Past presidents will be present to explain the importance of the position and to help facilitate the voting process. This year we have four members interested in running for this position; please note that their professional profiles are attached. Make sure to review these profiles prior to the meeting. There will be a question-and-answer session with this year's candidates before voting begins.\n\nWe are anticipating a large turnout at this year's election, and hope that you will be able to join us on this important day. If, for some reason, you are unable to attend, we ask that you send in your vote using the attached mail-in ballot. You can send the form to Local Businesses of Albany, 121 S. Main St., Albany, NY 12019. Please make sure that your ballot arrives by November 17.\n\nOur bylaws state that a majority of the LBA's members must vote in the upcoming election in order for us to officially inaugurate a new president. Because of this, we ask that you make voting a priority and either attend the meeting or send in your ballot by mail.\n\nSincerely,\nDavid Smith",
+          question: "What can be inferred about Ms. LeChevre?",
+          options: [
+            "She wants to be president.",
+            "She works for the president.",
+            "She takes charge of counting the ballots.",
+            "She is a member of the LBA."
+          ],
+          correctAnswer: 3,
+          points: 1
+        },
+        {
+          questionId: 68,
+          type: "multiple-choice",
+          passage: "RESERVATIONS\n\nTo ensure a table at SkyCity, at the top of Seattle's Space Needle, reservations are recommended.\n\nTo make a reservation call: 206-905-2100 or 800-938-9582.\n\nGroups are welcome but must be scheduled in advance and are limited to no more than 21 guests. Parties of 10 or more cannot be accommodated May 31 through September 3.\n\nYour elevator ride and Observation Deck visit are complimentary with your reservation at SkyCity. Reservations are available for seating during the following hours:\n\nLunch: Monday - Friday 11:00am - 3:00pm\nBrunch: Saturday & Sunday 10:00am - 3:00pm\nDinner: Sunday - Thursday 5:00pm - 9:00pm, Friday & Saturday 5:00pm - 10:00pm",
+          question: "What kind of place is SkyCity?",
+          options: [
+            "A restaurant",
+            "A ship",
+            "A museum",
+            "A theme park"
+          ],
+          correctAnswer: 0,
+          points: 1
+        },
+        {
+          questionId: 69,
+          type: "multiple-choice",
+          passage: "RESERVATIONS\n\nTo ensure a table at SkyCity, at the top of Seattle's Space Needle, reservations are recommended.\n\nTo make a reservation call: 206-905-2100 or 800-938-9582.\n\nGroups are welcome but must be scheduled in advance and are limited to no more than 21 guests. Parties of 10 or more cannot be accommodated May 31 through September 3.\n\nYour elevator ride and Observation Deck visit are complimentary with your reservation at SkyCity. Reservations are available for seating during the following hours:\n\nLunch: Monday - Friday 11:00am - 3:00pm\nBrunch: Saturday & Sunday 10:00am - 3:00pm\nDinner: Sunday - Thursday 5:00pm - 9:00pm, Friday & Saturday 5:00pm - 10:00pm",
+          question: "When could you go with a party of 12 people?",
+          options: [
+            "February 2nd, without needing a reservation",
+            "June 24th, with a reservation",
+            "May 3rd, with a reservation",
+            "You cannot go with a group of 12 people"
+          ],
+          correctAnswer: 2,
+          points: 1
+        },
+        {
+          questionId: 70,
+          type: "multiple-choice",
+          passage: "RESERVATIONS\n\nTo ensure a table at SkyCity, at the top of Seattle's Space Needle, reservations are recommended.\n\nTo make a reservation call: 206-905-2100 or 800-938-9582.\n\nGroups are welcome but must be scheduled in advance and are limited to no more than 21 guests. Parties of 10 or more cannot be accommodated May 31 through September 3.\n\nYour elevator ride and Observation Deck visit are complimentary with your reservation at SkyCity. Reservations are available for seating during the following hours:\n\nLunch: Monday - Friday 11:00am - 3:00pm\nBrunch: Saturday & Sunday 10:00am - 3:00pm\nDinner: Sunday - Thursday 5:00pm - 9:00pm, Friday & Saturday 5:00pm - 10:00pm",
+          question: "What time on Friday can you NOT reserve a table?",
+          options: [
+            "10am",
+            "2pm",
+            "9pm",
+            "10pm"
+          ],
+          correctAnswer: 0,
+          points: 1
+        },
+        {
+          questionId: 71,
+          type: "multiple-choice",
+          passage: "Intersil Corp., manufacturer of high-performance wireless networking solutions, announced today that it will relocate its corporate headquarters from Irvine, Calif. to Milpitas, effective December 1, 2010. The company plans to accommodate the expanding operation with the relocation of the finance, human resources, IT and sales operations facilities.\n\nIntersil Corp. cited Milpitas' skilled work force, good access to an international airport, and the generous tax incentives offered by the state government and the cost-effective environment as the main reasons for choosing the city for its new head office.\n\nThe move is expected to generate up to 90 new high-paying jobs for local residents. With an average annual salary of $10,000, Intersil's annual payroll for workers in Milpitas will surpass $4 million. This is good news for the city.\n\n\"Our attractiveness as a place to live and work, makes this city an excellent home for Intersil where they can prosper and grow well into the future. Also, Intersil's impressive salaries will significantly impact the local economy,\" said Mayor Ronald Lopez.\n\nAlthough the relocation will cost Intersil Corp. a significant amount of money, executives feel it is a worthwhile investment. \"We can continue to execute our plan towards profitability, while building our company for the future in the new site,\" CEO Adriana Cruz said in a press statement.",
+          question: "What is the article mainly about?",
+          options: [
+            "The state of a city's local economy",
+            "The rise of the employment rate",
+            "The relocation of a company",
+            "The improvement of an existing tax law"
+          ],
+          correctAnswer: 2,
+          points: 1
+        },
+        {
+          questionId: 72,
+          type: "multiple-choice",
+          passage: "Intersil Corp., manufacturer of high-performance wireless networking solutions, announced today that it will relocate its corporate headquarters from Irvine, Calif. to Milpitas, effective December 1, 2010. The company plans to accommodate the expanding operation with the relocation of the finance, human resources, IT and sales operations facilities.\n\nIntersil Corp. cited Milpitas' skilled work force, good access to an international airport, and the generous tax incentives offered by the state government and the cost-effective environment as the main reasons for choosing the city for its new head office.\n\nThe move is expected to generate up to 90 new high-paying jobs for local residents. With an average annual salary of $10,000, Intersil's annual payroll for workers in Milpitas will surpass $4 million. This is good news for the city.\n\n\"Our attractiveness as a place to live and work, makes this city an excellent home for Intersil where they can prosper and grow well into the future. Also, Intersil's impressive salaries will significantly impact the local economy,\" said Mayor Ronald Lopez.\n\nAlthough the relocation will cost Intersil Corp. a significant amount of money, executives feel it is a worthwhile investment. \"We can continue to execute our plan towards profitability, while building our company for the future in the new site,\" CEO Adriana Cruz said in a press statement.",
+          question: "What is indicated about Intersil Corp?",
+          options: [
+            "The existing headquarters is in Milpitas.",
+            "Its business is expanding.",
+            "It has a cost-effective environment.",
+            "It has highly skilled workers."
+          ],
+          correctAnswer: 1,
+          points: 1
+        },
+        {
+          questionId: 73,
+          type: "multiple-choice",
+          passage: "Intersil Corp., manufacturer of high-performance wireless networking solutions, announced today that it will relocate its corporate headquarters from Irvine, Calif. to Milpitas, effective December 1, 2010. The company plans to accommodate the expanding operation with the relocation of the finance, human resources, IT and sales operations facilities.\n\nIntersil Corp. cited Milpitas' skilled work force, good access to an international airport, and the generous tax incentives offered by the state government and the cost-effective environment as the main reasons for choosing the city for its new head office.\n\nThe move is expected to generate up to 90 new high-paying jobs for local residents. With an average annual salary of $10,000, Intersil's annual payroll for workers in Milpitas will surpass $4 million. This is good news for the city.\n\n\"Our attractiveness as a place to live and work, makes this city an excellent home for Intersil where they can prosper and grow well into the future. Also, Intersil's impressive salaries will significantly impact the local economy,\" said Mayor Ronald Lopez.\n\nAlthough the relocation will cost Intersil Corp. a significant amount of money, executives feel it is a worthwhile investment. \"We can continue to execute our plan towards profitability, while building our company for the future in the new site,\" CEO Adriana Cruz said in a press statement.",
+          question: "The word 'surpass' in paragraph 3, line 3, is closest in meaning to",
+          options: [
+            "exceed",
+            "include",
+            "develop",
+            "accelerate"
+          ],
+          correctAnswer: 0,
+          points: 1
+        },
+        {
+          questionId: 74,
+          type: "multiple-choice",
+          passage: "Intersil Corp., manufacturer of high-performance wireless networking solutions, announced today that it will relocate its corporate headquarters from Irvine, Calif. to Milpitas, effective December 1, 2010. The company plans to accommodate the expanding operation with the relocation of the finance, human resources, IT and sales operations facilities.\n\nIntersil Corp. cited Milpitas' skilled work force, good access to an international airport, and the generous tax incentives offered by the state government and the cost-effective environment as the main reasons for choosing the city for its new head office.\n\nThe move is expected to generate up to 90 new high-paying jobs for local residents. With an average annual salary of $10,000, Intersil's annual payroll for workers in Milpitas will surpass $4 million. This is good news for the city.\n\n\"Our attractiveness as a place to live and work, makes this city an excellent home for Intersil where they can prosper and grow well into the future. Also, Intersil's impressive salaries will significantly impact the local economy,\" said Mayor Ronald Lopez.\n\nAlthough the relocation will cost Intersil Corp. a significant amount of money, executives feel it is a worthwhile investment. \"We can continue to execute our plan towards profitability, while building our company for the future in the new site,\" CEO Adriana Cruz said in a press statement.",
+          question: "How does the CEO feel about the company's plan?",
+          options: [
+            "anxious",
+            "angry",
+            "depressed",
+            "confident"
+          ],
+          correctAnswer: 3,
+          points: 1
+        },
+        {
+          questionId: 75,
+          type: "multiple-choice",
+          passage: "Looking for Cozy House?\n\nLooking for roommates who want to live in a cozy 3-bedroom apartment starting on March 1st. The location is great and very convenient, only a short walk to bus stops. The interior is quite charming with large windows and high ceilings. The apartment includes sizeable kitchen, living room, and two full bathrooms. Trash collection and water are included in monthly rent; all other utilities are split evenly. There is no parking included, but there is a garage across the street that offers monthly rental. For more information, call 250-356-2368.",
+          question: "What is the purpose of the notice?",
+          options: [
+            "Inform residents of an increase in utility fees",
+            "Advertise a room for rent",
+            "Update new regulations for tenants",
+            "Recruit a manager for an apartment building"
+          ],
+          correctAnswer: 1,
+          points: 1
+        },
+        {
+          questionId: 76,
+          type: "multiple-choice",
+          passage: "Looking for Cozy House?\n\nLooking for roommates who want to live in a cozy 3-bedroom apartment starting on March 1st. The location is great and very convenient, only a short walk to bus stops. The interior is quite charming with large windows and high ceilings. The apartment includes sizeable kitchen, living room, and two full bathrooms. Trash collection and water are included in monthly rent; all other utilities are split evenly. There is no parking included, but there is a garage across the street that offers monthly rental. For more information, call 250-356-2368.",
+          question: "What is included in the notice?",
+          options: [
+            "All utilities are included in the rent",
+            "The kitchen is not spacious",
+            "It is close to public transportation",
+            "Onsite parking is available"
+          ],
+          correctAnswer: 2,
+          points: 1
+        },
+        {
+          questionId: 77,
+          type: "multiple-choice",
+          passage: "Hillside Hotel International\n798 Blackstone St.\nSalt Lake City, UT\n\nKimberly Law Firm Co.\n356 Brooks Ave.\n\nDear Mr. Morris,\n\nIn our meeting last week with you, you expressed an interest in reserving our largest banquet hall for your annual meeting on September 20. At the time, I made a tentative reservation and sent a contract to you. I requested that the contract be signed and returned to my attention within ten business days. As of this morning, I have not yet received the executed contract.\n\nI need to know if you still intend to make use of our facilities as soon as possible. If not, we have another company that is interested in the same banquet hall and is prepared to make a deposit. If I do not hear from you within the next 48 hours, I'm going to assume that you're no longer interested and will cancel the reservation. If you want to keep the reservation, please contact me as soon as possible. Should you no longer have the original contract, I would be more than happy to send you another copy. I look forward to your response.\n\nJohn Bates\nFront Desk Manager",
+          question: "Why is this email written?",
+          options: [
+            "To invite an employee to attend wedding",
+            "To apologize for a clerical mistake",
+            "To request a response from a customer",
+            "To complain about poor service"
+          ],
+          correctAnswer: 2,
+          points: 1
+        },
+        {
+          questionId: 78,
+          type: "multiple-choice",
+          passage: "Hillside Hotel International\n798 Blackstone St.\nSalt Lake City, UT\n\nKimberly Law Firm Co.\n356 Brooks Ave.\n\nDear Mr. Morris,\n\nIn our meeting last week with you, you expressed an interest in reserving our largest banquet hall for your annual meeting on September 20. At the time, I made a tentative reservation and sent a contract to you. I requested that the contract be signed and returned to my attention within ten business days. As of this morning, I have not yet received the executed contract.\n\nI need to know if you still intend to make use of our facilities as soon as possible. If not, we have another company that is interested in the same banquet hall and is prepared to make a deposit. If I do not hear from you within the next 48 hours, I'm going to assume that you're no longer interested and will cancel the reservation. If you want to keep the reservation, please contact me as soon as possible. Should you no longer have the original contract, I would be more than happy to send you another copy. I look forward to your response.\n\nJohn Bates\nFront Desk Manager",
+          question: "What does the email suggest about Mr. Bates?",
+          options: [
+            "He has cancelled a reservation.",
+            "He works for a law firm.",
+            "He has spoken to Mr. Morris previously.",
+            "He forgot to send the contract."
+          ],
+          correctAnswer: 2,
+          points: 1
+        },
+        {
+          questionId: 79,
+          type: "multiple-choice",
+          passage: "Hillside Hotel International\n798 Blackstone St.\nSalt Lake City, UT\n\nKimberly Law Firm Co.\n356 Brooks Ave.\n\nDear Mr. Morris,\n\nIn our meeting last week with you, you expressed an interest in reserving our largest banquet hall for your annual meeting on September 20. At the time, I made a tentative reservation and sent a contract to you. I requested that the contract be signed and returned to my attention within ten business days. As of this morning, I have not yet received the executed contract.\n\nI need to know if you still intend to make use of our facilities as soon as possible. If not, we have another company that is interested in the same banquet hall and is prepared to make a deposit. If I do not hear from you within the next 48 hours, I'm going to assume that you're no longer interested and will cancel the reservation. If you want to keep the reservation, please contact me as soon as possible. Should you no longer have the original contract, I would be more than happy to send you another copy. I look forward to your response.\n\nJohn Bates\nFront Desk Manager",
+          question: "The word 'intend' in paragraph 2, line 1 is closest in meaning to:",
+          options: [
+            "complete",
+            "plan",
+            "reserve",
+            "announce"
+          ],
+          correctAnswer: 1,
+          points: 1
+        },
+        {
+          questionId: 80,
+          type: "multiple-choice",
+          passage: "Hillside Hotel International\n798 Blackstone St.\nSalt Lake City, UT\n\nKimberly Law Firm Co.\n356 Brooks Ave.\n\nDear Mr. Morris,\n\nIn our meeting last week with you, you expressed an interest in reserving our largest banquet hall for your annual meeting on September 20. At the time, I made a tentative reservation and sent a contract to you. I requested that the contract be signed and returned to my attention within ten business days. As of this morning, I have not yet received the executed contract.\n\nI need to know if you still intend to make use of our facilities as soon as possible. If not, we have another company that is interested in the same banquet hall and is prepared to make a deposit. If I do not hear from you within the next 48 hours, I'm going to assume that you're no longer interested and will cancel the reservation. If you want to keep the reservation, please contact me as soon as possible. Should you no longer have the original contract, I would be more than happy to send you another copy. I look forward to your response.\n\nJohn Bates\nFront Desk Manager",
+          question: "What is Mr. Morris asked to do?",
+          options: [
+            "Contact Mr. Bates",
+            "Refund the deposit money",
+            "Make a new reservation",
+            "Choose a different date"
+          ],
+          correctAnswer: 0,
+          points: 1
+        },
+        {
+          questionId: 81,
+          type: "multiple-choice",
+          passage: "TO: AGP8X Employees\nFROM: Sylvie Hamm, Director, Human Relations\n\nDear Colleagues,\n\nAGP8X Corporation recognizes the importance of having a first-rate employee exercise facility on the premises. For the past three years, we have worked very hard to improve the employee exercise facility. We purchased new exercise equipment, renovated locker rooms and began offering a new safety training course.\n\nA month ago, you responded enthusiastically to the survey about the fitness center. Based on your recommendations, new changes will be planned. They will take effect on January 2. Finally, the employee fitness center will be open extra three hours Monday through Thursday. Also, long-time members will be surely pleased to hear that the popular personal manager Tony Stumpo will be promoted to the manager of the fitness center.\n\nWe encourage more employees to take advantage of what the center has to offer. Memberships will continue to be subsidized and remain at $20 per month. And for a limited time only, we offer a special rate for new members. Members who sign up before December 31 will be charged only $15 per month for their first year. Contact Tony Stumpo to sign up at this reduced rate.",
+          question: "What is the purpose of this message?",
+          options: [
+            "To notify employees of the closure of the fitness center",
+            "To inform employees of current changes at a fitness center",
+            "To ask for suggestions about classes",
+            "To complain about a trainer"
+          ],
+          correctAnswer: 1,
+          points: 1
+        },
+        {
+          questionId: 82,
+          type: "multiple-choice",
+          passage: "TO: AGP8X Employees\nFROM: Sylvie Hamm, Director, Human Relations\n\nDear Colleagues,\n\nAGP8X Corporation recognizes the importance of having a first-rate employee exercise facility on the premises. For the past three years, we have worked very hard to improve the employee exercise facility. We purchased new exercise equipment, renovated locker rooms and began offering a new safety training course.\n\nA month ago, you responded enthusiastically to the survey about the fitness center. Based on your recommendations, new changes will be planned. They will take effect on January 2. Finally, the employee fitness center will be open extra three hours Monday through Thursday. Also, long-time members will be surely pleased to hear that the popular personal manager Tony Stumpo will be promoted to the manager of the fitness center.\n\nWe encourage more employees to take advantage of what the center has to offer. Memberships will continue to be subsidized and remain at $20 per month. And for a limited time only, we offer a special rate for new members. Members who sign up before December 31 will be charged only $15 per month for their first year. Contact Tony Stumpo to sign up at this reduced rate.",
+          question: "What is TRUE based on this e-mail?",
+          options: [
+            "Tony Stumpo will be manager of the fitness center.",
+            "Sylvie Hamm is a new employee of the company.",
+            "AGP8X Corporation employees requested weekend hours for operation of the fitness center.",
+            "AGP8X Corporation employees attend free fitness classes."
+          ],
+          correctAnswer: 0,
+          points: 1
+        },
+        {
+          questionId: 83,
+          type: "multiple-choice",
+          passage: "TO: AGP8X Employees\nFROM: Sylvie Hamm, Director, Human Relations\n\nDear Colleagues,\n\nAGP8X Corporation recognizes the importance of having a first-rate employee exercise facility on the premises. For the past three years, we have worked very hard to improve the employee exercise facility. We purchased new exercise equipment, renovated locker rooms and began offering a new safety training course.\n\nA month ago, you responded enthusiastically to the survey about the fitness center. Based on your recommendations, new changes will be planned. They will take effect on January 2. Finally, the employee fitness center will be open extra three hours Monday through Thursday. Also, long-time members will be surely pleased to hear that the popular personal manager Tony Stumpo will be promoted to the manager of the fitness center.\n\nWe encourage more employees to take advantage of what the center has to offer. Memberships will continue to be subsidized and remain at $20 per month. And for a limited time only, we offer a special rate for new members. Members who sign up before December 31 will be charged only $15 per month for their first year. Contact Tony Stumpo to sign up at this reduced rate.",
+          question: "What will happen from January 2?",
+          options: [
+            "Employees can attend free fitness classes.",
+            "The new equipment will be delivered.",
+            "The fitness center will be open extra hours.",
+            "The fitness center will be closed for renovations."
+          ],
+          correctAnswer: 2,
+          points: 1
+        },
+        {
+          questionId: 84,
+          type: "multiple-choice",
+          passage: "AGPSX EMPLOYEES FITNESS CENTER - NEW SCHEDULE\n\nReminders:\n1. Please do not use equipment for more than 30 minutes if other members are waiting to use it.\n2. Members may bring a guest per visit. Guests under 18 should be accompanied by a member at all times.\n3. Registration is not required for class but class size is limited to 10 participants. Please arrive early to secure a place. Coats and bags should be left in the locker room so that other participants have plenty of space.\n4. New members are required to complete an orientation class before they use equipment. Members must carry a membership card at all times while they are in the center.",
+          question: "Who is asked NOT to use the equipment?",
+          options: [
+            "People who need it for an hour",
+            "Women",
+            "People under 18 years old",
+            "Seniors"
+          ],
+          correctAnswer: 0,
+          points: 1
+        },
+        {
+          questionId: 85,
+          type: "multiple-choice",
+          passage: "AGPSX EMPLOYEES FITNESS CENTER - NEW SCHEDULE\n\nReminders:\n1. Please do not use equipment for more than 30 minutes if other members are waiting to use it.\n2. Members may bring a guest per visit. Guests under 18 should be accompanied by a member at all times.\n3. Registration is not required for class but class size is limited to 10 participants. Please arrive early to secure a place. Coats and bags should be left in the locker room so that other participants have plenty of space.\n4. New members are required to complete an orientation class before they use equipment. Members must carry a membership card at all times while they are in the center.",
+          question: "What must a newcomer do to use this facility?",
+          options: [
+            "See their doctor",
+            "Take the orientation session first",
+            "Register for fitness classes",
+            "Pay for one-year membership"
+          ],
+          correctAnswer: 1,
+          points: 1
+        },
+        {
+          questionId: 86,
+          type: "multiple-choice",
+          passage: "Raymond Paycheck\n433 1st St.\nDetroit, MI 48303\n\nDear Mr. Paycheck,\n\nWe appreciate your request a few days ago to increase your credit limit on your Visa Card from $7,500 to $10,000. National Bank has carefully reviewed your overall credit rating, your current bank balances, and your payment history for the debts you carry on your Visa Card. We are afraid to tell you that we are not able to accept your request at this time. However, we could review your case again after the 1st of January, taking into account your further payment history and any new credit information you may wish to provide. Please submit another written request if you wish us to do so.\n\nMr. Paycheck, you are a valued customer to us. If you have any questions or concerns, please give me a call by telephone. We are always willing to do the best we can for you.\n\nSincerely,\nJason Notts\nChief Credit Card Officer\nNational Banking Visa\n1-899-433-4444",
+          question: "From which of the bank departments was this letter sent?",
+          options: [
+            "Analysis or Statistical",
+            "Country Bank Account",
+            "Paying Teller's",
+            "Credit"
+          ],
+          correctAnswer: 3,
+          points: 1
+        },
+        {
+          questionId: 87,
+          type: "multiple-choice",
+          passage: "Raymond Paycheck\n433 1st St.\nDetroit, MI 48303\n\nDear Mr. Paycheck,\n\nWe appreciate your request a few days ago to increase your credit limit on your Visa Card from $7,500 to $10,000. National Bank has carefully reviewed your overall credit rating, your current bank balances, and your payment history for the debts you carry on your Visa Card. We are afraid to tell you that we are not able to accept your request at this time. However, we could review your case again after the 1st of January, taking into account your further payment history and any new credit information you may wish to provide. Please submit another written request if you wish us to do so.\n\nMr. Paycheck, you are a valued customer to us. If you have any questions or concerns, please give me a call by telephone. We are always willing to do the best we can for you.\n\nSincerely,\nJason Notts\nChief Credit Card Officer\nNational Banking Visa\n1-899-433-4444",
+          question: "What is the purpose of the letter?",
+          options: [
+            "His credit card no longer exists.",
+            "His application for a new credit card has been approved.",
+            "His credit card balance is too high and it needs to be cleared.",
+            "His wish to raise his credit line has been declined."
+          ],
+          correctAnswer: 3,
+          points: 1
+        },
+        {
+          questionId: 88,
+          type: "multiple-choice",
+          passage: "Raymond Paycheck\n433 1st St.\nDetroit, MI 48303\n\nDear Mr. Paycheck,\n\nWe appreciate your request a few days ago to increase your credit limit on your Visa Card from $7,500 to $10,000. National Bank has carefully reviewed your overall credit rating, your current bank balances, and your payment history for the debts you carry on your Visa Card. We are afraid to tell you that we are not able to accept your request at this time. However, we could review your case again after the 1st of January, taking into account your further payment history and any new credit information you may wish to provide. Please submit another written request if you wish us to do so.\n\nMr. Paycheck, you are a valued customer to us. If you have any questions or concerns, please give me a call by telephone. We are always willing to do the best we can for you.\n\nSincerely,\nJason Notts\nChief Credit Card Officer\nNational Banking Visa\n1-899-433-4444",
+          question: "What should Mr. Paycheck do in order to get answers for any questions he has?",
+          options: [
+            "Send an email to Mr. Notts.",
+            "Call his personal credit card officer.",
+            "Leave a message on the Bank's website.",
+            "Fax to the Customer Service employee."
+          ],
+          correctAnswer: 1,
+          points: 1
+        },
+        {
+          questionId: 89,
+          type: "multiple-choice",
+          passage: "Dear Mr. Notts,\n\nThank you for your kindness for at least considering to raise my credit card limit, although unfortunately you were not able to accept my request. Yes, I do admit that my credit card payments have not been consistent and are sometimes late. But I really need the expansion of my credit card limit, therefore I do wish that you will consider my case again on the 1st of January. And I hope that by then my credit rating will be better so that you will accept my request.\n\nSincerely,\nBill",
+          question: "What is the main reason the bank declined Mr. Paycheck's request?",
+          options: [
+            "He carries a large balance in his checking account.",
+            "He has taken too many loans from the bank.",
+            "He has not been a customer of the bank long enough.",
+            "He has been late many times in paying his credit payment."
+          ],
+          correctAnswer: 3,
+          points: 1
+        },
+        {
+          questionId: 90,
+          type: "multiple-choice",
+          passage: "Dear Mr. Notts,\n\nThank you for your kindness for at least considering to raise my credit card limit, although unfortunately you were not able to accept my request. Yes, I do admit that my credit card payments have not been consistent and are sometimes late. But I really need the expansion of my credit card limit, therefore I do wish that you will consider my case again on the 1st of January. And I hope that by then my credit rating will be better so that you will accept my request.\n\nSincerely,\nBill",
+          question: "What will Mr. Paycheck probably do next?",
+          options: [
+            "He will try to make a new account in a different bank.",
+            "He will try to get rid of all the balances on his credit card.",
+            "He will pay for all of his loan interests consistently and not late.",
+            "He will pay for his credit card debts regularly."
+          ],
+          correctAnswer: 3,
+          points: 1
+        },
+        {
+          questionId: 91,
+          type: "multiple-choice",
+          passage: "Business Fashions - Fall Catalog p. 35\n\nMen's Dress Shirts. Solid color. Item #387\nThese comfortable yet elegant shirts are made of 100% combed cotton.\nColors: white, cream, light blue, light green.\nSizes S M L XL. $55\n\nMen's Dress Shirts. Striped. Item #387A\nSame as above, but with a thin stripe over a solid background color.\nColors: red on white, blue on white, green on cream, brown on cream.\nSizes S M L XL. $65\n\nStriped Ties. Item #765\nThese stylish ties with a jaunty stripe are made of imported silk.\nColors: burgundy red/navy blue, moss green/navy blue, moss green/golden yellow, black/bright red. $30\n\nCashmere Sweaters. Item #521\nYou'll feel oh-so-comfortable in these sweaters made of 100% genuine cashmere with a chic V neck.\nColors: burgundy red, charcoal gray, midnight black. $150",
+          question: "Which item is available in only three colors?",
+          options: [
+            "Solid color men's dress shirts",
+            "Striped men's dress shirts",
+            "Striped ties",
+            "Sweaters"
+          ],
+          correctAnswer: 3,
+          points: 1
+        },
+        {
+          questionId: 92,
+          type: "multiple-choice",
+          passage: "ORDER FORM\n\nDescription: men's dress shirt-striped, Color: blue/white, Size: L, Item No.: 387A, Quantity: 2, Price: $110\nDescription: silk tie, Color: red/blue, Item No.: 765, Quantity: 3, Price: $90\nDescription: cashmere sweater, Color: black, Size: L, Item No.: 521, Quantity: 1, Price: $150\n\nSubtotal: $350\nShipping: \nTotal:\n\nPayment Method: [X] check ___ credit card\n\nShipping Charges:\nFor orders up to $200: $12.50 Please allow six weeks for delivery.\nFor orders up to $400: $20.00\nFor orders over $400: no charge\n\n*Cash and money orders not accepted.\n\nSend Order to:\nBill Simpson\nP.O. Box 78\nArdmore, IL",
+          question: "What mistake did Mr. Simpson make with his shirt order?",
+          options: [
+            "He forgot to specify a size.",
+            "He didn't write the item number.",
+            "He ordered a color that isn't available.",
+            "He wrote the wrong price."
+          ],
+          correctAnswer: 0,
+          points: 1
+        },
+        {
+          questionId: 93,
+          type: "multiple-choice",
+          passage: "ORDER FORM\n\nDescription: men's dress shirt-striped, Color: blue/white, Size: L, Item No.: 387A, Quantity: 2, Price: $110\nDescription: silk tie, Color: red/blue, Item No.: 765, Quantity: 3, Price: $90\nDescription: cashmere sweater, Color: black, Size: L, Item No.: 521, Quantity: 1, Price: $150\n\nSubtotal: $350\nShipping: \nTotal:\n\nPayment Method: [X] check ___ credit card\n\nShipping Charges:\nFor orders up to $200: $12.50 Please allow six weeks for delivery.\nFor orders up to $400: $20.00\nFor orders over $400: no charge\n\n*Cash and money orders not accepted.\n\nSend Order to:\nBill Simpson\nP.O. Box 78\nArdmore, IL",
+          question: "How many ties did Mr. Simpson order?",
+          options: [
+            "1",
+            "2",
+            "3",
+            "4"
+          ],
+          correctAnswer: 2,
+          points: 1
+        },
+        {
+          questionId: 94,
+          type: "multiple-choice",
+          passage: "ORDER FORM\n\nDescription: men's dress shirt-striped, Color: blue/white, Size: L, Item No.: 387A, Quantity: 2, Price: $110\nDescription: silk tie, Color: red/blue, Item No.: 765, Quantity: 3, Price: $90\nDescription: cashmere sweater, Color: black, Size: L, Item No.: 521, Quantity: 1, Price: $150\n\nSubtotal: $350\nShipping: \nTotal:\n\nPayment Method: [X] check ___ credit card\n\nShipping Charges:\nFor orders up to $200: $12.50 Please allow six weeks for delivery.\nFor orders up to $400: $20.00\nFor orders over $400: no charge\n\n*Cash and money orders not accepted.\n\nSend Order to:\nBill Simpson\nP.O. Box 78\nArdmore, IL",
+          question: "How much should Mr. Simpson pay for shipping?",
+          options: [
+            "$20",
+            "$12.50",
+            "$22.50",
+            "$0"
+          ],
+          correctAnswer: 0,
+          points: 1
+        },
+        {
+          questionId: 95,
+          type: "multiple-choice",
+          passage: "ORDER FORM\n\nDescription: men's dress shirt-striped, Color: blue/white, Size: L, Item No.: 387A, Quantity: 2, Price: $110\nDescription: silk tie, Color: red/blue, Item No.: 765, Quantity: 3, Price: $90\nDescription: cashmere sweater, Color: black, Size: L, Item No.: 521, Quantity: 1, Price: $150\n\nSubtotal: $350\nShipping: \nTotal:\n\nPayment Method: [X] check ___ credit card\n\nShipping Charges:\nFor orders up to $200: $12.50 Please allow six weeks for delivery.\nFor orders up to $400: $20.00\nFor orders over $400: no charge\n\n*Cash and money orders not accepted.\n\nSend Order to:\nBill Simpson\nP.O. Box 78\nArdmore, IL",
+          question: "How will Mr. Simpson pay for his order?",
+          options: [
+            "Check",
+            "Debit card",
+            "Money order",
+            "Cash"
+          ],
+          correctAnswer: 0,
+          points: 1
+        },
+        {
+          questionId: 96,
+          type: "multiple-choice",
+          passage: "BILL\n\nOutstanding Balance: $33.59\nAccount No.: 021-4-11895\nBilled from Oct. 1 to Oct. 31\nPayment Due Date: Dec. 24\n\nAs of December 15, our records indicate that the amount shown under 'Outstanding Balance' is now more than 30 days past due. To avoid a surcharge and possible disconnection of service, payment must be received within 24 days of the 'Payment Due Date'.\n\nIf payment has already been made, please ignore this notice, and thank you for your payment. For billing questions, please call our office during regular working hours. Regular working hours are Monday through Friday, from 9 a.m. to 6 p.m. They are 9 a.m. to noon on Saturdays. Because of the small parking lot, we advise visitors to use public transportation rather than your own vehicle. The subway and bus stations are approximately 5 minutes away.",
+          question: "When was the service received?",
+          options: [
+            "December",
+            "November",
+            "October",
+            "September"
+          ],
+          correctAnswer: 2,
+          points: 1
+        },
+        {
+          questionId: 97,
+          type: "multiple-choice",
+          passage: "BILL\n\nOutstanding Balance: $33.59\nAccount No.: 021-4-11895\nBilled from Oct. 1 to Oct. 31\nPayment Due Date: Dec. 24\n\nAs of December 15, our records indicate that the amount shown under 'Outstanding Balance' is now more than 30 days past due. To avoid a surcharge and possible disconnection of service, payment must be received within 24 days of the 'Payment Due Date'.\n\nIf payment has already been made, please ignore this notice, and thank you for your payment. For billing questions, please call our office during regular working hours. Regular working hours are Monday through Friday, from 9 a.m. to 6 p.m. They are 9 a.m. to noon on Saturdays. Because of the small parking lot, we advise visitors to use public transportation rather than your own vehicle. The subway and bus stations are approximately 5 minutes away.",
+          question: "What action is suggested if payment has already been made?",
+          options: [
+            "Demand a refund in writing",
+            "Acknowledge receipt of the bill",
+            "Return the invoice",
+            "Disregard the notice"
+          ],
+          correctAnswer: 3,
+          points: 1
+        },
+        {
+          questionId: 98,
+          type: "multiple-choice",
+          passage: "BILL\n\nOutstanding Balance: $33.59\nAccount No.: 021-4-11895\nBilled from Oct. 1 to Oct. 31\nPayment Due Date: Dec. 24\n\nAs of December 15, our records indicate that the amount shown under 'Outstanding Balance' is now more than 30 days past due. To avoid a surcharge and possible disconnection of service, payment must be received within 24 days of the 'Payment Due Date'.\n\nIf payment has already been made, please ignore this notice, and thank you for your payment. For billing questions, please call our office during regular working hours. Regular working hours are Monday through Friday, from 9 a.m. to 6 p.m. They are 9 a.m. to noon on Saturdays. Because of the small parking lot, we advise visitors to use public transportation rather than your own vehicle. The subway and bus stations are approximately 5 minutes away.",
+          question: "According to the notice, how late is the payment?",
+          options: [
+            "24 days",
+            "5 minutes",
+            "About one month",
+            "16 days"
+          ],
+          correctAnswer: 2,
+          points: 1
+        },
+        {
+          questionId: 99,
+          type: "multiple-choice",
+          passage: "Dec. 22, 2006\n\nMr. Mark Foster\nEZ Network Communications\n23232 Greens Lane\nReston, VA 22096\n\nDear Mr. Foster:\n\nI went to the bank today and paid the bill, but I remitted an amount bigger than the bill. The bill was $89.95, but I sent you $899.50. May I please have the remainder of the money I have sent returned to my bank account? Or may I use the money to pay my bills for the rest of the year? I had to pay 4 bills that were overdue today, so I figured I'd pay this bill also and was in a rush and made this one digit mistake. Please call me back at 555-8821 for assistance on this matter. If there is no call, I will stop by myself to see what's happening. Thank you.",
+          question: "What mistake did the man make?",
+          options: [
+            "He paid too much for his bill.",
+            "He forgot to pay the overdue bills.",
+            "He went to the bank when it didn't work.",
+            "He transferred the money into the wrong account."
+          ],
+          correctAnswer: 0,
+          points: 1
+        },
+                {
+          questionId: 100,
+          type: "multiple-choice",
+          passage: "Dec. 22, 2006\n\nMr. Mark Foster\nEZ Network Communications\n23232 Greens Lane\nReston, VA 22096\n\nDear Mr. Foster:\n\nI went to the bank today and paid the bill, but I remitted an amount bigger than the bill. The bill was $89.95, but I sent you $899.50. May I please have the remainder of the money I have sent returned to my bank account? Or may I use the money to pay my bills for the rest of the year? I had to pay 4 bills that were overdue today, so I figured I'd pay this bill also and was in a rush and made this one digit mistake. Please call me back at 555-8821 for assistance on this matter. If there is no call, I will stop by myself to see what's happening. Thank you.",
+          question: "Why did he make a mistake? ",
+          options: [
+            "The ATM machine was out of order.",
+            "He got the bill confused.",
+            "He was in a rush for lunch.",
+            "He was busy paying other bills."
+          ],
+          correctAnswer: 3,
+          points: 1
+        },
+      ]
+    }
+  ],
+
+  scoring: {
+    total: 100,
+    breakdown: {
+      part5: 40,
+      part6: 12,
+      part7: 48
+    },
+    levels: [
+      { min: 0, max: 39, level: "Beginner", recommendation: "Basic English courses" },
+      { min: 40, max: 59, level: "Elementary", recommendation: "Elementary TOEIC preparation" },
+      { min: 60, max: 74, level: "Intermediate", recommendation: "Intermediate TOEIC courses" },
+      { min: 75, max: 89, level: "Upper-Intermediate", recommendation: "Advanced TOEIC preparation" },
+      { min: 90, max: 100, level: "Advanced", recommendation: "TOEIC exam ready / Business English" }
+    ]
+  }
+};
+
+export default toeicReadingTest;

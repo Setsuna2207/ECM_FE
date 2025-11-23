@@ -18,6 +18,15 @@ export const mockTests = [
     category: "TOEIC",
   },
   {
+    testId: "toeic_reading_001",
+    title: "TOEIC Reading Test - Đề 1",
+    description: "Complete TOEIC Reading test covering Grammar, Vocabulary, and Reading Comprehension",
+    duration: 120,
+    totalQuestions: 100,
+    level: "All Levels",
+    category: "TOEIC",
+  },
+  {
     testId: "ielts_placement_001",
     title: "IELTS Placement Test",
     description: "Complete IELTS placement test covering all four skills: Reading, Writing, Listening, and Speaking",
