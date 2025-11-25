@@ -10,6 +10,9 @@ import {
 } from "@mui/material";
 import StarIcon from "@mui/icons-material/Star";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
+import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
+import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
+import FavoriteIcon from "@mui/icons-material/Favorite";
 import { useParams, useNavigate } from "react-router-dom";
 import { mockCourses } from "../data/mockCourse";
 import { mockLessons } from "../data/mockLesson";
@@ -62,8 +65,9 @@ export default function CourseDetailPage() {
         <StarIcon
           key={i}
           sx={{
-            color: i < fullStars ? "#FFD700" : "#555",
-            fontSize: 20,
+            color: i < fullStars ? "#FFB800" : "#444",
+            fontSize: 22,
+            filter: i < fullStars ? "drop-shadow(0 0 2px rgba(255,184,0,0.5))" : "none",
           }}
         />
       );
@@ -80,11 +84,15 @@ export default function CourseDetailPage() {
   );
 
   const generateRandomBrightColor = () => {
-    let color;
-    do {
-      color = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
-    } while (color === "#77c1f6");
-    return color;
+    const colors = [
+      "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+      "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+      "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
+      "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
+      "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
+      "linear-gradient(135deg, #30cfd0 0%, #330867 100%)",
+    ];
+    return colors[Math.floor(Math.random() * colors.length)];
   };
 
   // 🧩 Hàm kiểm tra đăng nhập
@@ -111,8 +119,23 @@ export default function CourseDetailPage() {
   return (
     <>
       <Navbar />
-      <Box sx={{ backgroundColor: "#111", color: "white", py: 6 }}>
-        <Container>
+      <Box sx={{
+        background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+        color: "white",
+        py: 8,
+        position: "relative",
+        overflow: "hidden",
+        "&::before": {
+          content: '""',
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "radial-gradient(circle at 20% 50%, rgba(102, 126, 234, 0.1) 0%, transparent 50%)",
+        }
+      }}>
+        <Container sx={{ position: "relative", zIndex: 1 }}>
           <Box
             sx={{
               display: "flex",
@@ -128,7 +151,9 @@ export default function CourseDetailPage() {
                 variant="h4"
                 fontWeight="bold"
                 gutterBottom
-                sx={{ wordBreak: "break-word" }}
+                sx={{
+                  wordBreak: "break-word",
+                }}
               >
                 {course.title}
               </Typography>
@@ -136,7 +161,7 @@ export default function CourseDetailPage() {
               <Typography
                 variant="body1"
                 sx={{
-                  mb: 2,
+                  mb: 3,
                   display: "-webkit-box",
                   WebkitLineClamp: 2,
                   WebkitBoxOrient: "vertical",
@@ -148,34 +173,66 @@ export default function CourseDetailPage() {
                 {course.description}
               </Typography>
 
-              <Box display="flex" alignItems="center" flexWrap="wrap" gap={1.5} mb={2}>
-                <Box display="flex" alignItems="center">
+              <Box display="flex" alignItems="center" flexWrap="wrap" gap={2.5} mb={3}>
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  sx={{
+                    backgroundColor: "rgba(255,255,255,0.1)",
+                    backdropFilter: "blur(10px)",
+                    borderRadius: 2,
+                    px: 2,
+                    py: 0.8,
+                  }}
+                >
                   {renderStars(averageRating)}
-                  <Typography variant="body2" sx={{ ml: 0.5 }}>
-                    {averageRating.toFixed(1)} / 5 ({courseReviews.length} đánh giá)
+                  <Typography variant="body2" sx={{ ml: 1, fontWeight: 600 }}>
+                    {averageRating.toFixed(1)} / 5
+                  </Typography>
+                  <Typography variant="body2" sx={{ ml: 0.5, color: "#bbb" }}>
+                    ({courseReviews.length})
                   </Typography>
                 </Box>
-                <Box display="flex" alignItems="center" gap={0.5}>
-                  <MenuBookIcon sx={{ fontSize: 18 }} />
-                  <Typography variant="body2">
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  gap={1}
+                  sx={{
+                    backgroundColor: "rgba(255,255,255,0.1)",
+                    backdropFilter: "blur(10px)",
+                    borderRadius: 2,
+                    px: 2,
+                    py: 0.8,
+                  }}
+                >
+                  <MenuBookIcon sx={{ fontSize: 20, color: "#4facfe" }} />
+                  <Typography variant="body2" fontWeight={600}>
                     {lessons.length} bài giảng
                   </Typography>
                 </Box>
               </Box>
 
-              <Box display="flex" gap={2} mt={2}>
+              <Box display="flex" gap={2} mt={3}>
                 {/* 🟢 Nút Tham gia khóa học */}
                 <Button
                   variant="contained"
+                  startIcon={<PlayCircleOutlineIcon />}
                   sx={{
-                    backgroundColor: "#1976d2",
+                    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
                     color: "white",
                     textTransform: "none",
-                    fontWeight: "bold",
-                    borderRadius: 2,
-                    px: 3,
-                    py: 1,
-                    "&:hover": { backgroundColor: "#1259a7" },
+                    fontWeight: "700",
+                    fontSize: "1rem",
+                    borderRadius: 3,
+                    px: 4,
+                    py: 1.5,
+                    boxShadow: "0 8px 20px rgba(102, 126, 234, 0.4)",
+                    transition: "all 0.3s ease",
+                    "&:hover": {
+                      background: "linear-gradient(135deg, #764ba2 0%, #667eea 100%)",
+                      transform: "translateY(-2px)",
+                      boxShadow: "0 12px 28px rgba(102, 126, 234, 0.5)",
+                    },
                   }}
                   onClick={() => {
                     const user = JSON.parse(localStorage.getItem("currentUser"));
@@ -184,11 +241,9 @@ export default function CourseDetailPage() {
                       return;
                     }
 
-                    // 🔹 Lấy danh sách khóa học đã tham gia
                     const joinedCourses =
                       JSON.parse(localStorage.getItem("historyCourses")) || [];
 
-                    // 🔹 Kiểm tra xem khóa học đã có trong lịch sử chưa
                     const alreadyJoined = joinedCourses.some(
                       (c) => c.courseId === course.courseId
                     );
@@ -203,7 +258,6 @@ export default function CourseDetailPage() {
                       alert(`Đã tham gia khóa học "${course.title}".`);
                     }
 
-                    // 🔹 Chuyển đến bài học đầu tiên
                     const firstLesson = lessons.sort((a, b) => a.orderIndex - b.orderIndex)[0];
                     if (firstLesson) checkLoginAndNavigate(firstLesson.lessonId);
                   }}
@@ -211,20 +265,26 @@ export default function CourseDetailPage() {
                   Tham gia khóa học
                 </Button>
 
-
                 {/* 🟣 Nút Theo dõi khóa học */}
                 <Button
-                  variant="contained"
+                  variant="outlined"
+                  startIcon={isFollowed ? <FavoriteIcon /> : <FavoriteBorderIcon />}
                   sx={{
-                    backgroundColor: isFollowed ? "#999" : "#73169aff",
+                    borderColor: "rgba(255,255,255,0.3)",
                     color: "white",
                     textTransform: "none",
-                    fontWeight: "bold",
-                    borderRadius: 2,
+                    fontWeight: "600",
+                    fontSize: "1rem",
+                    borderRadius: 3,
                     px: 3,
-                    py: 1,
+                    py: 1.5,
+                    backgroundColor: isFollowed ? "rgba(244, 63, 94, 0.2)" : "rgba(255,255,255,0.05)",
+                    backdropFilter: "blur(10px)",
+                    transition: "all 0.3s ease",
                     "&:hover": {
-                      backgroundColor: isFollowed ? "#888" : "#400859ff",
+                      borderColor: "#f43f5e",
+                      backgroundColor: "rgba(244, 63, 94, 0.15)",
+                      transform: "translateY(-2px)",
                     },
                   }}
                   onClick={() => {
@@ -237,7 +297,6 @@ export default function CourseDetailPage() {
                     const followed =
                       JSON.parse(localStorage.getItem("followedCourses")) || [];
 
-                    // Nếu đã theo dõi → hỏi xác nhận hủy
                     if (isFollowed) {
                       const confirmUnfollow = window.confirm(
                         "Bạn đang theo dõi khóa học này!\nCó muốn hủy theo dõi không?"
@@ -256,7 +315,6 @@ export default function CourseDetailPage() {
                       return;
                     }
 
-                    // Nếu chưa theo dõi → thêm vào localStorage
                     followed.push({
                       courseId: course.courseId,
                       title: course.title,
@@ -268,9 +326,8 @@ export default function CourseDetailPage() {
                     alert(`Đã theo dõi khóa học "${course.title}"`);
                   }}
                 >
-                  {isFollowed ? "Đang theo dõi" : "Theo dõi khóa học"}
+                  {isFollowed ? "Đang theo dõi" : "Theo dõi"}
                 </Button>
-
               </Box>
             </Box>
 
@@ -290,9 +347,14 @@ export default function CourseDetailPage() {
                 sx={{
                   width: "100%",
                   maxWidth: 420,
-                  borderRadius: 3,
-                  boxShadow: 4,
+                  borderRadius: 4,
+                  boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
                   objectFit: "cover",
+                  border: "3px solid rgba(255,255,255,0.1)",
+                  transition: "transform 0.3s ease",
+                  "&:hover": {
+                    transform: "scale(1.03)",
+                  }
                 }}
               />
             </Box>
@@ -301,16 +363,28 @@ export default function CourseDetailPage() {
       </Box>
 
       {/* 🔽 Nội dung khóa học + đánh giá */}
-      <Container sx={{ mt: 5, mb: 8 }}>
-        <Typography variant="h5" fontWeight="bold" gutterBottom>
+      <Container sx={{ mt: 6, mb: 8 }}>
+        <Typography
+          variant="h5"
+          fontWeight="bold"
+          gutterBottom
+        >
           Mô tả khóa học
         </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 5 }}>
+        <Typography
+          variant="body1"
+          color="text.secondary"
+          sx={{ mb: 6 }}
+        >
           {course.description}
         </Typography>
 
-        <Box sx={{ mb: 5 }}>
-          <Typography variant="h6" fontWeight="bold" gutterBottom>
+        <Box sx={{ mb: 6 }}>
+          <Typography
+            variant="h6"
+            fontWeight="bold"
+            gutterBottom
+          >
             Chủ đề liên quan
           </Typography>
           <Box display="flex" flexWrap="wrap" gap={1.5}>
@@ -318,12 +392,21 @@ export default function CourseDetailPage() {
               <Chip
                 label={levelCategory.name}
                 clickable
-                color="primary"
                 sx={{
-                  fontWeight: 600,
-                  height: 28,
-                  px: 1,
-                  "&:hover": { backgroundColor: "#4038d2ff", color: "white" },
+                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                  color: "white",
+                  fontWeight: 700,
+                  fontSize: "0.9rem",
+                  height: 36,
+                  px: 2,
+                  borderRadius: 3,
+                  boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)",
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    background: "linear-gradient(135deg, #764ba2 0%, #667eea 100%)",
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 6px 16px rgba(102, 126, 234, 0.4)",
+                  },
                 }}
                 onClick={() =>
                   navigate(`/courses/${levelCategory.name.toLowerCase()}`)
@@ -334,12 +417,21 @@ export default function CourseDetailPage() {
               <Chip
                 label={skillCategory.name}
                 clickable
-                color="secondary"
                 sx={{
-                  fontWeight: 600,
-                  height: 28,
-                  px: 1,
-                  "&:hover": { backgroundColor: "#73169aff", color: "white" },
+                  background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+                  color: "white",
+                  fontWeight: 700,
+                  fontSize: "0.9rem",
+                  height: 36,
+                  px: 2,
+                  borderRadius: 3,
+                  boxShadow: "0 4px 12px rgba(240, 147, 251, 0.3)",
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    background: "linear-gradient(135deg, #f5576c 0%, #f093fb 100%)",
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 6px 16px rgba(240, 147, 251, 0.4)",
+                  },
                 }}
                 onClick={() =>
                   navigate(`/courses/${skillCategory.name.toLowerCase()}`)
@@ -349,23 +441,30 @@ export default function CourseDetailPage() {
           </Box>
         </Box>
 
-        <Typography variant="h5" fontWeight="bold" gutterBottom>
+        <Typography
+          variant="h5"
+          fontWeight="bold"
+          gutterBottom
+        >
           Nội dung khóa học
         </Typography>
 
-        <Box sx={{ mt: 2, borderRadius: 2, overflow: "hidden", boxShadow: 2 }}>
+        <Box sx={{ mt: 3 }}>
           {lessons.map((lesson, index) => (
             <div key={lesson.lessonId}>
               <Card
                 onClick={() => checkLoginAndNavigate(lesson.lessonId)}
                 sx={{
-                  mb: 1,
-                  borderRadius: 0,
-                  boxShadow: "none",
-                  transition: "all 0.2s ease",
+                  mb: 2,
+                  borderRadius: 3,
+                  border: "2px solid transparent",
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+                  transition: "all 0.3s ease",
                   "&:hover": {
-                    backgroundColor: "#f5f5f5",
-                    transform: "scale(1.01)",
+                    borderColor: "#667eea",
+                    backgroundColor: "#f8fafc",
+                    transform: "translateX(8px)",
+                    boxShadow: "0 8px 24px rgba(102, 126, 234, 0.15)",
                     cursor: "pointer",
                   },
                 }}
@@ -375,41 +474,70 @@ export default function CourseDetailPage() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    p: 2,
+                    p: 3,
                   }}
                 >
-                  <Box display="flex" alignItems="center" gap={2}>
+                  <Box display="flex" alignItems="center" gap={2.5}>
                     <Box
                       sx={{
-                        width: 42,
-                        height: 42,
-                        borderRadius: "50%",
-                        backgroundColor: generateRandomBrightColor(),
+                        width: 50,
+                        height: 50,
+                        borderRadius: 3,
+                        background: generateRandomBrightColor(),
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        fontSize: 22,
+                        fontSize: 24,
                         fontWeight: "bold",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
                       }}
                     >
                       📄
                     </Box>
 
-                    <Typography variant="subtitle1" fontWeight="600">
-                      Bài giảng {index + 1}: {lesson.title}
-                    </Typography>
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "#94a3b8",
+                          fontWeight: 600,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.5px",
+                        }}
+                      >
+                        Bài giảng {index + 1}
+                      </Typography>
+                      <Typography
+                        variant="h6"
+                        fontWeight="700"
+                        sx={{
+                          color: "#1e293b",
+                          mt: 0.5,
+                        }}
+                      >
+                        {lesson.title}
+                      </Typography>
+                    </Box>
                   </Box>
 
                   <Button
-                    size="small"
-                    variant="outlined"
+                    size="medium"
+                    variant="contained"
+                    startIcon={<PlayCircleOutlineIcon />}
                     sx={{
-                      borderColor: "#1976d2",
-                      color: "#1976d2",
+                      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                      color: "white",
                       textTransform: "none",
-                      fontWeight: "bold",
-                      borderRadius: 2,
-                      "&:hover": { backgroundColor: "#E3F2FD" },
+                      fontWeight: "700",
+                      borderRadius: 2.5,
+                      px: 3,
+                      py: 1,
+                      boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)",
+                      transition: "all 0.3s ease",
+                      "&:hover": {
+                        background: "linear-gradient(135deg, #764ba2 0%, #667eea 100%)",
+                        boxShadow: "0 6px 16px rgba(102, 126, 234, 0.4)",
+                      },
                     }}
                   >
                     Xem bài học
@@ -417,13 +545,15 @@ export default function CourseDetailPage() {
                 </CardContent>
               </Card>
 
-              {index < lessons.length - 1 && <Divider sx={{ my: 2 }} />}
+              {index < lessons.length - 1 && (
+                <Divider sx={{ my: 0, opacity: 0 }} />
+              )}
             </div>
           ))}
         </Box>
 
         {/* ✅ Phần đánh giá */}
-        <Box mt={6}>
+        <Box mt={8}>
           <CourseReview courseId={course.courseId} />
         </Box>
       </Container>

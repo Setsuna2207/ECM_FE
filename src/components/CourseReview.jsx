@@ -94,7 +94,7 @@ export default function CourseReview({ courseId }) {
   };
 
   return (
-    <Box sx={{ mt: 6 }}>
+    <Box sx={{ mt: 1 }}>
       {/* Tiêu đề + điểm trung bình */}
       <Box
         display="flex"
