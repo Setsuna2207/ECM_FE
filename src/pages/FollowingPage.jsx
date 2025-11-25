@@ -2,7 +2,6 @@ import {
   Container,
   Grid,
   Typography,
-  Box,
   Stack,
   Pagination,
 } from "@mui/material";
@@ -12,7 +11,7 @@ import Footer from "../components/Footer";
 import CourseCard from "../components/CourseCard";
 import { mockCourses } from "../data/mockCourse";
 
-export default function FollowedPage() {
+export default function FollowingPage() {
   const [followedCourses, setFollowedCourses] = useState([]);
   const [page, setPage] = useState(1);
   const coursesPerPage = 6;
@@ -20,7 +19,6 @@ export default function FollowedPage() {
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("followedCourses")) || [];
 
-    // 🔹 Ghép thông tin course đầy đủ từ mockCourses để có categories, description, ...
     const merged = stored.map((f) => {
       const fullInfo = mockCourses.find((c) => c.courseId === f.courseId);
       return fullInfo ? { ...fullInfo } : f;
@@ -29,13 +27,14 @@ export default function FollowedPage() {
     setFollowedCourses(merged);
   }, []);
 
-  const pageCount = Math.ceil(followedCourses.length / coursesPerPage) || 1;
+  // --- Pagination ---
+  const pageCount = Math.ceil(followedCourses.length / coursesPerPage);
   const paginatedCourses = followedCourses.slice(
     (page - 1) * coursesPerPage,
     page * coursesPerPage
   );
 
-  const handlePageChange = (e, value) => {
+  const handlePageChange = (event, value) => {
     setPage(value);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -58,27 +57,13 @@ export default function FollowedPage() {
               ))}
             </Grid>
 
-            {/* ✅ Luôn hiển thị phân trang, kể cả khi chỉ có 1 trang */}
+            {/* Pagination - always show at least 1 */}
             <Stack alignItems="center" mt={4}>
               <Pagination
-                count={pageCount}
+                count={pageCount || 1} // Always show at least 1
                 page={page}
                 onChange={handlePageChange}
                 color="primary"
-                shape="rounded"
-                size="large"
-                showFirstButton
-                showLastButton
-                sx={{
-                  "& .MuiPaginationItem-root": {
-                    fontWeight: "bold",
-                    color: "#6C63FF",
-                  },
-                  "& .Mui-selected": {
-                    backgroundColor: "#6C63FF !important",
-                    color: "#fff",
-                  },
-                }}
               />
             </Stack>
           </>
@@ -88,6 +73,7 @@ export default function FollowedPage() {
           </Typography>
         )}
       </Container>
+
       <Footer />
     </>
   );

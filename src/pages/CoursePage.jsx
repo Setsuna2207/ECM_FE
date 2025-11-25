@@ -295,7 +295,7 @@ export default function CoursePage() {
         {/* Danh sách khóa học */}
         {paginatedCourses.length > 0 ? (
           <>
-            <Grid container spacing={3}>
+            <Grid container spacing={3} justifyContent="center">
               {paginatedCourses.map((course) => (
                 <Grid item key={course.courseId} xs={12} sm={6} md={4}>
                   <CourseCard course={course} />

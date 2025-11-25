@@ -56,7 +56,6 @@ export default function HomePage() {
       .sort((a, b) => b.rating - a.rating)
       .slice(0, 4);
 
-    // Nếu không có khóa học nào đủ điều kiện, ẩn luôn section
     if (topCourses.length === 0) return null;
 
     return (
@@ -89,7 +88,7 @@ export default function HomePage() {
           {description}
         </Typography>
 
-        <Grid container spacing={3}>
+        <Grid container spacing={3} justifyContent="center">
           {topCourses.map((course) => (
             <Grid item key={course.courseId} xs={12} sm={6} md={4}>
               <CourseCard course={course} />
@@ -103,7 +102,7 @@ export default function HomePage() {
   return (
     <>
       <Navbar />
-      <Container sx={{ mt: 4, mb: 6 }}>
+      <Container sx={{ mt: 4, mb: 6, px: { xs: 2, sm: 4 } }}>
         <Typography variant="h4" fontWeight="bold" mb={4} color="#0a0749ff">
           Khóa học nổi bật
         </Typography>

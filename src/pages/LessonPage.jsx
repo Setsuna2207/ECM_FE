@@ -12,7 +12,17 @@ import {
     Button,
     Card,
     CardContent,
+    Chip,
+    Paper,
+    Divider,
+    Grid,
 } from "@mui/material";
+import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
+import QuizIcon from "@mui/icons-material/Quiz";
+import DescriptionIcon from "@mui/icons-material/Description";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
 export default function LessonPage() {
     const navigate = useNavigate();
@@ -22,15 +32,9 @@ export default function LessonPage() {
         window.scrollTo({ top: 0, behavior: "smooth" });
     }, [lessonId]);
 
-    const course = mockCourses.find(
-        (c) => c.courseId === parseInt(courseId, 10)
-    );
-
-    //  tìm bài học đúng trong khóa học
+    const course = mockCourses.find((c) => c.courseId === parseInt(courseId, 10));
     const lesson = mockLessons.find(
-        (l) =>
-            l.lessonId === parseInt(lessonId, 10) &&
-            l.courseId === parseInt(courseId, 10)
+        (l) => l.lessonId === parseInt(lessonId, 10) && l.courseId === parseInt(courseId, 10)
     );
 
     if (!course || !lesson) {
@@ -47,128 +51,94 @@ export default function LessonPage() {
         );
     }
 
-    // Các bài giảng trong cùng khóa
-    const lessonsInCourse = mockLessons.filter(
-        (l) => l.courseId === course.courseId
-    );
+    const lessonsInCourse = mockLessons.filter((l) => l.courseId === course.courseId);
+    const prevLesson = lessonsInCourse.find((l) => l.orderIndex === lesson.orderIndex - 1);
+    const nextLesson = lessonsInCourse.find((l) => l.orderIndex === lesson.orderIndex + 1);
 
-    const prevLesson = lessonsInCourse.find(
-        (l) => l.orderIndex === lesson.orderIndex - 1
-    );
-    const nextLesson = lessonsInCourse.find(
-        (l) => l.orderIndex === lesson.orderIndex + 1
-    );
+    // Check if lesson has quiz
+    const hasQuiz = mockQuizzes.some((q) => q.lessonId === lesson.lessonId);
+    const relatedQuiz = mockQuizzes.find((q) => q.lessonId === lesson.lessonId);
 
-    
+    // Check progress (from localStorage)
+    const progressData = JSON.parse(localStorage.getItem("courseProgress")) || {};
+    const isCompleted = progressData[String(courseId)]?.[String(lessonId)]?.completed;
 
     return (
         <>
             <Navbar />
-            {/* Header */}
-            <Box sx={{ backgroundColor: "#111", color: "white", py: 6 }}>
+
+            {/* Breadcrumb Header */}
+            <Box sx={{ backgroundColor: "#f5f5f5", py: 2, borderBottom: "1px solid #e0e0e0" }}>
                 <Container>
-                    <Box
-                        display="flex"
-                        justifyContent="space-between"
-                        alignItems="center"
-                        flexWrap="wrap"
-                    >
-                        {/* Cột trái */}
-
-                        <Box sx={{ flex: "1 1 55%", minWidth: 300 }}>
-                            {/* Tiêu đề khóa học */}
-                            <Typography variant="h4" fontWeight="bold" gutterBottom>
-                                Khóa học: {course.title}
-                            </Typography>
-
-                            {/* 🔹 Chủ đề của khóa học (Level & Category) */}
-                            <Box display="flex" gap={1.5} mb={2}>
-                                {course.categories?.map((cat) => (
-                                    <Button
-                                        key={cat.name}
-                                        variant="outlined"
-                                        color="primary"
-                                        size="small"
-                                        sx={{
-                                            borderRadius: 2,
-                                            textTransform: "none",
-                                            fontWeight: 600,
-                                            borderColor: cat.description === "LEVEL" ? "#f3f1ff" : "#f7e8ff",
-                                            color: cat.description === "LEVEL" ? "#f3f1ff" : "#f7e8ff",
-                                            "&:hover": {
-                                                backgroundColor:
-                                                    cat.description === "LEVEL" ? "#4038d2ff" : "#73169aff",
-                                            },
-                                        }}
-                                        onClick={() => navigate(`/courses/${cat.name.toLowerCase()}`)}
-                                    >
-                                        {cat.name}
-                                    </Button>
-                                ))}
-                            </Box>
-
-
-                            {/* Tiêu đề bài giảng */}
-                            <Typography
-                                variant="body1"
-                                sx={{
-                                    mb: 2,
-                                    display: "-webkit-box",
-                                    WebkitLineClamp: 2,
-                                    WebkitBoxOrient: "vertical",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                    whiteSpace: "normal",
-                                }}
-                            >
-                                Bài giảng {lesson.orderIndex}: {lesson.title}
-                            </Typography>
-
-                            {/* Nút quay lại */}
-                            <Button
-                                variant="contained"
-                                sx={{
-                                    backgroundColor: "#1976d2",
-                                    color: "white",
-                                    textTransform: "none",
-                                    fontWeight: "bold",
-                                    borderRadius: 2,
-                                    "&:hover": { backgroundColor: "#1259a7" },
-                                }}
-                                onClick={() => navigate(`/course/${course.courseId}`)}
-                            >
-                                Quay lại khóa học
-                            </Button>
-                        </Box>
-
-
-                        {/* Cột phải: Thumbnail */}
-                        <Box
-                            component="img"
-                            src={course.thumbnail}
-                            alt={course.title}
-                            sx={{
-                                flex: "1 1 40%",
-                                maxWidth: 320,
-                                borderRadius: 3,
-                                boxShadow: 3,
-                                mt: { xs: 4, md: 0 },
-                            }}
-                        />
+                    <Box display="flex" alignItems="center" gap={1}>
+                        <Button
+                            size="small"
+                            startIcon={<ArrowBackIcon />}
+                            onClick={() => navigate(`/course/${course.courseId}`)}
+                            sx={{ textTransform: "none", color: "#666" }}
+                        >
+                            {course.title}
+                        </Button>
+                        <Typography color="text.secondary">/</Typography>
+                        <Typography variant="body2" fontWeight={600}>
+                            Bài {lesson.orderIndex}: {lesson.title}
+                        </Typography>
                     </Box>
                 </Container>
             </Box>
 
+            {/* Main Content */}
+            <Container maxWidth="lg" sx={{ mt: 4, mb: 8 }}>
+                {/* Lesson Header */}
+                <Paper sx={{ p: 4, mb: 4, borderRadius: 3, background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "white" }}>
+                    <Box display="flex" alignItems="center" gap={3} mb={2}>
+                        <PlayCircleOutlineIcon sx={{ fontSize: 50 }} />
+                        <Box flex={1}>
+                            <Typography variant="h6" sx={{ opacity: 0.9, mb: 0.5 }}>
+                                BÀI HỌC {lesson.orderIndex}
+                            </Typography>
+                            <Typography variant="h4" fontWeight="700">
+                                {lesson.title}
+                            </Typography>
+                        </Box>
+                        {isCompleted && (
+                            <Chip
+                                icon={<CheckCircleIcon />}
+                                label="Đã hoàn thành"
+                                size="large"
+                                sx={{ backgroundColor: "#4caf50", color: "white", px: 2, py: 3, fontSize: 16 }}
+                            />
+                        )}
+                    </Box>
 
-            {/* Nội dung */}
-            <Container sx={{ mt: 5, mb: 8 }}>
-                {/* Video */}
-                <Box
+                    {/* Categories */}
+                    <Box display="flex" gap={1.5} flexWrap="wrap">
+                        {course.categories?.map((cat) => (
+                            <Chip
+                                key={cat.name}
+                                label={cat.name}
+                                onClick={() => navigate(`/courses/${cat.name.toLowerCase()}`)}
+                                sx={{
+                                    backgroundColor: "rgba(255, 255, 255, 0.2)",
+                                    color: "white",
+                                    fontWeight: 600,
+                                    fontSize: 15,
+                                    px: 2,
+                                    py: 2.5,
+                                    "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.3)" }
+                                }}
+                            />
+                        ))}
+                    </Box>
+                </Paper>
+
+                {/* Video Player */}
+                <Paper
                     sx={{
                         position: "relative",
-                        paddingTop: "50.625%",
-                        borderRadius: 2,
-                        boxShadow: 3,
+                        paddingTop: "56.25%" 
+                        , borderRadius: 3,
+                        boxShadow: 4,
                         overflow: "hidden",
                         mb: 4,
                     }}
@@ -185,174 +155,270 @@ export default function LessonPage() {
                             border: 0,
                         }}
                         allowFullScreen
-                    ></iframe>
-                </Box>
+                    />
+                </Paper>
 
-                {/* 📚 Tài liệu bài giảng */}
-                <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mt: 6 }}>
-                    Tài liệu bài giảng
-                </Typography>
+                {/* Documents Section */}
+                <Paper sx={{ p: 4, borderRadius: 3, mb: 4 }}> 
+                    <Box display="flex" alignItems="center" gap={2} mb={1}>
+                        <DescriptionIcon color="primary" sx={{ fontSize: 26 }} />
+                        <Typography variant="h6" fontWeight="700">
+                            Tài liệu bài giảng
+                        </Typography>
+                    </Box>
 
-                {lesson.documentUrls && lesson.documentUrls.length > 0 ? (
-                    <Box
-                        display="grid"
-                        gridTemplateColumns={{
-                            xs: "1fr",
-                            sm: "1fr 1fr",
-                            md: "1fr 1fr 1fr",
-                        }}
-                        gap={2}
-                    >
-                        {lesson.documentUrls.map((url, index) => {
-                            const fileName = url.split("/").pop();
-                            const ext = fileName.split(".").pop().toLowerCase();
+                    <Divider sx={{ mb: 1 }} />
 
-                            // 🎨 Gán màu & icon theo loại file
-                            const fileStyles = {
-                                pdf: { color: "#E53935", bg: "#FFEBEE", icon: "📕" },
-                                docx: { color: "#1E88E5", bg: "#E3F2FD", icon: "📘" },
-                                pptx: { color: "#FB8C00", bg: "#FFF3E0", icon: "📙" },
-                                xlsx: { color: "#43A047", bg: "#E8F5E9", icon: "📗" },
-                                default: { color: "#6D4C41", bg: "#EFEBE9", icon: "📄" },
-                            };
+                    {lesson.documentUrls && lesson.documentUrls.length > 0 ? (
+                        <Box display="flex" flexDirection="column" gap={1}>
+                            {lesson.documentUrls.map((url, index) => {
+                                const fileName = url.split("/").pop();
+                                const ext = fileName.split(".").pop().toLowerCase();
 
-                            const file = fileStyles[ext] || fileStyles.default;
+                                const fileStyles = {
+                                    pdf: { color: "#E53935", bg: "#FFEBEE", icon: "📕" },
+                                    docx: { color: "#1E88E5", bg: "#E3F2FD", icon: "📘" },
+                                    pptx: { color: "#FB8C00", bg: "#FFF3E0", icon: "📙" },
+                                    xlsx: { color: "#43A047", bg: "#E8F5E9", icon: "📗" },
+                                    default: { color: "#6D4C41", bg: "#EFEBE9", icon: "📄" },
+                                };
 
-                            return (
-                                <Card
-                                    key={index}
-                                    sx={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 2,
-                                        px: 2,
-                                        py: 1.5,
-                                        borderRadius: 3,
-                                        boxShadow: 2,
-                                        transition: "all 0.3s ease",
-                                        "&:hover": { transform: "scale(1.02)", boxShadow: 5 },
-                                    }}
-                                >
-                                    {/* Icon */}
-                                    <Box
+                                const file = fileStyles[ext] || fileStyles.default;
+
+                                return (
+                                    <Card
+                                        key={index}
                                         sx={{
-                                            width: 48,
-                                            height: 48,
-                                            borderRadius: "50%",
-                                            backgroundColor: file.bg,
-                                            color: file.color,
                                             display: "flex",
                                             alignItems: "center",
-                                            justifyContent: "center",
-                                            fontSize: 26,
-                                        }}
-                                    >
-                                        {file.icon}
-                                    </Box>
-
-                                    {/* Thông tin file */}
-                                    <Box flexGrow={1}>
-                                        <Typography
-                                            variant="subtitle2"
-                                            sx={{
-                                                fontWeight: 600,
-                                                wordBreak: "break-word",
-                                            }}
-                                        >
-                                            {fileName}
-                                        </Typography>
-                                        <Typography variant="caption" color="text.secondary">
-                                            {ext.toUpperCase()} file
-                                        </Typography>
-                                    </Box>
-
-                                    {/* Nút tải / mở */}
-                                    <Button
-                                        size="small"
-                                        variant="outlined"
-                                        href={url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        sx={{
-                                            textTransform: "none",
-                                            borderColor: "black",
-                                            color: "black",
-                                            fontWeight: "bold",
+                                            gap: 2,
+                                            p: 2,
+                                            borderRadius: 3,
+                                            border: "2px solid #e0e0e0",
+                                            transition: "all 0.3s ease",
                                             "&:hover": {
-                                                backgroundColor: file.bg,
+                                                transform: "translateX(5px)",
+                                                boxShadow: 4,
                                                 borderColor: file.color,
                                             },
                                         }}
                                     >
-                                        Mở
-                                    </Button>
-                                </Card>
-                            );
-                        })}
-                    </Box>
-                ) : (
-                    <Typography variant="body2" color="text.secondary" mt={1}>
-                        Chưa có tài liệu cho bài giảng này.
-                    </Typography>
-                )}
+                                        {/* Icon */}
+                                        <Box
+                                            sx={{
+                                                width: 60,
+                                                height: 60,
+                                                borderRadius: 2,
+                                                backgroundColor: file.bg,
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                fontSize: 30,
+                                            }}
+                                        >
+                                            {file.icon}
+                                        </Box>
 
+                                        {/* File Info */}
+                                        <Box flex={1}>
+                                            <Typography variant="h6" fontWeight={600} sx={{ wordBreak: "break-word", mb: 0.5 }}>
+                                                {fileName}
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                {ext.toUpperCase()} • Tài liệu học tập
+                                            </Typography>
+                                        </Box>
 
-
-                {/* Nút Quiz */}
-                <Box textAlign="center" mt={5}>
-                    <Button
-                        variant="contained"
-                        color={mockQuizzes.some((q) => q.lessonId === lesson.lessonId) ? "secondary" : "grey"}
-                        sx={{
-                            px: 4,
-                            py: 1.5,
-                            borderRadius: 5,
-                            fontWeight: "bold",
-                            textTransform: "none",
-                        }}
-                        onClick={() => {
-                            const relatedQuiz = mockQuizzes.find(
-                                (q) => q.lessonId === lesson.lessonId
-                            );
-                            if (relatedQuiz) {
-                                navigate(
-                                    `/course/${course.courseId}/lesson/${lesson.lessonId}/quiz/${relatedQuiz.quizId}`
+                                        {/* Action Button */}
+                                        <Button
+                                            variant="contained"
+                                            size="large"
+                                            href={url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            sx={{
+                                                textTransform: "none",
+                                                backgroundColor: file.color,
+                                                borderRadius: 3,
+                                                fontWeight: 600,
+                                                fontSize: 16,
+                                                px: 3,
+                                                py: 0.7,
+                                                "&:hover": { backgroundColor: file.color, opacity: 0.9 },
+                                            }}
+                                        >
+                                            Mở file
+                                        </Button>
+                                    </Card>
                                 );
-                            }
+                            })}
+                        </Box>
+                    ) : (
+                        <Box textAlign="center" py={6}>
+                            <Typography variant="h6" color="text.secondary">
+                                📚 Chưa có tài liệu cho bài giảng này
+                            </Typography>
+                        </Box>
+                    )}
+                </Paper>
+
+                {/* Quiz Section */}
+                <Paper
+                    sx={{
+                        p: 3,
+                        borderRadius: 3,
+                        mb: 4,
+                        background: hasQuiz
+                            ? "linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%)"
+                            : "#f5f5f5",
+                        border: hasQuiz ? "3px solid #fdcb6e" : "3px solid #e0e0e0",
+                    }}
+                >
+                    <Box display="flex" alignItems="center" gap={3} mb={3}>
+                        <Box
+                            sx={{
+                                width: 60,
+                                height: 60,
+                                borderRadius: 3,
+                                backgroundColor: hasQuiz ? "#ff9f43" : "#ccc",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                            }}
+                        >
+                            <QuizIcon sx={{ fontSize: 36, color: "white" }} />
+                        </Box>
+
+                        <Box flex={1}>
+                            <Typography variant="h5" fontWeight="700" mb={1}>
+                                {hasQuiz ? "Quiz" : "Chưa có quiz"}
+                            </Typography>
+                            <Typography variant="body1" color="text.secondary">
+                                {hasQuiz
+                                    ? "Hoàn thành quiz để kiểm tra kiến thức của bạn"
+                                    : "Bài giảng này chưa có bài quiz"}
+                            </Typography>
+                        </Box>
+                    </Box>
+
+                    <Button
+                        fullWidth
+                        variant="contained"
+                        size="large"
+                        disabled={!hasQuiz}
+                        onClick={() => relatedQuiz && navigate(`/course/${courseId}/lesson/${lessonId}/quiz/${relatedQuiz.quizId}`)}
+                        sx={{
+                            py: 2,
+                            borderRadius: 4,
+                            fontWeight: 700,
+                            fontSize: 18,
+                            textTransform: "none",
+                            backgroundColor: hasQuiz ? "#4038d2ff" : "#ccc",
+                            "&:hover": { backgroundColor: hasQuiz ? "#73169aff" : "#ccc" },
                         }}
-                        disabled={!mockQuizzes.some((q) => q.lessonId === lesson.lessonId)}
                     >
-                        {mockQuizzes.some((q) => q.lessonId === lesson.lessonId)
-                            ? "LÀM BÀI QUIZ"
-                            : "Bài giảng chưa có quiz"}
+                        Làm bài Quiz
                     </Button>
+                </Paper>
+
+                {/* Progress & Navigation Row */}
+                <Box display="flex" gap={3} mb={4} flexWrap="wrap">
+                    {/* Progress Card */}
+                    <Paper sx={{ flex: 1, minWidth: 280, p: 4, borderRadius: 3, backgroundColor: "#ffffffff" }}>
+                        <Typography variant="h6" fontWeight="700" mb={1}>
+                            📊 Tiến độ học tập
+                        </Typography>
+                        <Divider sx={{ mb: 1 }} />
+                        <Box display="flex" alignItems="center" gap={2} mb={1}>
+                            <Typography variant="h2" fontWeight="bold" color="primary">
+                                {lesson.orderIndex}
+                            </Typography>
+                            <Typography variant="h6" color="text.secondary">
+                                / {lessonsInCourse.length} bài học
+                            </Typography>
+                        </Box>
+                        <Typography variant="body2" color="text.secondary">
+                            Bạn đang ở bài học thứ {lesson.orderIndex} trong khóa học này.
+                            Bài học được coi là hoàn thành và cập nhật vào lịch sử học tập 
+                            sau khi bạn hoàn thành quiz (nếu có).
+                        </Typography>
+                    </Paper>
+
+                    {/* Navigation Card */}
+                    <Paper sx={{ flex: 1, minWidth: 280, p: 4, borderRadius: 3 }}>
+                        <Typography variant="h6" fontWeight="700" mb={1}>
+                            🧭 Điều hướng
+                        </Typography>
+                        <Divider sx={{ mb: 1 }} />
+                        {/* Return to Course */}
+                        <Button
+                            fullWidth
+                            variant="outlined"
+                            size="large"
+                            startIcon={<ArrowBackIcon />}
+                            onClick={() => navigate(`/course/${course.courseId}`)}
+                            sx={{
+                                mb: 2,
+                                py: 1.5,
+                                borderRadius: 2,
+                                textTransform: "none",
+                                fontWeight: 600,
+                                fontSize: 16,
+                                borderColor: "#4038d2ff",
+                                color: "#4038d2ff",
+                                "&:hover": {
+                                    backgroundColor: "#f3f2ff",
+                                    borderColor: "#4038d2ff",
+                                }
+                            }}
+                        >
+                            Quay lại khóa học
+                        </Button>
+
+                        {/* Previous/Next buttons side by side */}
+                        <Box display="flex" gap={2}>
+                            <Button
+                                fullWidth
+                                variant="outlined"
+                                size="large"
+                                startIcon={<ArrowBackIcon />}
+                                onClick={() => prevLesson && navigate(`/course/${courseId}/lesson/${prevLesson.lessonId}`)}
+                                disabled={!prevLesson}
+                                sx={{
+                                    py: 1.5,
+                                    borderRadius: 2,
+                                    textTransform: "none",
+                                    fontWeight: 600,
+                                    fontSize: 14,
+                                }}
+                            >
+                                Bài trước
+                            </Button>
+
+                            <Button
+                                fullWidth
+                                variant="contained"
+                                size="large"
+                                endIcon={<ArrowForwardIcon />}
+                                onClick={() => nextLesson && navigate(`/course/${courseId}/lesson/${nextLesson.lessonId}`)}
+                                disabled={!nextLesson}
+                                sx={{
+                                    py: 1.5,
+                                    borderRadius: 2,
+                                    textTransform: "none",
+                                    fontWeight: 600,
+                                    fontSize: 14,
+                                    backgroundColor: "#4038d2ff",
+                                    "&:hover": { backgroundColor: "#73169aff" },
+                                }}
+                            >
+                                Bài tiếp
+                            </Button>
+                        </Box>
+                    </Paper>
                 </Box>
-
-                {/* Điều hướng bài giảng */}
-            <Box display="flex" justifyContent="space-between" mt={6}>
-                <Button
-                    variant="outlined"
-                    onClick={() =>
-                        prevLesson &&
-                        navigate(`/course/${course.courseId}/lesson/${prevLesson.lessonId}`)
-                    }
-                    disabled={!prevLesson}
-                >
-                    ← Bài trước
-                </Button>
-
-                <Button
-                    variant="contained"
-                    onClick={() =>
-                        nextLesson &&
-                        navigate(`/course/${course.courseId}/lesson/${nextLesson.lessonId}`)
-                    }
-                    disabled={!nextLesson}
-                >
-                    Bài tiếp theo →
-                </Button>
-            </Box>
             </Container>
+
             <Footer />
         </>
     );
