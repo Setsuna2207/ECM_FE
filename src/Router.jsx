@@ -12,7 +12,7 @@ import CourseDetailPage from "./pages/CourseDetailPage";
 import LessonPage from "./pages/LessonPage";
 import QuizPage from "./pages/QuizPage";
 import HistoryPage from "./pages/HistoryPage";
-import FollowedPage from "./pages/FollowingPage";
+import FollowingPage from "./pages/FollowingPage";
 import TestPage from "./pages/TestPage";
 import TestDetailPage from "./pages/TestDetailPage";
 
@@ -42,7 +42,7 @@ export default function AppRouter() {
         <Route path="/course/:courseId/lesson/:lessonId" element={<LessonPage />} />
         <Route path="/course/:courseId/lesson/:lessonId/quiz/:quizId" element={<QuizPage />} />
         <Route path="/history" element={<HistoryPage />} />
-        <Route path="/following" element={<FollowedPage />} />
+        <Route path="/following" element={<FollowingPage />} />
         <Route path="/tests" element={<TestPage/>} />
         <Route path="/test/:testId" element={<TestDetailPage/>} />
 

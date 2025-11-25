@@ -8,54 +8,19 @@ import {
   Chip,
   Paper,
 } from "@mui/material";
-import StarIcon from "@mui/icons-material/Star";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import { mockLessons } from "../data/mockLesson";
 import { mockReviews } from "../data/mockReview";
 import { useNavigate } from "react-router-dom";
 
-export default function CourseCard({ course }) {
+export default function MiniCourseCard({ course }) {
   const navigate = useNavigate();
 
   // Calculate lesson count
   const lessonCount = mockLessons.filter(
     (lesson) => lesson.courseId === course.courseId
   ).length;
-
-  // Calculate average rating
-  const courseReviews = mockReviews.filter(
-    (review) => review.courseId === course.courseId
-  );
-  const averageRating =
-    courseReviews.length > 0
-      ? courseReviews.reduce((sum, r) => sum + r.ratingScore, 0) /
-      courseReviews.length
-      : 0;
-
-  // Render stars
-  const renderStars = (rating) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 >= 0.5;
-
-    for (let i = 0; i < 5; i++) {
-      if (i < fullStars) {
-        stars.push(
-          <StarIcon key={i} sx={{ color: "#FFD700", fontSize: 18 }} />
-        );
-      } else if (i === fullStars && hasHalfStar) {
-        stars.push(
-          <StarIcon key={i} sx={{ color: "#FFD700", fontSize: 18, opacity: 0.5 }} />
-        );
-      } else {
-        stars.push(
-          <StarIcon key={i} sx={{ color: "#E0E0E0", fontSize: 18 }} />
-        );
-      }
-    }
-    return stars;
-  };
 
   // Get categories
   const levelCategory = course.categories?.find(
@@ -87,7 +52,7 @@ export default function CourseCard({ course }) {
       <Box sx={{ position: "relative", overflow: "hidden" }}>
         <CardMedia
           component="img"
-          height="200"
+          height="175"
           image={course.thumbnail}
           alt={course.title}
           sx={{
@@ -186,55 +151,11 @@ export default function CourseCard({ course }) {
             textOverflow: "ellipsis",
             minHeight: 56,
             lineHeight: 1.4,
+            mb: 1,
           }}
         >
           {course.title}
         </Typography>
-
-        {/* Description */}
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            minHeight: 40,
-            lineHeight: 1.6,
-          }}
-        >
-          {course.description}
-        </Typography>
-
-        {/* Rating section */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1,
-            p: 1.5,
-            backgroundColor: "#f8f9fa",
-            borderRadius: 2,
-            mb: 0.5,
-          }}
-        >
-          <Box display="flex" alignItems="center">
-            {renderStars(averageRating)}
-          </Box>
-          <Typography
-            variant="h6"
-            fontWeight="700"
-            color="text.primary"
-            sx={{ ml: 0.5 }}
-          >
-            {averageRating.toFixed(1)}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            ({courseReviews.length} đánh giá)
-          </Typography>
-        </Box>
 
         {/* Action button */}
         <Button
