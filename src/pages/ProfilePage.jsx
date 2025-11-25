@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import {
   Avatar,
   Box,
@@ -9,8 +10,17 @@ import {
   TextField,
   Typography,
   Alert,
+  IconButton,
 } from "@mui/material";
-import { useState, useEffect } from "react";
+import EditIcon from "@mui/icons-material/Edit";
+import SaveIcon from "@mui/icons-material/Save";
+import CloseIcon from "@mui/icons-material/Close";
+import HistoryIcon from "@mui/icons-material/History";
+import FavoriteIcon from "@mui/icons-material/Favorite";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import CameraAltIcon from "@mui/icons-material/CameraAlt";
+import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -35,6 +45,34 @@ export default function ProfilePage() {
       setUser(savedUser);
     }
   }, [navigate]);
+
+  const handleAvatarChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Vui lòng chọn file ảnh!');
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Kích thước ảnh không được vượt quá 5MB!');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result;
+        const updatedUser = { ...user, avatar: base64String };
+        setUser(updatedUser);
+        localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+        setConfirmMessage("Ảnh đại diện đã được cập nhật!");
+        setTimeout(() => setConfirmMessage(""), 4000);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSave = () => {
     const updatedUser = { ...user, password };
@@ -65,227 +103,457 @@ export default function ProfilePage() {
     <>
       <Navbar />
 
-      <Container sx={{ mt: 4, mb: 6 }}>
-        {/* ====================================================== */}
+      {/* Hero Background */}
+      <Box
+        sx={{
+          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          height: 200,
+          position: "relative",
+          "&::after": {
+            content: '""',
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: "100px",
+            background: "linear-gradient(to top, #f8fafc, transparent)",
+          },
+        }}
+      />
+
+      <Container sx={{ mt: -18, mb: 6, position: "relative", zIndex: 1 }}>
+
         {/* ===============     CONTAINER 1     ================== */}
-        {/* ====================================================== */}
         <Paper
           sx={{
-            p: 3,
-            borderRadius: 3,
+            p: 4,
+            borderRadius: 4,
             mb: 4,
             backgroundColor: "#ffffff",
-            boxShadow: 3,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
+            border: "1px solid rgba(255,255,255,0.8)",
           }}
         >
-          <Typography variant="h5" fontWeight="bold" mb={3} textAlign="left">
-            Thông tin cá nhân
-          </Typography>
-
           <Box
             display="flex"
             flexDirection={{ xs: "column", md: "row" }}
             gap={4}
-            justifyContent="center"
             alignItems="center"
           >
             {/* ==== AVATAR ==== */}
             <Box display="flex" flexDirection="column" alignItems="center">
-              <Avatar
-                src={
-                  user.avatar ||
-                  "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
-                }
-                sx={{
-                  width: 200,
-                  height: 200,
-                  mb: 1.5,
-                  border: "2px solid #6C63FF",
-                }}
-              />
-              <Button
-                variant="outlined"
-                sx={{
-                  textTransform: "none",
-                  borderColor: "#6C63FF",
-                  color: "#6C63FF",
-                  fontWeight: "bold",
-                  fontSize: 12,
-                  "&:hover": { backgroundColor: "#f3f1ff" },
-                }}
-              >
-                Đổi ảnh đại diện
-              </Button>
+              <Box sx={{ position: "relative" }}>
+                <Avatar
+                  src={
+                    user.avatar ||
+                    "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+                  }
+                  sx={{
+                    width: 180,
+                    height: 180,
+                    mb: 2,
+                    border: "4px solid white",
+                    boxShadow: "0 8px 24px rgba(102, 126, 234, 0.3)",
+                  }}
+                />
+                <input
+                  accept="image/*"
+                  id="avatar-upload"
+                  type="file"
+                  style={{ display: "none" }}
+                  onChange={handleAvatarChange}
+                />
+                <label htmlFor="avatar-upload">
+                  <IconButton
+                    component="span"
+                    sx={{
+                      position: "absolute",
+                      bottom: 20,
+                      right: 0,
+                      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                      color: "white",
+                      width: 40,
+                      height: 40,
+                      boxShadow: "0 4px 12px rgba(102, 126, 234, 0.4)",
+                      "&:hover": {
+                        background: "linear-gradient(135deg, #764ba2 0%, #667eea 100%)",
+                      },
+                    }}
+                  >
+                    <CameraAltIcon fontSize="small" />
+                  </IconButton>
+                </label>
+              </Box>
+              <Typography variant="h5" fontWeight="bold" sx={{ mb: 0.5 }}>
+                {user.fullName || user.userName}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                @{user.userName}
+              </Typography>
             </Box>
 
-            {/* ==== THÔNG TIN ==== */}
-            <Box display="flex" flexDirection="column" justifyContent="center">
-              <Grid container spacing={2}>
+            <Box sx={{ flex: 1, width: "100%" }}>
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={2}
+              >
+                <Typography variant="h4" fontWeight="bold">
+                  Thông tin cá nhân
+                </Typography>
+                {!editing && (
+                  <Button
+                    variant="contained"
+                    startIcon={<EditIcon />}
+                    sx={{
+                      background:
+                        "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                      textTransform: "none",
+                      fontWeight: "bold",
+                      borderRadius: 2.5,
+                      px: 3,
+                      boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)",
+                      "&:hover": {
+                        background:
+                          "linear-gradient(135deg, #764ba2 0%, #667eea 100%)",
+                      },
+                    }}
+                    onClick={() => setEditing(true)}
+                  >
+                    Chỉnh sửa
+                  </Button>
+                )}
+              </Box>
+
+              {/* Add a decorative divider */}
+              <Divider sx={{ mb: 2, borderColor: "#cbd5e1" }} />
+
+              {/* Grid 2 cột × 2 hàng */}
+              <Grid container spacing={1.5}>
                 {/* Cột trái: Username + Email */}
-                <Grid item xs={12} sm={6} display="flex" flexDirection="column" gap={2}>
-                  <TextField
-                    label="Tên đăng nhập"
-                    value={user.userName}
-                    fullWidth
-                    disabled
-                  />
-                  <TextField label="Email" value={user.email} fullWidth disabled />
+                <Grid item xs={12} sm={6}>
+                  <Box display="flex" flexDirection="column" gap={2}>
+                    <TextField
+                      label="Tên đăng nhập"
+                      value={user.userName}
+                      fullWidth
+                      disabled
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: 2,
+                          backgroundColor: "#f8fafc",
+                          minWidth: 420,
+                        },
+                      }}
+                    />
+                    <TextField
+                      label="Họ và tên"
+                      value={user.fullName || ""}
+                      onChange={(e) =>
+                        setUser({ ...user, fullName: e.target.value })
+                      }
+                      fullWidth
+                      disabled={!editing}
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: 2,
+                          backgroundColor: editing ? "white" : "#f8fafc",
+                          minWidth: 420
+                        },
+                      }}
+                    />
+                  </Box>
                 </Grid>
 
                 {/* Cột phải: Họ và tên + Mật khẩu */}
-                <Grid item xs={12} sm={6} display="flex" flexDirection="column" gap={2}>
-                  <TextField
-                    label="Họ và tên"
-                    value={user.fullName}
-                    onChange={(e) =>
-                      setUser({ ...user, fullName: e.target.value })
-                    }
-                    fullWidth
-                    disabled={!editing}
-                  />
-                  <TextField
-                    label="Mật khẩu mới"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    fullWidth
-                    disabled={!editing}
-                  />
+                <Grid item xs={12} sm={6}>
+                  <Box display="flex" flexDirection="column" gap={2}>
+                    <TextField
+                      label="Email"
+                      value={user.email}
+                      fullWidth
+                      disabled
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: 2,
+                          backgroundColor: "#f8fafc",
+                          minWidth: 420,
+                        },
+                      }}
+                    />
 
-                  {/* NÚT CHỈNH SỬA / LƯU / HỦY CĂN THEO CỘT MẬT KHẨU */}
-                  <Box display="flex" gap={2} mt={2} justifyContent="flex-end" flexWrap="wrap">
-                    {editing ? (
-                      <>
-                        <Button
-                          variant="contained"
-                          sx={{
-                            textTransform: "none",
-                            fontWeight: "bold",
-                            backgroundColor: "#4038d2ff",
-                            "&:hover": { backgroundColor: "#6C63FF" },
-                            minWidth: 140,
-                          }}
-                          onClick={handleSave}
-                        >
-                          Lưu thay đổi
-                        </Button>
-                        <Button
-                          variant="outlined"
-                          sx={{
-                            textTransform: "none",
-                            borderColor: "#aaa",
-                            color: "#555",
-                            minWidth: 100,
-                          }}
-                          onClick={() => setEditing(false)}
-                        >
-                          Hủy
-                        </Button>
-                        {confirmMessage && (
-                          <Alert sx={{ mt: 1, width: "100%" }} severity="success">
-                            {confirmMessage}
-                          </Alert>
-                        )}
-                      </>
-                    ) : (
-                      <Button
-                        variant="contained"
-                        sx={{
-                          textTransform: "none",
-                          fontWeight: "bold",
-                          backgroundColor: "#4038d2ff",
-                          minWidth: 180,
-                          "&:hover": { backgroundColor: "#6C63FF" },
-                        }}
-                        onClick={() => setEditing(true)}
-                      >
-                        Chỉnh sửa thông tin
-                      </Button>
-                    )}
+                    <TextField
+                      label="Mật khẩu mới"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      fullWidth
+                      disabled={!editing}
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: 2,
+                          backgroundColor: editing ? "white" : "#f8fafc",
+                          minWidth: 420
+                        },
+                      }}
+                    />
                   </Box>
                 </Grid>
               </Grid>
+
+              {editing && (
+                <Box display="flex" gap={2} mt={3} justifyContent="flex-end">
+                  <Button
+                    variant="outlined"
+                    startIcon={<CloseIcon />}
+                    sx={{
+                      textTransform: "none",
+                      borderColor: "#cbd5e1",
+                      color: "#64748b",
+                      borderRadius: 2.5,
+                      px: 3,
+                      "&:hover": {
+                        borderColor: "#94a3b8",
+                        backgroundColor: "#f8fafc",
+                      },
+                    }}
+                    onClick={() => setEditing(false)}
+                  >
+                    Hủy
+                  </Button>
+                  <Button
+                    variant="contained"
+                    startIcon={<SaveIcon />}
+                    sx={{
+                      background:
+                        "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                      textTransform: "none",
+                      fontWeight: "bold",
+                      borderRadius: 2.5,
+                      px: 3,
+                      boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)",
+                      "&:hover": {
+                        background:
+                          "linear-gradient(135deg, #764ba2 0%, #667eea 100%)",
+                      },
+                    }}
+                    onClick={handleSave}
+                  >
+                    Lưu thay đổi
+                  </Button>
+                </Box>
+              )}
+
+              {confirmMessage && (
+                <Alert
+                  severity="success"
+                  sx={{
+                    mt: 2,
+                    borderRadius: 2,
+                    boxShadow: "0 4px 12px rgba(34, 197, 94, 0.2)",
+                  }}
+                >
+                  {confirmMessage}
+                </Alert>
+              )}
             </Box>
           </Box>
         </Paper>
 
-        {/* ====================================================== */}
         {/* ===============     CONTAINER 2     ================== */}
-        {/* ====================================================== */}
-
-        <Paper sx={{ p: 4, borderRadius: 3 }}>
+        <Paper
+          sx={{
+            p: 4,
+            borderRadius: 4,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
+            border: "1px solid rgba(255,255,255,0.8)",
+          }}
+        >
           <Typography variant="h5" fontWeight="bold" mb={3}>
             Hồ sơ học tập
           </Typography>
 
-          {/* Hàng 1 – Lịch sử + Theo dõi */}
-          <Box display="flex" gap={2} mb={3}>
-            <Button
-              fullWidth
-              variant="contained"
-              sx={{
-                textTransform: "none",
-                fontWeight: "bold",
-                backgroundColor: "#4038d2ff",
-                "&:hover": { backgroundColor: "#6C63FF" },
-              }}
-              onClick={() => navigate("/history")}
-            >
-              Lịch sử
-            </Button>
+          {/* Hàng 1 – Lịch sử + Theo dõi + Kết quả kiểm tra */}
+          <Grid container spacing={2} mb={3} justifyContent={"center"}>
+            <Grid item xs={12} sm={4}>
+              <Button
+                fullWidth
+                variant="contained"
+                startIcon={<HistoryIcon />}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: "bold",
+                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                  borderRadius: 2.5,
+                  py: 1.5,
+                  boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)",
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    background: "linear-gradient(135deg, #764ba2 0%, #667eea 100%)",
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 6px 16px rgba(102, 126, 234, 0.4)",
+                  },
+                }}
+                onClick={() => navigate("/history")}
+              >
+                Lịch sử học tập
+              </Button>
+            </Grid>
 
-            <Button
-              fullWidth
-              variant="contained"
-              sx={{
-                textTransform: "none",
-                fontWeight: "bold",
-                backgroundColor: "#4038d2ff",
-                "&:hover": { backgroundColor: "#6C63FF" },
-              }}
-              onClick={() => navigate("/following")}
-            >
-              Theo dõi
-            </Button>
-          </Box>
+            <Grid item xs={12} sm={4}>
+              <Button
+                fullWidth
+                variant="contained"
+                startIcon={<FavoriteIcon />}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: "bold",
+                  background: "linear-gradient(135deg, #1e3e87ff 0%, #f5576c 100%)",
+                  borderRadius: 2.5,
+                  py: 1.5,
+                  boxShadow: "0 4px 12px rgba(240, 147, 251, 0.3)",
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    background: "linear-gradient(135deg, #f5576c 0%, #1e3e87ff 100%)",
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 6px 16px rgba(240, 147, 251, 0.4)",
+                  },
+                }}
+                onClick={() => navigate("/following")}
+              >
+                Khóa học theo dõi
+              </Button>
+            </Grid>
+
+            <Grid item xs={12} sm={4}>
+              <Button
+                fullWidth
+                variant="contained"
+                startIcon={<AssignmentTurnedInIcon />}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: "bold",
+                  background: "linear-gradient(135deg, #187035ff 0%, #206b93ff 100%)",
+                  borderRadius: 2.5,
+                  py: 1.5,
+                  boxShadow: "0 4px 12px rgba(67, 233, 123, 0.3)",
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    background: "linear-gradient(135deg, #206b93ff 0%, #187035ff 100%)",
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 6px 16px rgba(67, 233, 123, 0.4)",
+                  },
+                }}
+                onClick={() => navigate("/test-results")}
+              >
+                Kết quả kiểm tra
+              </Button>
+            </Grid>
+          </Grid>
+
+          <Divider sx={{ my: 3 }} />
 
           {/* Hàng 2 – Mục tiêu học tập */}
-          <Box display="flex" gap={2} mb={3}>
-            <Button
-              variant="contained"
-              sx={{
-                width: 200,
-                textTransform: "none",
-                fontWeight: "bold",
-                backgroundColor: "#4038d2ff",
-                "&:hover": { backgroundColor: "#6C63FF" },
-              }}
-              onClick={() =>
-                editingGoal ? handleSaveGoal() : setEditingGoal(true)
-              }
-            >
-              {editingGoal ? "Lưu" : "Mục tiêu học tập"}
-            </Button>
+          <Box mb={3}>
+            <Box display="flex" alignItems="center" gap={1} mb={2}>
+              <EmojiEventsIcon sx={{ color: "#f59e0b", fontSize: 28 }} />
+              <Typography variant="h5" fontWeight="bold">
+                Mục tiêu học tập
+              </Typography>
+            </Box>
 
-            <TextField
-              fullWidth
-              label="Nhập mục tiêu của bạn"
-              value={learningGoal}
-              onChange={(e) => setLearningGoal(e.target.value)}
-              disabled={!editingGoal}
-            />
+            <Box display="flex" gap={2} flexDirection={{ xs: "column", sm: "row" }}>
+              <TextField
+                fullWidth
+                placeholder="Nhập mục tiêu của bạn (VD: Trở thành Data Scientist trong 6 tháng)"
+                value={learningGoal}
+                onChange={(e) => setLearningGoal(e.target.value)}
+                disabled={!editingGoal}
+                multiline
+                rows={1}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2.5,
+                    backgroundColor: editingGoal ? "white" : "#f8fafc",
+                  },
+                }}
+              />
+              <Button
+                variant="contained"
+                startIcon={editingGoal ? <SaveIcon /> : <EditIcon />}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: "bold",
+                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                  borderRadius: 2.5,
+                  px: 2,
+                  minWidth: { xs: "100%", sm: 180 },
+                  boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)",
+                  "&:hover": {
+                    background: "linear-gradient(135deg, #764ba2 0%, #667eea 100%)",
+                  },
+                }}
+                onClick={() =>
+                  editingGoal ? handleSaveGoal() : setEditingGoal(true)
+                }
+              >
+                {editingGoal ? "Lưu" : "Chỉnh sửa"}
+              </Button>
+            </Box>
           </Box>
 
+          <Divider sx={{ my: 3 }} />
+
           {/* Hàng 3 – Feedback AI */}
-          <TextField
-            fullWidth
-            label="Gợi ý từ AI. Các khóa học được đề xuất sẽ hiển thị ở đầu trang chủ."
-            multiline
-            minRows={6}
-            value={aiFeedback}
-            disabled
-            sx={{ backgroundColor: "#fafafa" }}
-          />
+          <Box>
+            <Box display="flex" alignItems="center" gap={1} mb={2}>
+              <AutoAwesomeIcon
+                sx={{
+                  color: "#8b5cf6",
+                  fontSize: 28,
+                  animation: "pulse 2s infinite",
+                  "@keyframes pulse": {
+                    "0%, 100%": { opacity: 1 },
+                    "50%": { opacity: 0.5 },
+                  },
+                }}
+              />
+              <Typography variant="h5" fontWeight="bold">
+                Gợi ý từ AI
+              </Typography>
+            </Box>
+
+            <Paper
+              sx={{
+                p: 3,
+                borderRadius: 2.5,
+                background: "linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)",
+                border: "2px solid #bae6fd",
+              }}
+            >
+              <Typography
+                variant="body1"
+                sx={{
+                  color: "#0c4a6e",
+                  lineHeight: 1.8,
+                  fontStyle: "italic",
+                }}
+              >
+                {aiFeedback}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  display: "block",
+                  mt: 2,
+                  color: "#64748b",
+                }}
+              >
+                💡 Các khóa học được đề xuất sẽ hiển thị ở đầu trang chủ
+              </Typography>
+            </Paper>
+          </Box>
         </Paper>
       </Container>
 
