@@ -65,7 +65,7 @@ export default function CourseDetailPage() {
         <StarIcon
           key={i}
           sx={{
-            color: i < fullStars ? "#FFB800" : "#444",
+            color: i < fullStars ? "#FFB800" : "#dcdadaff",
             fontSize: 22,
             filter: i < fullStars ? "drop-shadow(0 0 2px rgba(255,184,0,0.5))" : "none",
           }}
