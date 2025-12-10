@@ -29,7 +29,7 @@ export default function ManageUser() {
   const [openDialog, setOpenDialog] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  // ✅ Lấy thông tin người đăng nhập hiện tại
+  // Lấy thông tin người đăng nhập hiện tại
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
 
   useEffect(() => {
@@ -78,7 +78,7 @@ export default function ManageUser() {
       )
     );
 
-    // ✅ Nếu sửa chính mình thì cập nhật vào localStorage
+    // Nếu sửa chính mình thì cập nhật vào localStorage
     if (currentUser && currentUser.userId === selectedAccount.userId) {
       localStorage.setItem("currentUser", JSON.stringify(selectedAccount));
     }
@@ -87,7 +87,7 @@ export default function ManageUser() {
     setOpenDialog(false);
   };
 
-  // ✅ Cấu hình cột
+  // Cấu hình cột
   const columns = [
     {
       field: "avatar",

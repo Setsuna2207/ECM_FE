@@ -31,7 +31,7 @@ export default function AppRouter() {
   return (
     <Router>
       <Routes>
-        {/* 🏠 Trang khách & người dùng */}
+        {/* Trang khách & người dùng */}
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
@@ -47,7 +47,7 @@ export default function AppRouter() {
         <Route path="/test/:testId" element={<TestDetailPage/>} />
 
 
-        {/* 🧱 Khu vực quản trị — dùng Dashboard làm layout cha */}
+        {/* Trang quản trị */}
         <Route path="/admin" element={<Dashboard />}>
           <Route index element={<ManageProfile />} />
           <Route path="reviews" element={<ManageReviews />} />

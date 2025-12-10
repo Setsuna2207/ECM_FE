@@ -27,8 +27,8 @@ export default function TestCard({ test }) {
   return (
     <Card
       sx={{
-        width: 350, // Fixed width
-        height: 350, // Fixed height (square)
+        width: 350, 
+        height: 350,
         borderRadius: 3,
         boxShadow: 3,
         display: "flex",
@@ -43,7 +43,7 @@ export default function TestCard({ test }) {
       {/* Header / Icon */}
       <Box
         sx={{
-          flex: "0 0 35%", // 35% height for header
+          flex: "0 0 35%", 
           background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
           display: "flex",
           alignItems: "center",

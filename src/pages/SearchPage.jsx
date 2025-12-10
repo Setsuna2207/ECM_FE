@@ -43,7 +43,7 @@ export default function SearchPage() {
 
   // --- Phân trang ---
   const [page, setPage] = useState(1);
-  const coursesPerPage = 10; // 🔹 2 khóa học mỗi hàng (mỗi hàng 2 -> 2 hàng / trang)
+  const coursesPerPage = 10;
 
   const open = Boolean(anchorEl);
   const handleClick = (event) => setAnchorEl(event.currentTarget);
@@ -85,7 +85,7 @@ export default function SearchPage() {
     setAnchorEl(null);
   };
 
-  // ✅ Bổ sung dữ liệu phụ: số bài học + điểm đánh giá
+  // Số bài giảng + điểm đánh giá
   const coursesWithStats = useMemo(() => {
     return mockCourses.map((course) => {
       const lessonCount = mockLessons.filter(
@@ -105,7 +105,7 @@ export default function SearchPage() {
     });
   }, []);
 
-  // ✅ Lọc theo từ khóa tìm kiếm
+  // Lọc theo từ khóa tìm kiếm
   const filteredCourses = useMemo(() => {
     const filtered = coursesWithStats.filter(
       (c) =>
@@ -128,7 +128,7 @@ export default function SearchPage() {
     });
   }, [coursesWithStats, query, appliedFilters]);
 
-  // ✅ Phân trang
+  //Phân trang
   const pageCount = Math.ceil(filteredCourses.length / coursesPerPage);
   const paginatedCourses = filteredCourses.slice(
     (page - 1) * coursesPerPage,

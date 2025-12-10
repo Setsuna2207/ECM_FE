@@ -2,7 +2,7 @@ import { Grid, Container, Typography, Button, Box } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import CourseCard from "../components/CourseCard";
 import { mockCourses } from "../data/mockCourse";
-import { mockReviews } from "../data/mockReview"; // ✅ import review
+import { mockReviews } from "../data/mockReview";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 

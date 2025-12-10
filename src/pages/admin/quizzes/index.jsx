@@ -217,7 +217,6 @@ export default function ManageQuiz() {
     setOpenDialog(true);
   };
 
-  /* ✔ EDIT: MỞ THẲNG EDIT INFO (KHÔNG HIỆN LỰA CHỌN NỮA) */
   const handleEdit = (row) => {
     setSelectedQuiz({ ...row });
 

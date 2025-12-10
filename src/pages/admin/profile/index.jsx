@@ -29,7 +29,7 @@ export default function ManageProfile() {
     });
     const [avatarPreview, setAvatarPreview] = useState("");
 
-    // ✅ Lấy thông tin người dùng hiện tại từ localStorage
+    // Lấy thông tin người dùng hiện tại từ localStorage
     useEffect(() => {
         const currentUser = JSON.parse(localStorage.getItem("currentUser"));
         if (currentUser) {
@@ -73,16 +73,14 @@ export default function ManageProfile() {
             p={3}
             sx={{
                 overflow: "hidden",
-                minHeight: "calc(100vh - 120px)", // trừ chiều cao navbar nếu có
+                minHeight: "calc(100vh - 120px)",
             }}
         >
 
-            {/* 🔹 Tiêu đề */}
+            {/* Heading */}
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Header title="Hồ sơ quản trị viên" subtitle="Thông tin tài khoản quản trị" />
             </Box>
-
-            {/* 🔹 Nội dung hồ sơ */}
             <Box
                 display="flex"
                 alignItems="flex-start"
@@ -90,7 +88,6 @@ export default function ManageProfile() {
                 gap={6}
                 mt={4}
             >
-                {/* Avatar bên trái */}
                 <Box display="flex" flexDirection="column" alignItems="center" gap={1}>
                     <Avatar
                         src={avatarPreview}
@@ -112,8 +109,6 @@ export default function ManageProfile() {
                         <input type="file" accept="image/*" hidden onChange={handleAvatarUpload} />
                     </Button>
                 </Box>
-
-                {/* Form bên phải */}
                 <Box
                     display="flex"
                     flexDirection="column"

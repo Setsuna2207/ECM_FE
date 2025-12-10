@@ -231,7 +231,7 @@ export default function ProfilePage() {
 
               {/* Grid 2 cột × 2 hàng */}
               <Grid container spacing={1.5}>
-                {/* Cột trái: Username + Email */}
+                {/* Username + Email */}
                 <Grid item xs={12} sm={6}>
                   <Box display="flex" flexDirection="column" gap={2}>
                     <TextField
@@ -266,7 +266,7 @@ export default function ProfilePage() {
                   </Box>
                 </Grid>
 
-                {/* Cột phải: Họ và tên + Mật khẩu */}
+                {/* Họ và tên + Mật khẩu */}
                 <Grid item xs={12} sm={6}>
                   <Box display="flex" flexDirection="column" gap={2}>
                     <TextField
@@ -374,7 +374,7 @@ export default function ProfilePage() {
             Hồ sơ học tập
           </Typography>
 
-          {/* Hàng 1 – Lịch sử + Theo dõi + Kết quả kiểm tra */}
+          {/* Lịch sử + Theo dõi + Kết quả kiểm tra */}
           <Grid container spacing={2} mb={3} justifyContent={"center"}>
             <Grid item xs={12} sm={4}>
               <Button
@@ -454,7 +454,7 @@ export default function ProfilePage() {
 
           <Divider sx={{ my: 3 }} />
 
-          {/* Hàng 2 – Mục tiêu học tập */}
+          {/* Mục tiêu học tập */}
           <Box mb={3}>
             <Box display="flex" alignItems="center" gap={1} mb={2}>
               <EmojiEventsIcon sx={{ color: "#f59e0b", fontSize: 28 }} />
@@ -505,7 +505,7 @@ export default function ProfilePage() {
 
           <Divider sx={{ my: 3 }} />
 
-          {/* Hàng 3 – Feedback AI */}
+          {/* Feedback AI */}
           <Box>
             <Box display="flex" alignItems="center" gap={1} mb={2}>
               <AutoAwesomeIcon

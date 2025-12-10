@@ -29,7 +29,7 @@ export default function ManageCategory() {
   const [editMode, setEditMode] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState({ name: "", description: "" });
 
-  // ✅ Khởi tạo dữ liệu mẫu
+  // Dữ liệu mẫu
   useEffect(() => {
     setCategories([
       // LEVEL
@@ -47,28 +47,24 @@ export default function ManageCategory() {
     ]);
   }, []);
   
-  // 🟢 Thêm danh mục
   const handleAdd = () => {
     setSelectedCategory({ name: "", description: "" });
     setEditMode(false);
     setOpenDialog(true);
   };
 
-  // 🟠 Sửa danh mục
   const handleEdit = (category) => {
     setSelectedCategory(category);
     setEditMode(true);
     setOpenDialog(true);
   };
 
-  // 🔴 Xóa danh mục
   const handleDelete = (category) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa danh mục này?")) {
       setCategories((prev) => prev.filter((c) => c.id !== category.id));
     }
   };
 
-  // 💾 Lưu (thêm hoặc cập nhật)
   const handleSave = () => {
     if (!selectedCategory.name || !selectedCategory.description) {
       alert("Vui lòng nhập đầy đủ thông tin!");
@@ -87,7 +83,7 @@ export default function ManageCategory() {
     setOpenDialog(false);
   };
 
-  // 🧱 Cột DataGrid
+  // Cột DataGrid
   const columns = [
     { field: "id", headerName: "ID", flex: 0.3, align: "center", headerAlign: "center" },
     { field: "name", headerName: "Tên danh mục", flex: 1, align: "center", headerAlign: "center" },

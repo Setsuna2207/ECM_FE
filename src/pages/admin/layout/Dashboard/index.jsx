@@ -18,7 +18,7 @@ export default function Dashboard() {
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh", backgroundColor: "#f5f6fa" }}>
-      {/* 🔹 Sidebar (cố định hoặc Drawer) */}
+      {/* Sidebar */}
       {isSmallScreen ? (
         <Drawer
           variant="temporary"
@@ -49,11 +49,11 @@ export default function Dashboard() {
         </Box>
       )}
 
-      {/* 🔹 Nội dung bên phải */}
+      {/* Nội dung bên phải */}
       <Box
         sx={{
           flexGrow: 1,
-          ml: isSmallScreen ? 0 : `${drawerWidth}px`, // ✅ dùng giá trị chung
+          ml: isSmallScreen ? 0 : `${drawerWidth}px`,
           display: "flex",
           flexDirection: "column",
           width: "100%",

@@ -20,9 +20,9 @@ export default function CourseReview({ courseId }) {
   const [newRating, setNewRating] = useState(0);
   const [newContent, setNewContent] = useState("");
 
-  // ====== GIẢ LẬP USER LOGIN ======
+  //  GIẢ LẬP USER LOGIN 
   const [currentUserId] = useState(1);
-  const [currentUserRole] = useState("admin"); // "user" hoặc "admin"
+  const [currentUserRole] = useState("admin");
 
   const [isEditing, setIsEditing] = useState(false);
   const [editingReview, setEditingReview] = useState(null);
@@ -178,7 +178,7 @@ export default function CourseReview({ courseId }) {
               {/* Dòng đầu tiên */}
               <Box display="flex" justifyContent="space-between">
                 <Box display="flex" alignItems="center" gap={2}>
-                  {/* 🟣 AVATAR */}
+                  {/* AVATAR */}
                   <Avatar
                     src={
                       r.avatar ||

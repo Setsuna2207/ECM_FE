@@ -43,7 +43,7 @@ const ManageReviews = () => {
     setReviews(reviewsWithCourseTitle);
   }, []);
 
-  // Xử lý xóa review
+  // Xóa review
   const handleDeleteSelected = (row) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa đánh giá này không?")) {
       setReviews((prev) => prev.filter((r) => r.reviewId !== row.reviewId));
@@ -56,7 +56,6 @@ const ManageReviews = () => {
     ? reviews.filter((r) => r.courseId === filterCourse.courseId)
     : reviews;
 
-  // Cấu hình các cột
   const columns = [
     { field: "reviewId", headerName: "ID", flex: 0.3, align: "center", headerAlign: "center" },
     { field: "courseTitle", headerName: "Khóa học", flex: 1.2, headerAlign: "center" },
@@ -104,7 +103,7 @@ const ManageReviews = () => {
         <Header title="Quản lý đánh giá" subtitle="Danh sách đánh giá khóa học" />
       </Box>
 
-      {/* Filter khóa học */}
+      {/* Filter */}
       <Box mb={2} width="300px">
         <Autocomplete
           options={mockCourses}

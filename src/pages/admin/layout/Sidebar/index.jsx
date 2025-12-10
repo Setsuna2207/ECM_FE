@@ -45,9 +45,9 @@ const menuItems = [
 export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [currentUser, setCurrentUser] = useState(null); // 🔹 Thêm state người dùng
+  const [currentUser, setCurrentUser] = useState(null);
 
-  // 🔹 Lấy thông tin user đăng nhập từ localStorage
+  // Lấy thông tin user đăng nhập từ localStorage
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("currentUser"));
     if (user) setCurrentUser(user);
@@ -64,7 +64,7 @@ export default function Sidebar() {
         "& .MuiDrawer-paper": { width: drawerWidth, overflowX: "hidden" },
       }}
     >
-      {/* 🔹 Tiêu đề Sidebar */}
+      {/* Tiêu đề Sidebar */}
       <Box sx={{ px: 2, py: 3 }}>
         <Typography
           variant="h5"
@@ -76,7 +76,7 @@ export default function Sidebar() {
         </Typography>
       </Box>
 
-      {/* 🔹 Avatar + Tên người dùng */}
+      {/* Avatar + Tên người dùng */}
       <Box
         sx={{
           display: "flex",
@@ -113,7 +113,7 @@ export default function Sidebar() {
         </Typography>
       </Box>
 
-      {/* 🔹 Danh sách menu */}
+      {/* Danh sách menu */}
       <List>
         {menuItems.map((item) => (
           <ListItem key={item.text} disablePadding>

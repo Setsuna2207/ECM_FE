@@ -27,7 +27,7 @@ export default function CoursePage() {
   const { category } = useParams();
   const normalized = category?.toUpperCase();
 
-  // --- Bộ lọc ---
+  // Bộ lọc
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedFilters, setSelectedFilters] = useState({
     rating: true,
@@ -42,7 +42,7 @@ export default function CoursePage() {
     desc: true,
   });
 
-  // --- Phân trang ---
+  //  Phân trang 
   const [page, setPage] = useState(1);
   const coursesPerPage = 6;
 
@@ -86,7 +86,7 @@ export default function CoursePage() {
     setAnchorEl(null);
   };
 
-  // --- Dữ liệu phụ: số bài và rating ---
+  //  Số bài giảng + đánh giá 
   const coursesWithStats = useMemo(() => {
     return mockCourses.map((course) => {
       const lessonCount = mockLessons.filter(
@@ -106,7 +106,7 @@ export default function CoursePage() {
     });
   }, []);
 
-  // --- Lọc và sắp xếp ---
+  //  Lọc và sắp xếp 
   const filteredCourses = useMemo(() => {
     const filtered = coursesWithStats.filter((c) =>
       c.categories?.some((cat) => cat.name.toUpperCase() === normalized)
@@ -124,7 +124,7 @@ export default function CoursePage() {
     });
   }, [coursesWithStats, normalized, appliedFilters]);
 
-  // --- Phân trang ---
+  // Phân trang 
   const pageCount = Math.ceil(filteredCourses.length / coursesPerPage);
   const paginatedCourses = filteredCourses.slice(
     (page - 1) * coursesPerPage,
@@ -303,10 +303,10 @@ export default function CoursePage() {
               ))}
             </Grid>
 
-            {/* Pagination - luôn hiển thị tối thiểu 1 */}
+            {/* Pagination */}
             <Stack alignItems="center" mt={4}>
               <Pagination
-                count={pageCount || 1} // hiển thị tối thiểu 1
+                count={pageCount || 1} 
                 page={page}
                 onChange={handlePageChange}
                 color="primary"

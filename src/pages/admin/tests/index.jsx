@@ -436,12 +436,12 @@ export default function ManageTest() {
         <DataGrid rows={filteredTests} columns={columns} getRowId={row => row.id} slots={{ toolbar: GridToolbar }} initialState={{ pagination: { paginationModel: { pageSize: 10 } } }} pageSizeOptions={[5, 10, 25, 50]} />
       </Box>
 
-      {/* Add/Edit Dialog - keeping existing code */}
+      {/* Add/Edit Dialog */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} fullWidth maxWidth="sm">
         {/* ... existing dialog code ... */}
       </Dialog>
 
-      {/* Preview Dialog with improved UI */}
+      {/* Preview Dialog */}
       <Dialog open={openPreview} onClose={() => setOpenPreview(false)} fullWidth maxWidth="lg" PaperProps={{ sx: { height: '90vh' } }}>
         <DialogTitle>
           <Box display="flex" justifyContent="space-between" alignItems="center">

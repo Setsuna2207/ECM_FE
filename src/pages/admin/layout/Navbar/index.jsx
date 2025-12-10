@@ -18,16 +18,16 @@ export default function Navbar() {
   return (
     <Box
       sx={{
-        flex: 1, // ✅ chiếm đúng vùng bố cục, không ép width 100%
+        flex: 1,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        backgroundColor: "transparent", // ✅ dùng màu của vùng chứa
+        backgroundColor: "transparent",
         height: "64px",
         px: 3,
       }}
     >
-      {/* 🔹 Logo */}
+      {/* Logo */}
       <Box
         display="flex"
         alignItems="center"
@@ -42,7 +42,7 @@ export default function Navbar() {
         />
       </Box>
 
-      {/* 🔸 Tiêu đề */}
+      {/* Tiêu đề */}
       <Typography
         variant="h6"
         fontWeight="bold"
@@ -56,7 +56,6 @@ export default function Navbar() {
         {isAdminPage ? "QUẢN LÝ HỆ THỐNG" : ""}
       </Typography>
 
-      {/* 🔹 Nút bên phải */}
       <Box display="flex" alignItems="center" gap={2}>
         <Button
           startIcon={isAdminPage ? <HomeIcon /> : <SettingsIcon />}

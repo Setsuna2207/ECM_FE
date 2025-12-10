@@ -56,7 +56,7 @@ export default function CourseDetailPage() {
       ? courseReviews.reduce((acc, r) => acc + r.ratingScore, 0) / courseReviews.length
       : 0;
 
-  // ⭐ Hiển thị sao
+  // Hiển thị rating
   const renderStars = (rating) => {
     const stars = [];
     const fullStars = Math.floor(rating);
@@ -75,7 +75,7 @@ export default function CourseDetailPage() {
     return stars;
   };
 
-  // 🔹 Lấy level và skill từ categories
+  // Lấy level và skill từ categories
   const levelCategory = course.categories?.find(
     (cat) => cat.description === "LEVEL"
   );
@@ -95,7 +95,7 @@ export default function CourseDetailPage() {
     return colors[Math.floor(Math.random() * colors.length)];
   };
 
-  // 🧩 Hàm kiểm tra đăng nhập
+  // Hàm kiểm tra đăng nhập
   const checkLoginAndNavigate = (lessonId) => {
     const user = JSON.parse(localStorage.getItem("currentUser"));
     if (!user) {
@@ -105,7 +105,7 @@ export default function CourseDetailPage() {
     navigate(`/course/${course.courseId}/lesson/${lessonId}`);
   };
 
-  // 🟣 Kiểm tra đã theo dõi / đã tham gia
+  // Kiểm tra đã theo dõi / đã tham gia
   useEffect(() => {
     const followed =
       JSON.parse(localStorage.getItem("followedCourses")) || [];
@@ -145,7 +145,7 @@ export default function CourseDetailPage() {
               gap: 4,
             }}
           >
-            {/* Cột trái: thông tin khóa học */}
+            {/* Thông tin khóa học */}
             <Box sx={{ flex: "1 1 55%", minWidth: 320, maxWidth: 650 }}>
               <Typography
                 variant="h4"
@@ -213,7 +213,7 @@ export default function CourseDetailPage() {
               </Box>
 
               <Box display="flex" gap={2} mt={3}>
-                {/* 🟢 Nút Tham gia khóa học */}
+                {/* Nút Tham gia */}
                 <Button
                   variant="contained"
                   startIcon={<PlayCircleOutlineIcon />}
@@ -265,7 +265,7 @@ export default function CourseDetailPage() {
                   Tham gia khóa học
                 </Button>
 
-                {/* 🟣 Nút Theo dõi khóa học */}
+                {/* Nút Theo dõi */}
                 <Button
                   variant="outlined"
                   startIcon={isFollowed ? <FavoriteIcon /> : <FavoriteBorderIcon />}
@@ -331,7 +331,7 @@ export default function CourseDetailPage() {
               </Box>
             </Box>
 
-            {/* Cột phải: thumbnail */}
+            {/* Thumbnail */}
             <Box
               sx={{
                 flex: "1 1 40%",
@@ -362,7 +362,7 @@ export default function CourseDetailPage() {
         </Container>
       </Box>
 
-      {/* 🔽 Nội dung khóa học + đánh giá */}
+      {/* Nội dung khóa học + đánh giá */}
       <Container sx={{ mt: 6, mb: 8 }}>
         <Typography
           variant="h5"
@@ -552,7 +552,7 @@ export default function CourseDetailPage() {
           ))}
         </Box>
 
-        {/* ✅ Phần đánh giá */}
+        {/* Phần đánh giá */}
         <Box mt={8}>
           <CourseReview courseId={course.courseId} />
         </Box>

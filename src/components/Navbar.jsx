@@ -107,15 +107,15 @@ export default function Navbar() {
         boxShadow: "0 4px 20px rgba(64, 56, 210, 0.08)",
       }}
     >
-      <Toolbar sx={{ justifyContent: "space-between", py: 0.5 /* Reduce padding */ }}>
-        {/* 🔹 Logo + Khám phá */}
-        <Box display="flex" alignItems="center" gap={2 /* Adjust gap */}>
+      <Toolbar sx={{ justifyContent: "space-between", py: 0.5 }}>
+        {/* Logo + Khám phá */}
+        <Box display="flex" alignItems="center" gap={2}>
           <Box
             component="img"
             src="/src/assets/ECM.png"
             alt="ECM Logo"
             sx={{
-              height: 45 /* Reduce logo height */,
+              height: 45,
               cursor: "pointer",
               transition: "transform 0.3s ease",
               "&:hover": {
@@ -304,7 +304,7 @@ export default function Navbar() {
           </Popover>
         </Box>
 
-        {/* 🔹 Ô tìm kiếm */}
+        {/* Ô tìm kiếm */}
         <Box display="flex" alignItems="center" gap={1}>
           <form
             onSubmit={(e) => {
@@ -333,7 +333,7 @@ export default function Navbar() {
                 ),
               }}
               sx={{
-                width: 350 /* Reduce width */,
+                width: 350,
                 backgroundColor: "white",
                 borderRadius: 3,
                 transition: "all 0.3s",
@@ -356,8 +356,8 @@ export default function Navbar() {
           </form>
         </Box>
 
-        {/* 🔹 Nút hành động bên phải */}
-        <Box display="flex" alignItems="center" gap={1 /* Adjust gap */}>
+        {/* Nút hành động bên phải */}
+        <Box display="flex" alignItems="center" gap={1}>
           {!currentUser ? (
             <>
               <Button
@@ -370,8 +370,8 @@ export default function Navbar() {
                   borderWidth: 2,
                   textTransform: "none",
                   fontWeight: 700,
-                  px: 2 /* Adjust padding */,
-                  py: 0.5 /* Adjust padding */,
+                  px: 2,
+                  py: 0.5,
                   transition: "all 0.3s",
                   "&:hover": {
                     backgroundColor: "#f3f1ff",
@@ -392,8 +392,8 @@ export default function Navbar() {
                   borderRadius: 3,
                   textTransform: "none",
                   fontWeight: 700,
-                  px: 2 /* Adjust padding */,
-                  py: 0.5 /* Adjust padding */,
+                  px: 2,
+                  py: 0.5,
                   boxShadow: "0 4px 12px rgba(64, 56, 210, 0.3)",
                   transition: "all 0.3s",
                   "&:hover": {
