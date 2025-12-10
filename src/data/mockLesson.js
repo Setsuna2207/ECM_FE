@@ -4,7 +4,7 @@ export const mockLessons = [
     lessonId: 1,
     courseId: 1,
     title: "Introduction to TOEIC Listening",
-    videoUrl: "https://www.youtube.com/embed/5MgBikgcWnY",
+    videoUrl: "https://www.youtube.com/embed/v=1h_K0sUTAoc",
     documentUrls: [
       "https://example.com/docs/toeic_listening_intro.pdf",
       "https://example.com/docs/toeic_notes.docx",
