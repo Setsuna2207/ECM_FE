@@ -11,7 +11,7 @@ export default function TestPage() {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [page, setPage] = useState(1);
 
-  const testsPerPage = 15; // max 3 x 5 = 15 cards per page
+  const testsPerPage = 15;
 
   const filteredTests = useMemo(() => {
     if (!selectedCategory) return [];
