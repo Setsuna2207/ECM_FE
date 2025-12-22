@@ -16,12 +16,12 @@ import {
   Pagination,
   Stack,
 } from "@mui/material";
-import CourseCard from "../components/CourseCard";
-import { mockCourses } from "../data/mockCourse";
-import { mockLessons } from "../data/mockLesson";
-import { mockReviews } from "../data/mockReview";
-import Footer from "../components/Footer";
-import Navbar from "../components/Navbar";
+import CourseCard from "../../components/CourseCard";
+import { mockCourses } from "../../data/mockCourse";
+import { mockLessons } from "../../data/mockLesson";
+import { mockReviews } from "../../data/mockReview";
+import Footer from "../../components/Footer";
+import Navbar from "../../components/Navbar";
 
 export default function CoursePage() {
   const { category } = useParams();
@@ -99,7 +99,7 @@ export default function CoursePage() {
       const rating =
         courseReviews.length > 0
           ? courseReviews.reduce((sum, r) => sum + r.ratingScore, 0) /
-            courseReviews.length
+          courseReviews.length
           : 0;
 
       return { ...course, lessonCount, rating };
@@ -306,7 +306,7 @@ export default function CoursePage() {
             {/* Pagination */}
             <Stack alignItems="center" mt={4}>
               <Pagination
-                count={pageCount || 1} 
+                count={pageCount || 1}
                 page={page}
                 onChange={handlePageChange}
                 color="primary"

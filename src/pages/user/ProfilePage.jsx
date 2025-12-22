@@ -22,8 +22,8 @@ import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
 import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
 import { useNavigate } from "react-router-dom";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
 
 export default function ProfilePage() {
   const navigate = useNavigate();

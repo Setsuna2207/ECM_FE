@@ -15,12 +15,12 @@ import {
   Pagination,
   Stack,
 } from "@mui/material";
-import CourseCard from "../components/CourseCard";
-import { mockCourses } from "../data/mockCourse";
-import { mockLessons } from "../data/mockLesson";
-import { mockReviews } from "../data/mockReview";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
+import CourseCard from "../../components/CourseCard";
+import { mockCourses } from "../../data/mockCourse";
+import { mockLessons } from "../../data/mockLesson";
+import { mockReviews } from "../../data/mockReview";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
 
 export default function SearchPage() {
   const { search } = useLocation();
@@ -98,7 +98,7 @@ export default function SearchPage() {
       const rating =
         courseReviews.length > 0
           ? courseReviews.reduce((sum, r) => sum + r.ratingScore, 0) /
-            courseReviews.length
+          courseReviews.length
           : 0;
 
       return { ...course, lessonCount, rating };

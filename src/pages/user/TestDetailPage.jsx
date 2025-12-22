@@ -21,10 +21,10 @@ import {
   Divider,
 } from "@mui/material";
 import ArticleIcon from "@mui/icons-material/Article";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
-import { mockTests } from "../data/mockTest";
-import { getTestById } from "../data/test/testRegistry";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
+import { mockTests } from "../../data/mockTest";
+import { getTestById } from "../../data/test/testRegistry";
 
 export default function TestDetailPage() {
   const { testId } = useParams();
@@ -130,21 +130,21 @@ export default function TestDetailPage() {
 
     allQuestions.forEach((q) => {
       maxScore += q.points || 2;
-      
+
       if (q.type === "multiple-choice") {
         if (answers[q.questionId] === q.correctAnswer) {
           totalScore += q.points || 2;
         }
-      } 
+      }
       else if (q.type === "sentence-completion") {
         // For fill-in-the-blank questions
         const userAnswer = (answers[q.questionId] || "").toLowerCase().trim();
         const correctAnswer = (q.sampleAnswer || q.correctAnswer || "").toLowerCase().trim();
-        
+
         // Remove extra spaces and compare
         const normalizedUser = userAnswer.replace(/\s+/g, " ");
         const normalizedCorrect = correctAnswer.replace(/\s+/g, " ");
-        
+
         // Check if answers match (allow some flexibility)
         if (normalizedUser === normalizedCorrect) {
           totalScore += q.points || 2;
@@ -152,12 +152,12 @@ export default function TestDetailPage() {
           // Partial credit if user got some words right
           const userWords = normalizedUser.split(/[,\s]+/).filter(w => w);
           const correctWords = normalizedCorrect.split(/[,\s]+/).filter(w => w);
-          
+
           let correctCount = 0;
           userWords.forEach(word => {
             if (correctWords.includes(word)) correctCount++;
           });
-          
+
           // Give partial credit based on correct words
           if (correctCount > 0 && correctWords.length > 0) {
             totalScore += (q.points || 2) * (correctCount / correctWords.length);
@@ -168,7 +168,7 @@ export default function TestDetailPage() {
         // For error correction, check if answer is provided
         const userAnswer = (answers[q.questionId] || "").toLowerCase().trim();
         const correctAnswer = (q.correctAnswer || "").toLowerCase().trim();
-        
+
         if (userAnswer && correctAnswer) {
           // Simple comparison (can be made more sophisticated)
           if (userAnswer === correctAnswer) {
@@ -211,24 +211,24 @@ export default function TestDetailPage() {
   const calculateSimilarity = (str1, str2) => {
     const longer = str1.length > str2.length ? str1 : str2;
     const shorter = str1.length > str2.length ? str2 : str1;
-    
+
     if (longer.length === 0) return 1.0;
-    
+
     const editDistance = getEditDistance(longer, shorter);
     return (longer.length - editDistance) / longer.length;
   };
 
   const getEditDistance = (str1, str2) => {
     const matrix = [];
-    
+
     for (let i = 0; i <= str2.length; i++) {
       matrix[i] = [i];
     }
-    
+
     for (let j = 0; j <= str1.length; j++) {
       matrix[0][j] = j;
     }
-    
+
     for (let i = 1; i <= str2.length; i++) {
       for (let j = 1; j <= str1.length; j++) {
         if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
@@ -242,7 +242,7 @@ export default function TestDetailPage() {
         }
       }
     }
-    
+
     return matrix[str2.length][str1.length];
   };
 
@@ -289,10 +289,10 @@ export default function TestDetailPage() {
 
           {test.sections.map((section) => (
             <Box key={section.sectionId} mb={4}>
-              <Paper 
-                sx={{ 
-                  p: 3, 
-                  mb: 3, 
+              <Paper
+                sx={{
+                  p: 3,
+                  mb: 3,
                   background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
                   color: "white",
                   borderRadius: 3,
@@ -333,21 +333,21 @@ export default function TestDetailPage() {
                       <Typography variant="h6" fontWeight="600" color="primary">
                         Câu {q.questionId}
                       </Typography>
-                      <Chip 
-                        label={`${q.points} điểm`} 
-                        size="small" 
-                        color="primary" 
+                      <Chip
+                        label={`${q.points} điểm`}
+                        size="small"
+                        color="primary"
                         sx={{ fontWeight: 600 }}
                       />
                     </Box>
 
                     {/* Passage - Improved UI */}
                     {q.passage && (
-                      <Paper 
+                      <Paper
                         elevation={0}
-                        sx={{ 
-                          p: 3, 
-                          mb: 3, 
+                        sx={{
+                          p: 3,
+                          mb: 3,
                           backgroundColor: "#f8f9fa",
                           border: "2px solid #e3f2fd",
                           borderLeft: "5px solid #2196f3",
@@ -355,29 +355,29 @@ export default function TestDetailPage() {
                           position: "relative"
                         }}
                       >
-                        <Box 
-                          sx={{ 
-                            display: "flex", 
-                            alignItems: "center", 
-                            gap: 1, 
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
                             mb: 2,
                             pb: 1.5,
                             borderBottom: "1px solid #e0e0e0"
                           }}
                         >
                           <ArticleIcon sx={{ color: "#2196f3", fontSize: 24 }} />
-                          <Typography 
-                            variant="subtitle2" 
-                            fontWeight="700" 
+                          <Typography
+                            variant="subtitle2"
+                            fontWeight="700"
                             color="primary"
                             sx={{ textTransform: "uppercase", letterSpacing: 1 }}
                           >
                             Reading Passage
                           </Typography>
                         </Box>
-                        <Typography 
-                          variant="body1" 
-                          sx={{ 
+                        <Typography
+                          variant="body1"
+                          sx={{
                             lineHeight: 1.8,
                             color: "#2c3e50",
                             fontSize: "1rem",
@@ -412,9 +412,9 @@ export default function TestDetailPage() {
                               p: 1.5,
                               border: "1px solid #e0e0e0",
                               borderRadius: 2,
-                              backgroundColor: 
-                                answers[q.questionId] === i 
-                                  ? "#e3f2fd" 
+                              backgroundColor:
+                                answers[q.questionId] === i
+                                  ? "#e3f2fd"
                                   : "transparent",
                               transition: "all 0.2s ease",
                               "&:hover": {
@@ -423,9 +423,9 @@ export default function TestDetailPage() {
                               }
                             }}
                           >
-                            <FormControlLabel 
-                              value={i} 
-                              control={<Radio />} 
+                            <FormControlLabel
+                              value={i}
+                              control={<Radio />}
                               label={
                                 <Typography variant="body1">
                                   {opt}
@@ -447,7 +447,7 @@ export default function TestDetailPage() {
                         value={answers[q.questionId] || ""}
                         onChange={(e) => handleAnswer(q.questionId, e.target.value)}
                         disabled={score !== null}
-                        sx={{ 
+                        sx={{
                           mt: 1,
                           "& .MuiOutlinedInput-root": {
                             borderRadius: 2
@@ -466,7 +466,7 @@ export default function TestDetailPage() {
                         value={answers[q.questionId] || ""}
                         onChange={(e) => handleAnswer(q.questionId, e.target.value)}
                         disabled={score !== null}
-                        sx={{ 
+                        sx={{
                           mt: 1,
                           "& .MuiOutlinedInput-root": {
                             borderRadius: 2
@@ -485,7 +485,7 @@ export default function TestDetailPage() {
                         value={answers[q.questionId] || ""}
                         onChange={(e) => handleAnswer(q.questionId, e.target.value)}
                         disabled={score !== null}
-                        sx={{ 
+                        sx={{
                           mt: 1,
                           "& .MuiOutlinedInput-root": {
                             borderRadius: 2
@@ -500,8 +500,8 @@ export default function TestDetailPage() {
                         {q.type === "multiple-choice" && (
                           <Paper
                             elevation={0}
-                            sx={{ 
-                              mt: 2, 
+                            sx={{
+                              mt: 2,
                               p: 2,
                               backgroundColor: answers[q.questionId] === q.correctAnswer ? "#e8f5e9" : "#ffebee",
                               borderRadius: 2,
@@ -519,12 +519,12 @@ export default function TestDetailPage() {
                             </Typography>
                           </Paper>
                         )}
-                        
+
                         {q.type === "sentence-completion" && (
                           <Paper
                             elevation={0}
-                            sx={{ 
-                              mt: 2, 
+                            sx={{
+                              mt: 2,
                               p: 2,
                               backgroundColor: "#e3f2fd",
                               borderRadius: 2,
@@ -549,12 +549,12 @@ export default function TestDetailPage() {
                             )}
                           </Paper>
                         )}
-                        
+
                         {q.type === "error-correction" && (
                           <Paper
                             elevation={0}
-                            sx={{ 
-                              mt: 2, 
+                            sx={{
+                              mt: 2,
                               p: 2,
                               backgroundColor: "#e3f2fd",
                               borderRadius: 2,
@@ -622,23 +622,23 @@ export default function TestDetailPage() {
             {(() => {
               const hasAudio = test?.sections?.some(s => s.mediaUrl);
               const audioUrl = test?.sections?.find(s => s.mediaUrl)?.mediaUrl;
-              
+
               return hasAudio && audioUrl && score === null ? (
                 <Box sx={{ mb: 3, p: 2, backgroundColor: "#fff3e0", borderRadius: 3, border: "2px solid #ff9800" }}>
                   <Box display="flex" alignItems="center" justifyContent="space-between" mb={1.5}>
                     <Typography variant="subtitle1" fontWeight="700" color="#e65100">
                       🎧 Audio Listening
                     </Typography>
-                    <Chip 
-                      label={`${listenCount}/2 lần`} 
-                      size="small" 
+                    <Chip
+                      label={`${listenCount}/2 lần`}
+                      size="small"
                       color={listenCount >= 2 ? "error" : "warning"}
                       sx={{ fontWeight: 600 }}
                     />
                   </Box>
-                  <audio 
+                  <audio
                     ref={audioRef}
-                    controls 
+                    controls
                     style={{ width: "100%", borderRadius: 8 }}
                     onPlay={() => {
                       if (listenCount < 2) {

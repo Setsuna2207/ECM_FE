@@ -8,11 +8,11 @@ import {
   LinearProgress,
 } from "@mui/material";
 import { useEffect, useState } from "react";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
-import MiniCourseCard from "../components/MiniCourseCard";
-import { mockCourses } from "../data/mockCourse";
-import { mockQuizzes } from "../data/mockQuiz";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
+import MiniCourseCard from "../../components/MiniCourseCard";
+import { mockCourses } from "../../data/mockCourse";
+import { mockQuizzes } from "../../data/mockQuiz";
 
 export default function HistoryPage() {
   const [historyCourses, setHistoryCourses] = useState([]);

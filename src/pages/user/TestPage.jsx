@@ -1,10 +1,10 @@
 // src/pages/TestPage.jsx
 import React, { useState, useMemo } from "react";
 import { Container, Typography, Box, Button, Grid, Stack, Pagination } from "@mui/material";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
-import TestCard from "../components/TestCard";
-import { mockTests } from "../data/mockTest";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
+import TestCard from "../../components/TestCard";
+import { mockTests } from "../../data/mockTest";
 
 
 export default function TestPage() {

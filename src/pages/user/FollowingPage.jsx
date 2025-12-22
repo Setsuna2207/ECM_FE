@@ -6,10 +6,10 @@ import {
   Pagination,
 } from "@mui/material";
 import { useEffect, useState } from "react";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
-import CourseCard from "../components/CourseCard";
-import { mockCourses } from "../data/mockCourse";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
+import CourseCard from "../../components/CourseCard";
+import { mockCourses } from "../../data/mockCourse";
 
 export default function FollowingPage() {
   const [followedCourses, setFollowedCourses] = useState([]);

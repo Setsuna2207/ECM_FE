@@ -14,12 +14,12 @@ import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import { useParams, useNavigate } from "react-router-dom";
-import { mockCourses } from "../data/mockCourse";
-import { mockLessons } from "../data/mockLesson";
-import { mockReviews } from "../data/mockReview";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
-import CourseReview from "../components/CourseReview";
+import { mockCourses } from "../../data/mockCourse";
+import { mockLessons } from "../../data/mockLesson";
+import { mockReviews } from "../../data/mockReview";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
+import CourseReview from "../../components/CourseReview";
 import { useEffect, useState } from "react";
 
 export default function CourseDetailPage() {

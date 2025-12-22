@@ -21,9 +21,9 @@ import {
 } from "@mui/material";
 import ArticleIcon from "@mui/icons-material/Article";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
-import { mockQuizzes } from "../data/mockQuiz";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
+import { mockQuizzes } from "../../data/mockQuiz";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
 
 export default function QuizPage() {
   const { courseId, lessonId, quizId } = useParams();
@@ -34,7 +34,7 @@ export default function QuizPage() {
   const [loading, setLoading] = useState(true);
   const [openResultDialog, setOpenResultDialog] = useState(false);
   const navigate = useNavigate();
-  
+
   const questionRefs = useRef({});
 
   useEffect(() => {
@@ -74,9 +74,9 @@ export default function QuizPage() {
   };
 
   const scrollToQuestion = (questionId) => {
-    questionRefs.current[questionId]?.scrollIntoView({ 
-      behavior: "smooth", 
-      block: "center" 
+    questionRefs.current[questionId]?.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
     });
   };
 
@@ -88,7 +88,7 @@ export default function QuizPage() {
       });
       const resultScore = total;
       const percentage = Math.round((resultScore / questions.length) * 100);
-      
+
       setScore({ total: resultScore, max: questions.length, percentage });
       setOpenResultDialog(true);
 
@@ -110,7 +110,7 @@ export default function QuizPage() {
     }
   };
 
-  const getAnswerStatus = (questionId) => 
+  const getAnswerStatus = (questionId) =>
     answers[questionId] !== undefined ? "answered" : "unanswered";
 
   if (loading) {
@@ -127,9 +127,9 @@ export default function QuizPage() {
         <Navbar />
         <Box textAlign="center" mt={10}>
           <Typography variant="h5">Không tìm thấy bài quiz!</Typography>
-          <Button 
-            variant="contained" 
-            sx={{ mt: 2 }} 
+          <Button
+            variant="contained"
+            sx={{ mt: 2 }}
             onClick={() => navigate(`/course/${courseId}/lesson/${lessonId}`)}
           >
             Quay lại bài học
@@ -148,10 +148,10 @@ export default function QuizPage() {
         {/* LEFT SIDE - Questions */}
         <Box sx={{ flex: 1, minWidth: 0 }}>
           {/* Header */}
-          <Paper 
-            sx={{ 
-              p: 3, 
-              mb: 3, 
+          <Paper
+            sx={{
+              p: 3,
+              mb: 3,
               background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
               color: "white",
               borderRadius: 3,
@@ -174,7 +174,7 @@ export default function QuizPage() {
                 p: 3,
                 mb: 3,
                 textAlign: "center",
-                background: score.percentage >= 70 
+                background: score.percentage >= 70
                   ? "linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)"
                   : "linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%)",
                 borderRadius: 3,
@@ -227,10 +227,10 @@ export default function QuizPage() {
                       <Typography variant="h6" fontWeight="600" color="primary">
                         Câu {index + 1}
                       </Typography>
-                      <Chip 
-                        label="1 điểm" 
-                        size="small" 
-                        color="primary" 
+                      <Chip
+                        label="1 điểm"
+                        size="small"
+                        color="primary"
                         sx={{ fontWeight: 600 }}
                       />
                     </Box>
@@ -256,9 +256,9 @@ export default function QuizPage() {
                             p: 1.5,
                             border: "1px solid #e0e0e0",
                             borderRadius: 2,
-                            backgroundColor: 
-                              userAnswer === i 
-                                ? "#e3f2fd" 
+                            backgroundColor:
+                              userAnswer === i
+                                ? "#e3f2fd"
                                 : "transparent",
                             transition: "all 0.2s ease",
                             "&:hover": {
@@ -267,9 +267,9 @@ export default function QuizPage() {
                             }
                           }}
                         >
-                          <FormControlLabel 
-                            value={i} 
-                            control={<Radio />} 
+                          <FormControlLabel
+                            value={i}
+                            control={<Radio />}
                             label={
                               <Typography variant="body1">
                                 {opt}
@@ -286,8 +286,8 @@ export default function QuizPage() {
                     {score !== null && (
                       <Paper
                         elevation={0}
-                        sx={{ 
-                          mt: 2, 
+                        sx={{
+                          mt: 2,
                           p: 2,
                           backgroundColor: userAnswer === correct ? "#e8f5e9" : "#ffebee",
                           borderRadius: 2,
@@ -379,8 +379,8 @@ export default function QuizPage() {
                     Audio
                   </Typography>
                 </Box>
-                <audio 
-                  controls 
+                <audio
+                  controls
                   style={{ width: "100%", borderRadius: 8 }}
                 >
                   <source src={quiz.mediaUrl} type="audio/mpeg" />
@@ -455,10 +455,10 @@ export default function QuizPage() {
       </Box>
 
       {/* Result Dialog */}
-      <Dialog 
-        open={openResultDialog} 
-        onClose={() => setOpenResultDialog(false)} 
-        maxWidth="sm" 
+      <Dialog
+        open={openResultDialog}
+        onClose={() => setOpenResultDialog(false)}
+        maxWidth="sm"
         fullWidth
       >
         <DialogTitle>
@@ -472,7 +472,7 @@ export default function QuizPage() {
             py={4}
             px={2}
             sx={{
-              background: score?.percentage >= 70 
+              background: score?.percentage >= 70
                 ? "linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%)"
                 : "linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)",
               borderRadius: 3,
@@ -501,15 +501,15 @@ export default function QuizPage() {
           </Box>
         </DialogContent>
         <DialogActions sx={{ justifyContent: "center", mb: 2 }}>
-          <Button 
-            variant="contained" 
+          <Button
+            variant="contained"
             onClick={() => navigate(`/course/${courseId}/lesson/${lessonId}`)}
             sx={{ mx: 1 }}
           >
             Quay lại bài học
           </Button>
-          <Button 
-            variant="outlined" 
+          <Button
+            variant="outlined"
             onClick={() => setOpenResultDialog(false)}
             sx={{ mx: 1 }}
           >

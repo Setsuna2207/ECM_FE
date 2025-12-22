@@ -1,10 +1,10 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { mockLessons } from "../data/mockLesson";
-import { mockCourses } from "../data/mockCourse";
-import { mockQuizzes } from "../data/mockQuiz";
+import { mockLessons } from "../../data/mockLesson";
+import { mockCourses } from "../../data/mockCourse";
+import { mockQuizzes } from "../../data/mockQuiz";
 import { useEffect, useState } from "react";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
 import {
     Container,
     Typography,
