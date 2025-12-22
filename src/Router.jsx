@@ -4,17 +4,17 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
 
-import HomePage from "./pages/HomePage";
-import SearchPage from "./pages/SearchPage";
-import ProfilePage from "./pages/ProfilePage";
-import CoursePage from "./pages/CoursePage";
-import CourseDetailPage from "./pages/CourseDetailPage";
-import LessonPage from "./pages/LessonPage";
-import QuizPage from "./pages/QuizPage";
-import HistoryPage from "./pages/HistoryPage";
-import FollowingPage from "./pages/FollowingPage";
-import TestPage from "./pages/TestPage";
-import TestDetailPage from "./pages/TestDetailPage";
+import HomePage from "./pages/user/HomePage";
+import SearchPage from "./pages/user/SearchPage";
+import ProfilePage from "./pages/user/ProfilePage";
+import CoursePage from "./pages/user/CoursePage";
+import CourseDetailPage from "./pages/user/CourseDetailPage";
+import LessonPage from "./pages/user/LessonPage";
+import QuizPage from "./pages/user/QuizPage";
+import HistoryPage from "./pages/user/HistoryPage";
+import FollowingPage from "./pages/user/FollowingPage";
+import TestPage from "./pages/user/TestPage";
+import TestDetailPage from "./pages/user/TestDetailPage";
 
 // Khu vực quản trị
 import Dashboard from "./pages/admin/layout/Dashboard";
