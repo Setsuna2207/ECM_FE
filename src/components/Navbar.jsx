@@ -30,16 +30,13 @@ import {
   MenuBook,
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
+import { GetAllCategory } from "../services/categoryService";
 
 export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const categories = {
-    LEVEL: ["TOEIC", "IELTS", "TOEFL", "GENERAL"],
-    SKILL: ["VOCABULARY", "GRAMMAR", "WRITING", "LISTENING", "READING"],
-  };
-
+  const [categories, setCategories] = useState({ LEVEL: [], SKILL: [] });
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedLevel, setSelectedLevel] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
@@ -49,6 +46,53 @@ export default function Navbar() {
   useEffect(() => {
     const savedUser = JSON.parse(localStorage.getItem("currentUser"));
     setCurrentUser(savedUser);
+  }, []);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await GetAllCategory();
+        console.log("Categories response:", response);
+
+        let categoryData = [];
+
+        // Handle different response structures
+        if (response.data && response.data.data) {
+          categoryData = response.data.data;
+        } else if (response.data && Array.isArray(response.data)) {
+          categoryData = response.data;
+        } else if (Array.isArray(response.data)) {
+          categoryData = response.data;
+        }
+
+        console.log("Category data:", categoryData);
+
+        // Organize categories by description (LEVEL or SKILL)
+        const organized = {
+          LEVEL: [],
+          SKILL: []
+        };
+
+        if (Array.isArray(categoryData)) {
+          categoryData.forEach(cat => {
+            if (cat.description === "LEVEL") {
+              organized.LEVEL.push(cat.name);
+            } else if (cat.description === "SKILL") {
+              organized.SKILL.push(cat.name);
+            }
+          });
+        }
+
+        console.log("Organized categories:", organized);
+        setCategories(organized);
+      } catch (error) {
+        console.error("Failed to fetch categories:", error);
+        // Fallback to empty categories if fetch fails
+        setCategories({ LEVEL: [], SKILL: [] });
+      }
+    };
+
+    fetchCategories();
   }, []);
 
   const isInTestRoute = location.pathname.startsWith("/test/");
@@ -92,6 +136,10 @@ export default function Navbar() {
     WRITING: "✍️",
     LISTENING: "🎧",
     READING: "📖",
+  };
+
+  const getIcon = (categoryName) => {
+    return categoryIcons[categoryName] || "📚";
   };
 
   return (
@@ -242,7 +290,7 @@ export default function Navbar() {
                       <ListItemText
                         primary={
                           <Box display="flex" alignItems="center" gap={1}>
-                            <span>{categoryIcons[level]}</span>
+                            <span>{getIcon(level)}</span>
                             <Typography fontWeight={500}>{level}</Typography>
                           </Box>
                         }
@@ -291,7 +339,7 @@ export default function Navbar() {
                       <ListItemText
                         primary={
                           <Box display="flex" alignItems="center" gap={1}>
-                            <span>{categoryIcons[skill]}</span>
+                            <span>{getIcon(skill)}</span>
                             <Typography fontWeight={500}>{skill}</Typography>
                           </Box>
                         }
