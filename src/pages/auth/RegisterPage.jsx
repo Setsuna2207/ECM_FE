@@ -7,11 +7,14 @@ import {
   Link,
   InputAdornment,
   IconButton,
+  Alert,
+  CircularProgress,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import bgImage from "../../assets/bg1.jpg";
 import logo from "../../assets/ECM.png";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
+import { Register } from "../../services/userService";
 
 export default function RegisterPage() {
   const [form, setForm] = useState({
@@ -24,6 +27,8 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   //  Hàm định dạng thời gian
@@ -45,15 +50,41 @@ export default function RegisterPage() {
     return () => clearInterval(timer);
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
 
     if (form.password !== form.confirmPassword) {
-      alert("❌ Mật khẩu xác nhận không khớp!");
+      setError("Mật khẩu xác nhận không khớp!");
       return;
     }
 
-    // alert(`Đăng ký: ${form.fullName} - ${form.email}`);
+    if (!form.email || !form.password || !form.fullName || !form.userName) {
+      setError("Vui lòng điền đầy đủ thông tin!");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await Register({
+        email: form.email,
+        password: form.password,
+        fullName: form.fullName,
+        userName: form.userName,
+      });
+
+      if (response.status === 200 || response.status === 201) {
+        setError("");
+        alert("Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.");
+        navigate("/login");
+      }
+    } catch (err) {
+      console.error("Register error:", err);
+      setError(err.response?.data?.message || "Đã xảy ra lỗi khi đăng ký. Vui lòng thử lại!");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -118,6 +149,12 @@ export default function RegisterPage() {
           <Typography variant="h5" fontWeight="bold" mb={2}>
             Đăng ký tài khoản
           </Typography>
+
+          {error && (
+            <Alert severity="error" sx={{ mb: 2, width: "100%" }}>
+              {error}
+            </Alert>
+          )}
 
           {/* Form */}
           <Box component="form" onSubmit={handleSubmit} sx={{ width: "100%" }}>
@@ -205,6 +242,7 @@ export default function RegisterPage() {
               type="submit"
               variant="contained"
               fullWidth
+              disabled={loading}
               sx={{
                 mb: 1,
                 borderRadius: 2,
@@ -212,7 +250,7 @@ export default function RegisterPage() {
                 fontWeight: 600,
               }}
             >
-              Đăng ký
+              {loading ? <CircularProgress size={24} /> : "Đăng ký"}
             </Button>
 
             <Button

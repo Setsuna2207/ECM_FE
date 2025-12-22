@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
-import { Container, TextField, Button, Typography, IconButton, InputAdornment, Paper } from '@mui/material';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Container, TextField, Button, Typography, IconButton, InputAdornment, Paper, CircularProgress } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import InfoDialog from "../../components/InfoDialog";
-import { ResetPassword } from '../../services/UserService';
-import { useNavigate } from 'react-router-dom';
+import { ResetPassword as ResetPasswordService } from '../../services/userService';
 
 
 const ResetPasswordForm = () => {
@@ -15,36 +13,54 @@ const ResetPasswordForm = () => {
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 	const [infoDialogOpen, setInfoDialogOpen] = React.useState(false);
 	const [info, setInfo] = React.useState('');
+	const [loading, setLoading] = useState(false);
 	const location = useLocation();
-
 	const navigate = useNavigate();
 
 	const handleSubmit = async (e) => {
+		e.preventDefault();
 		const queryParams = new URLSearchParams(location.search);
 		const email = queryParams.get('email');
 		let token = queryParams.get('token');
+
 		if (password !== confirmPassword) {
 			setInfo('Mật khẩu không khớp');
 			setInfoDialogOpen(true);
 			return;
 		}
+
+		if (!password || !email || !token) {
+			setInfo('Thông tin không hợp lệ');
+			setInfoDialogOpen(true);
+			return;
+		}
+
 		if (token) {
 			token = token.replace(/ /g, '+'); // Fix the + being converted to space
 		}
-		const data = {
-			email: email,
-			token: token,
-			newPassword: password
-		}
 
-		const res = await ResetPassword(data);
-		if (res.status === 200) {
-			setInfo('Đặt lại mật khẩu thành công');
+		setLoading(true);
+
+		try {
+			const data = {
+				email: email,
+				token: token,
+				newPassword: password
+			};
+
+			const res = await ResetPasswordService(data);
+			if (res.status === 200) {
+				setInfo('Đặt lại mật khẩu thành công');
+			} else {
+				setInfo('Đã xảy ra lỗi. Vui lòng thử lại sau.');
+			}
+		} catch (error) {
+			console.error('Reset password error:', error);
+			setInfo(error.response?.data?.message || 'Đã xảy ra lỗi. Vui lòng thử lại sau.');
+		} finally {
+			setLoading(false);
+			setInfoDialogOpen(true);
 		}
-		else {
-			setInfo('Đã xảy ra lỗi. Vui lòng thử lại sau.');
-		}
-		setInfoDialogOpen(true);
 	};
 
 	const handleInfoDialogClose = () => {
@@ -95,7 +111,9 @@ const ResetPasswordForm = () => {
 							),
 						}}
 					/>
-					<Button type="submit" fullWidth variant="contained" sx={{ mt: 2 }}>Đặt lại mật khẩu</Button>
+					<Button type="submit" fullWidth variant="contained" sx={{ mt: 2 }} disabled={loading}>
+						{loading ? <CircularProgress size={24} /> : "Đặt lại mật khẩu"}
+					</Button>
 				</form>
 			</Paper>
 			<InfoDialog

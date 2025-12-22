@@ -7,7 +7,8 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import OutlinedInput from '@mui/material/OutlinedInput';
-import { SendForgotPasswordEmail } from '../../services/UserService';
+import CircularProgress from '@mui/material/CircularProgress';
+import { ForgotPassword as ForgotPasswordService } from '../../services/userService';
 import InfoDialog from "../../components/InfoDialog";
 
 function ForgotPassword({ open, handleClose }) {
@@ -15,6 +16,7 @@ function ForgotPassword({ open, handleClose }) {
   const [info, setInfo] = React.useState('');
   const [email, setEmail] = React.useState('');
   const [emailError, setEmailError] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
 
 
   const isValidEmail = (email) => {
@@ -28,22 +30,23 @@ function ForgotPassword({ open, handleClose }) {
       return;
     }
     setEmailError('');
-    // Add your forgot password logic here
+    setLoading(true);
+
     try {
-      var response = await SendForgotPasswordEmail(email);
+      const response = await ForgotPasswordService(email);
       if (response.status === 200) {
         setInfoDialogOpen(true);
         setInfo('Một email đã được gửi đến địa chỉ email của bạn với hướng dẫn để đặt lại mật khẩu.');
-      }
-      else {
+      } else {
         setInfoDialogOpen(true);
         setInfo('Đã xảy ra lỗi. Vui lòng thử lại sau.');
       }
-      console.log('Forgot password form submitted with email:', email);
     } catch (error) {
       console.error('Error sending forgot password email:', error);
       setInfoDialogOpen(true);
-      setInfo('Đã xảy ra lỗi. Vui lòng thử lại sau.');
+      setInfo(error.response?.data?.message || 'Đã xảy ra lỗi. Vui lòng thử lại sau.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -82,8 +85,8 @@ function ForgotPassword({ open, handleClose }) {
           {emailError && <p style={{ color: 'red' }}>{emailError}</p>}
           <DialogActions>
             <Button onClick={handleClose}>Hủy</Button>
-            <Button variant="contained" onClick={handleSubmit}>
-              Tiếp tục
+            <Button variant="contained" onClick={handleSubmit} disabled={loading}>
+              {loading ? <CircularProgress size={24} /> : "Tiếp tục"}
             </Button>
           </DialogActions>
         </form>

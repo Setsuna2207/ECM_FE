@@ -456,7 +456,7 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              {currentUser.access === "admin" ? (
+              {currentUser.access === "admin" || currentUser.roles === "Admin" ? (
                 <>
                   <Tooltip title="Làm bài test" arrow>
                     <Button

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { ConfirmEmail } from '../../services/UserService';
+import { ConfirmEmail } from '../../services/userService';
 
 const EmailConfirmed = () => {
 	const [message, setMessage] = useState('');
@@ -15,15 +15,15 @@ const EmailConfirmed = () => {
 		}
 		const CheckConfirmEmail = async () => {
 			try {
-				const response = await ConfirmEmail({ email, token });
-				if (response.data.confirmed) {
+				const response = await ConfirmEmail(email, token);
+				if (response.data && response.data.confirmed) {
 					setMessage(
 						<>
 							Email đã được xác thực, vui lòng quay lại trang đăng nhập {' '}
 							<a href="/login" style={styles.link}>tại đây</a>!
 						</>
 					);
-				} else if (response.data[0].code === "ConcurrencyFailure") {
+				} else if (response.data && response.data[0]?.code === "ConcurrencyFailure") {
 					setMessage(
 						<>
 							Email đã được xác thực, vui lòng quay lại trang đăng nhập {' '}
@@ -34,7 +34,8 @@ const EmailConfirmed = () => {
 					setMessage('Có lỗi xảy ra, vui lòng thử lại sau.');
 				}
 			} catch (error) {
-				setMessage('Có lỗi xảy ra, vui lòng thử lại sau.');
+				console.error('Email confirmation error:', error);
+				setMessage(error.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại sau.');
 			}
 		};
 

@@ -8,12 +8,14 @@ import {
   Link,
   InputAdornment,
   IconButton,
+  CircularProgress,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { mockAccount } from "../../data/mockAccount";
 import bgImage from "../../assets/bg.jpg";
 import logo from "../../assets/ECM.png";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
+import { Login } from "../../services/userService";
+import ForgotPassword from "./ForgotPassword";
 
 export default function LoginPage() {
   const [loginInput, setLoginInput] = useState("");
@@ -21,6 +23,8 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [currentTime, setCurrentTime] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const navigate = useNavigate();
 
   //  Hàm định dạng thời gian
@@ -40,25 +44,44 @@ export default function LoginPage() {
     return () => clearInterval(timer);
   }, []);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
-    const foundUser = mockAccount.find(
-      (acc) =>
-        (acc.email === loginInput || acc.userName === loginInput) &&
-        acc.password === password
-    );
+    try {
+      // Determine if input is email or username
+      const isEmail = loginInput.includes("@");
 
-    if (!foundUser) {
-      setError("Sai tên đăng nhập / email hoặc mật khẩu!");
-      return;
+      const response = await Login({
+        userName: !isEmail ? loginInput : undefined,
+        email: isEmail ? loginInput : undefined,
+        password: password,
+      });
+
+      if (response.status === 200 && response.data) {
+        const userData = response.data.data || response.data;
+
+        // Store token and user data
+        if (userData.accessToken) {
+          localStorage.setItem("access_token", userData.accessToken);
+        }
+
+        localStorage.setItem("currentUser", JSON.stringify(userData));
+
+        // Redirect based on user role
+        if (userData.access === "admin" || userData.role === "admin" || userData.roles === "Admin") {
+          navigate("/admin");
+        } else {
+          navigate("/");
+        }
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      setError(err.response?.data?.message || "Sai tên đăng nhập / email hoặc mật khẩu!");
+    } finally {
+      setLoading(false);
     }
-
-    localStorage.setItem("currentUser", JSON.stringify(foundUser));
-
-    if (foundUser.access === "admin") navigate("/admin");
-    else navigate("/");
   };
 
   return (
@@ -176,7 +199,10 @@ export default function LoginPage() {
                 component="button"
                 variant="body2"
                 underline="hover"
-              // onClick={() => alert("Chức năng đang phát triển!")}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setForgotPasswordOpen(true);
+                }}
               >
                 Quên mật khẩu?
               </Link>
@@ -184,7 +210,10 @@ export default function LoginPage() {
                 component="button"
                 variant="body2"
                 underline="hover"
-                onClick={() => navigate("/register")}
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate("/register");
+                }}
               >
                 Đăng ký
               </Link>
@@ -195,6 +224,7 @@ export default function LoginPage() {
               type="submit"
               variant="contained"
               fullWidth
+              disabled={loading}
               sx={{
                 mb: 1,
                 borderRadius: 2,
@@ -202,7 +232,7 @@ export default function LoginPage() {
                 fontWeight: 600,
               }}
             >
-              Đăng nhập
+              {loading ? <CircularProgress size={24} /> : "Đăng nhập"}
             </Button>
 
             <Button
@@ -220,6 +250,11 @@ export default function LoginPage() {
           </Box>
         </Box>
       </Box>
+
+      <ForgotPassword
+        open={forgotPasswordOpen}
+        handleClose={() => setForgotPasswordOpen(false)}
+      />
     </Box>
   );
 }
