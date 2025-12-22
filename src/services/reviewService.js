@@ -1,40 +1,40 @@
 import api from './axios/axios.customize';
 
-const GetAllReiew = () => {
-    const URL_API = "/api/Reiew";
+const GetAllReview = () => {
+    const URL_API = "/api/Review";
     return api.get(URL_API);
 };
 
-const GetReiewByCourseId = (CourseId) => {
-    const URL_API = `/api/Reiew/product/${CourseId}`;
+const GetReviewByCourseId = (courseId) => {
+    const URL_API = `/api/Review/Course/${courseId}`;
     return api.get(URL_API);
 };
 
-const GetReiewByuserId = (userId) => {
-    const URL_API = `/api/Reiew/user/${userId}`;
+const GetReviewByUserId = (userId) => {
+    const URL_API = `/api/Review/user/${userId}`;
     return api.get(URL_API);
 };
 
-const CreateReiew = (data) => {
-    const URL_API = "/api/Reiew";
+const CreateReview = (data) => {
+    const URL_API = "/api/Review";
     return api.post(URL_API, data);
 };
 
-const UpdateReiew = (CourseId, data) => {
-    const URL_API = `/api/Reiew/${CourseId}`;
+const UpdateReview = (courseId, data) => {
+    const URL_API = `/api/Review/${courseId}`;
     return api.put(URL_API, data);
 };
 
-const DeleteReiew = (CourseId) => {
-    const URL_API = `/api/Reiew/${CourseId}`;
+const DeleteReview = (courseId) => {
+    const URL_API = `/api/Review/${courseId}`;
     return api.delete(URL_API);
 };
 
 export {
-    GetAllReiew,
-    GetReiewByCourseId,
-    GetReiewByuserId,
-    CreateReiew,
-    UpdateReiew,
-    DeleteReiew,
+    GetAllReview,
+    GetReviewByCourseId,
+    GetReviewByUserId,
+    CreateReview,
+    UpdateReview,
+    DeleteReview,
 };
