@@ -46,41 +46,54 @@ export default function ProfilePage() {
     }
   }, [navigate]);
 
-  const handleAvatarChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        alert('Vui lòng chọn file ảnh!');
-        return;
-      }
-
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('Kích thước ảnh không được vượt quá 5MB!');
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result;
-        const updatedUser = { ...user, avatar: base64String };
-        setUser(updatedUser);
-        localStorage.setItem("currentUser", JSON.stringify(updatedUser));
-        setConfirmMessage("Ảnh đại diện đã được cập nhật!");
-        setTimeout(() => setConfirmMessage(""), 4000);
-      };
-      reader.readAsDataURL(file);
+const handleAvatarChange = (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    if (!file.type.startsWith('image/')) {
+      alert('Vui lòng chọn file ảnh!');
+      return;
     }
-  };
 
-  const handleSave = () => {
-    const updatedUser = { ...user, password };
-    localStorage.setItem("currentUser", JSON.stringify(updatedUser));
-    setEditing(false);
-    setConfirmMessage("Thông tin của bạn đã được cập nhật thành công!");
-    setTimeout(() => setConfirmMessage(""), 4000);
-  };
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Kích thước ảnh không được vượt quá 5MB!');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result;
+      const updatedUser = { ...user, avatar: base64String };
+      
+      console.log("ProfilePage - Updating avatar:", base64String.substring(0, 50) + "...");
+      
+      setUser(updatedUser);
+      localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+      
+      // Dispatch event to notify other components
+      window.dispatchEvent(new Event('userUpdated'));
+      
+      setConfirmMessage("Ảnh đại diện đã được cập nhật!");
+      setTimeout(() => setConfirmMessage(""), 4000);
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+const handleSave = () => {
+  const updatedUser = { ...user, password };
+  
+  console.log("ProfilePage - Saving user:", updatedUser);
+  
+  localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+  setUser(updatedUser);
+  setEditing(false);
+  
+  // Dispatch event to notify other components
+  window.dispatchEvent(new Event('userUpdated'));
+  
+  setConfirmMessage("Thông tin của bạn đã được cập nhật thành công!");
+  setTimeout(() => setConfirmMessage(""), 4000);
+};
 
   const handleSaveGoal = () => {
     setEditingGoal(false);

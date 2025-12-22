@@ -14,7 +14,7 @@ import { useNavigate } from "react-router-dom";
 import bgImage from "../../assets/bg.jpg";
 import logo from "../../assets/ECM.png";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
-import { Login } from "../../services/userService";
+import { Login, GetUser } from "../../services/userService";
 import ForgotPassword from "./ForgotPassword";
 
 export default function LoginPage() {
@@ -27,7 +27,6 @@ export default function LoginPage() {
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const navigate = useNavigate();
 
-  //  Hàm định dạng thời gian
   const formatTime = () => {
     const now = new Date();
     const hours = now.getHours() % 12 || 12;
@@ -37,52 +36,77 @@ export default function LoginPage() {
     return `${hours}:${minutes} ${ampm} ${date}`;
   };
 
-  //  Cập nhật thời gian mỗi phút
   useEffect(() => {
     setCurrentTime(formatTime());
     const timer = setInterval(() => setCurrentTime(formatTime()), 60000);
     return () => clearInterval(timer);
   }, []);
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+const handleLogin = async (e) => {
+  e.preventDefault();
+  setError("");
+  setLoading(true);
 
-    try {
-      // Determine if input is email or username
-      const isEmail = loginInput.includes("@");
+  try {
+    const isEmail = loginInput.includes("@");
 
-      const response = await Login({
-        userName: !isEmail ? loginInput : undefined,
-        email: isEmail ? loginInput : undefined,
-        password: password,
-      });
+    const loginResponse = await Login({
+      userName: !isEmail ? loginInput : undefined,
+      email: isEmail ? loginInput : undefined,
+      password: password,
+    });
 
-      if (response.status === 200 && response.data) {
-        const userData = response.data.data || response.data;
+    if (loginResponse.status === 200) {
+      // Get userName from login response
+      let loginData = loginResponse.data;
+      if (Array.isArray(loginData)) loginData = loginData[0];
+      if (loginData.data) loginData = loginData.data;
 
-        // Store token and user data
-        if (userData.accessToken) {
-          localStorage.setItem("access_token", userData.accessToken);
-        }
+      const userName = loginData.userName;
+      console.log("Logged in as:", userName);
 
-        localStorage.setItem("currentUser", JSON.stringify(userData));
+      console.log("Fetching complete user data...");
+      const userResponse = await GetUser(userName);
+      
+      console.log("GetUser response:", userResponse);
+      console.log("GetUser response.data:", userResponse.data);
 
-        // Redirect based on user role
-        if (userData.access === "admin" || userData.role === "admin" || userData.roles === "Admin") {
-          navigate("/admin");
-        } else {
-          navigate("/");
-        }
+      let userData = userResponse.data;
+      if (userData.data) userData = userData.data;
+
+      console.log("Complete user data:", userData);
+      console.log("Avatar from GetUser:", userData?.avatar);
+
+      // Store token if present
+      if (loginData.accessToken) {
+        localStorage.setItem("access_token", loginData.accessToken);
       }
-    } catch (err) {
-      console.error("Login error:", err);
-      setError(err.response?.data?.message || "Sai tên đăng nhập / email hoặc mật khẩu!");
-    } finally {
-      setLoading(false);
+
+      // Store complete user data
+      localStorage.setItem("currentUser", JSON.stringify(userData));
+
+      // Verify
+      const saved = JSON.parse(localStorage.getItem("currentUser"));
+      console.log("Saved to localStorage:", saved);
+      console.log("Avatar saved:", saved?.avatar);
+
+      // Dispatch event
+      window.dispatchEvent(new Event('userUpdated'));
+
+      // Redirect
+      if (userData.access === "admin" || userData.role === "admin" || userData.roles === "Admin") {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
     }
-  };
+  } catch (err) {
+    console.error("❌ Login error:", err);
+    setError(err.response?.data?.message || "Sai tên đăng nhập / email hoặc mật khẩu!");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <Box
@@ -94,7 +118,6 @@ export default function LoginPage() {
         backgroundPosition: "center",
       }}
     >
-      {/* Hộp đăng nhập bên phải */}
       <Box
         sx={{
           width: { xs: "100%", md: "40%" },
@@ -105,7 +128,6 @@ export default function LoginPage() {
           pr: { xs: 0, md: 6 },
         }}
       >
-        {/* Hộp trắng nhỏ gọn */}
         <Box
           sx={{
             width: "85%",
@@ -119,7 +141,6 @@ export default function LoginPage() {
             alignItems: "center",
           }}
         >
-          {/* Logo + Thời gian */}
           <Box
             sx={{
               width: "100%",
@@ -133,9 +154,7 @@ export default function LoginPage() {
               component="img"
               src={logo}
               alt="Logo hệ thống"
-              sx={{
-                width: 100,
-              }}
+              sx={{ width: 100 }}
             />
             <Typography
               variant="subtitle2"
@@ -155,7 +174,6 @@ export default function LoginPage() {
             </Alert>
           )}
 
-          {/* Form */}
           <Box component="form" onSubmit={handleLogin} sx={{ width: "100%" }}>
             <TextField
               fullWidth
@@ -186,7 +204,6 @@ export default function LoginPage() {
               }}
             />
 
-            {/* Quên mật khẩu + Đăng ký */}
             <Box
               sx={{
                 display: "flex",
@@ -219,7 +236,6 @@ export default function LoginPage() {
               </Link>
             </Box>
 
-            {/* Nút hành động */}
             <Button
               type="submit"
               variant="contained"

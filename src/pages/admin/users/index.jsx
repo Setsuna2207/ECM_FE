@@ -97,53 +97,63 @@ export default function ManageUser() {
     }
   };
 
-  const handleSave = async () => {
-    if (!selectedAccount.userName || !selectedAccount.email) {
-      alert("Vui lòng nhập tên đăng nhập và email!");
-      return;
+const handleSave = async () => {
+  if (!selectedAccount.userName || !selectedAccount.email) {
+    alert("Vui lòng nhập tên đăng nhập và email!");
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    if (isEditMode) {
+      await UpdateUser(selectedAccount.userName, {
+        fullName: selectedAccount.fullName,
+        email: selectedAccount.email,
+        avatar: selectedAccount.avatar,
+        roles: selectedAccount.roles,
+        ...(selectedAccount.password && { password: selectedAccount.password }),
+      });
+    } else {
+      await AddUser({
+        userName: selectedAccount.userName,
+        password: selectedAccount.password,
+        fullName: selectedAccount.fullName,
+        email: selectedAccount.email,
+        avatar: selectedAccount.avatar,
+        roles: selectedAccount.roles,
+      });
     }
 
-    try {
-      setLoading(true);
+    await fetchUsers();
 
-      if (isEditMode) {
-        // Update existing user
-        await UpdateUser(selectedAccount.userName, {
-          fullName: selectedAccount.fullName,
-          email: selectedAccount.email,
-          avatar: selectedAccount.avatar,
-          roles: selectedAccount.roles,
-          ...(selectedAccount.password && { password: selectedAccount.password }),
-        });
-      } else {
-        // Add new user
-        await AddUser({
-          userName: selectedAccount.userName,
-          password: selectedAccount.password,
-          fullName: selectedAccount.fullName,
-          email: selectedAccount.email,
-          avatar: selectedAccount.avatar,
-          roles: selectedAccount.roles,
-        });
-      }
-
-      // Refresh user list
-      await fetchUsers();
-
-      // If editing current user, update localStorage
-      if (currentUser && currentUser.userName === selectedAccount.userName) {
-        localStorage.setItem("currentUser", JSON.stringify(selectedAccount));
-      }
-
-      alert(isEditMode ? "Đã cập nhật tài khoản!" : "Đã thêm tài khoản mới!");
-      setOpenDialog(false);
-    } catch (err) {
-      console.error("Save error:", err);
-      alert(err.response?.data?.message || "Lỗi khi lưu tài khoản!");
-    } finally {
-      setLoading(false);
+    // If editing current user, update localStorage
+    if (currentUser && currentUser.userName === selectedAccount.userName) {
+      const updatedCurrentUser = {
+        ...currentUser,
+        fullName: selectedAccount.fullName,
+        email: selectedAccount.email,
+        avatar: selectedAccount.avatar,
+        roles: selectedAccount.roles,
+      };
+      
+      console.log("🔍 ManageUser - Updating current user:", updatedCurrentUser);
+      
+      localStorage.setItem("currentUser", JSON.stringify(updatedCurrentUser));
+      
+      // Dispatch event to notify other components
+      window.dispatchEvent(new Event('userUpdated'));
     }
-  };
+
+    alert(isEditMode ? "Đã cập nhật tài khoản!" : "Đã thêm tài khoản mới!");
+    setOpenDialog(false);
+  } catch (err) {
+    console.error("Save error:", err);
+    alert(err.response?.data?.message || "Lỗi khi lưu tài khoản!");
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Cấu hình cột
   const columns = [

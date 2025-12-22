@@ -43,10 +43,29 @@ export default function Navbar() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
-  useEffect(() => {
+useEffect(() => {
+  const loadUser = () => {
     const savedUser = JSON.parse(localStorage.getItem("currentUser"));
+    console.log("Navbar - Loading user:", savedUser);
+    console.log("Navbar - Avatar:", savedUser?.avatar);
     setCurrentUser(savedUser);
-  }, []);
+  };
+
+  loadUser();
+
+  const handleUserUpdate = () => {
+    console.log("🔍 Navbar - User updated event received");
+    loadUser();
+  };
+
+  window.addEventListener('storage', handleUserUpdate);
+  window.addEventListener('userUpdated', handleUserUpdate);
+
+  return () => {
+    window.removeEventListener('storage', handleUserUpdate);
+    window.removeEventListener('userUpdated', handleUserUpdate);
+  };
+}, []);
 
   useEffect(() => {
     const fetchCategories = async () => {

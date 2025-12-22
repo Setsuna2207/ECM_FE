@@ -48,10 +48,29 @@ export default function Sidebar() {
   const [currentUser, setCurrentUser] = useState(null);
 
   // Lấy thông tin user đăng nhập từ localStorage
-  useEffect(() => {
+useEffect(() => {
+  const loadUser = () => {
     const user = JSON.parse(localStorage.getItem("currentUser"));
+    console.log("Sidebar - Loading user:", user);
+    console.log("Sidebar - Avatar:", user?.avatar);
     if (user) setCurrentUser(user);
-  }, []);
+  };
+
+  loadUser();
+
+  const handleUserUpdate = () => {
+    console.log("🔍 Sidebar - User updated event received");
+    loadUser();
+  };
+
+  window.addEventListener('storage', handleUserUpdate);
+  window.addEventListener('userUpdated', handleUserUpdate);
+
+  return () => {
+    window.removeEventListener('storage', handleUserUpdate);
+    window.removeEventListener('userUpdated', handleUserUpdate);
+  };
+}, []);
 
   const isActive = (path) => location.pathname.startsWith(path);
 
