@@ -11,14 +11,16 @@ import {
   TextField,
   MenuItem,
   useTheme,
+  Alert,
+  CircularProgress,
 } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import Header from "../../../components/Header";
-import { mockAccount } from "../../../data/mockAccount";
 import { tokens } from "../../../theme";
+import { GetAllUsers, AddUser, UpdateUser, DeleteUser } from "../../../services/userService";
 
 export default function ManageUser() {
   const theme = useTheme();
@@ -28,17 +30,37 @@ export default function ManageUser() {
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   // Lấy thông tin người đăng nhập hiện tại
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
 
+  // Fetch all users on component mount
   useEffect(() => {
-    const formatted = mockAccount.map((acc, index) => ({
-      ...acc,
-      id: acc.userId || index + 1,
-    }));
-    setAccounts(formatted);
+    fetchUsers();
   }, []);
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await GetAllUsers();
+      const users = response.data.data || response.data || [];
+
+      const formatted = Array.isArray(users) ? users.map((user, index) => ({
+        ...user,
+        id: user.userId || user.id || index + 1,
+      })) : [];
+
+      setAccounts(formatted);
+    } catch (err) {
+      console.error("Failed to fetch users:", err);
+      setError("Không thể tải danh sách người dùng!");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAdd = () => {
     setSelectedAccount({
@@ -47,7 +69,7 @@ export default function ManageUser() {
       fullName: "",
       email: "",
       avatar: "",
-      access: "user",
+      roles: "User",
     });
     setIsEditMode(false);
     setOpenDialog(true);
@@ -59,32 +81,68 @@ export default function ManageUser() {
     setOpenDialog(true);
   };
 
-  const handleDelete = (row) => {
+  const handleDelete = async (row) => {
     if (window.confirm("Bạn có chắc muốn xóa tài khoản này không?")) {
-      setAccounts((prev) => prev.filter((acc) => acc.id !== row.id));
-      alert("Đã xóa tài khoản!");
+      try {
+        setLoading(true);
+        await DeleteUser(row.userName);
+        setAccounts((prev) => prev.filter((acc) => acc.id !== row.id));
+        alert("Đã xóa tài khoản!");
+      } catch (err) {
+        console.error("Delete error:", err);
+        alert(err.response?.data?.message || "Lỗi khi xóa tài khoản!");
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!selectedAccount.userName || !selectedAccount.email) {
       alert("Vui lòng nhập tên đăng nhập và email!");
       return;
     }
 
-    setAccounts((prev) =>
-      prev.map((acc) =>
-        acc.id === selectedAccount.id ? selectedAccount : acc
-      )
-    );
+    try {
+      setLoading(true);
 
-    // Nếu sửa chính mình thì cập nhật vào localStorage
-    if (currentUser && currentUser.userId === selectedAccount.userId) {
-      localStorage.setItem("currentUser", JSON.stringify(selectedAccount));
+      if (isEditMode) {
+        // Update existing user
+        await UpdateUser(selectedAccount.userName, {
+          fullName: selectedAccount.fullName,
+          email: selectedAccount.email,
+          avatar: selectedAccount.avatar,
+          roles: selectedAccount.roles,
+          ...(selectedAccount.password && { password: selectedAccount.password }),
+        });
+      } else {
+        // Add new user
+        await AddUser({
+          userName: selectedAccount.userName,
+          password: selectedAccount.password,
+          fullName: selectedAccount.fullName,
+          email: selectedAccount.email,
+          avatar: selectedAccount.avatar,
+          roles: selectedAccount.roles,
+        });
+      }
+
+      // Refresh user list
+      await fetchUsers();
+
+      // If editing current user, update localStorage
+      if (currentUser && currentUser.userName === selectedAccount.userName) {
+        localStorage.setItem("currentUser", JSON.stringify(selectedAccount));
+      }
+
+      alert(isEditMode ? "Đã cập nhật tài khoản!" : "Đã thêm tài khoản mới!");
+      setOpenDialog(false);
+    } catch (err) {
+      console.error("Save error:", err);
+      alert(err.response?.data?.message || "Lỗi khi lưu tài khoản!");
+    } finally {
+      setLoading(false);
     }
-
-    alert("Đã cập nhật tài khoản!");
-    setOpenDialog(false);
   };
 
   // Cấu hình cột
@@ -103,7 +161,7 @@ export default function ManageUser() {
     { field: "fullName", headerName: "Họ và tên", flex: 0.6, align: "center", headerAlign: "center" },
     { field: "email", headerName: "Email", flex: 1.2, align: "center", headerAlign: "center" },
     {
-      field: "access",
+      field: "roles",
       headerName: "Quyền truy cập",
       flex: 0.6,
       headerAlign: "center",
@@ -136,7 +194,7 @@ export default function ManageUser() {
     },
   ];
 
-  const isSelf = currentUser && selectedAccount && currentUser.userId === selectedAccount.userId;
+  const isSelf = currentUser && selectedAccount && currentUser.userName === selectedAccount.userName;
 
   return (
     <Box flex="1" overflow="auto" p={3}>
@@ -147,11 +205,18 @@ export default function ManageUser() {
           color="secondary"
           startIcon={<AddIcon />}
           onClick={handleAdd}
+          disabled={loading}
           sx={{ borderRadius: 2, textTransform: "none" }}
         >
           Thêm tài khoản
         </Button>
       </Box>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
 
       <Box
         mt="10px"
@@ -193,7 +258,7 @@ export default function ManageUser() {
             onChange={(e) =>
               setSelectedAccount({ ...selectedAccount, password: e.target.value })
             }
-            disabled={!isSelf}
+            disabled={isEditMode && !isSelf}
           />
           <TextField
             margin="dense"
@@ -203,7 +268,7 @@ export default function ManageUser() {
             onChange={(e) =>
               setSelectedAccount({ ...selectedAccount, fullName: e.target.value })
             }
-            disabled={!isSelf}
+            disabled={isEditMode && !isSelf}
           />
           <TextField
             margin="dense"
@@ -213,7 +278,7 @@ export default function ManageUser() {
             onChange={(e) =>
               setSelectedAccount({ ...selectedAccount, email: e.target.value })
             }
-            disabled={!isSelf}
+            disabled={isEditMode && !isSelf}
           />
 
           <TextField
@@ -221,14 +286,14 @@ export default function ManageUser() {
             margin="dense"
             label="Phân quyền"
             fullWidth
-            value={selectedAccount?.access || "user"}
+            value={selectedAccount?.roles || "User"}
             onChange={(e) =>
-              setSelectedAccount({ ...selectedAccount, access: e.target.value })
+              setSelectedAccount({ ...selectedAccount, roles: e.target.value })
             }
             disabled={isSelf} // 🔸 Không cho đổi quyền của chính mình
           >
-            <MenuItem value="admin">Admin</MenuItem>
-            <MenuItem value="user">User</MenuItem>
+            <MenuItem value="Admin">Admin</MenuItem>
+            <MenuItem value="User">User</MenuItem>
           </TextField>
 
           <TextField
@@ -239,7 +304,7 @@ export default function ManageUser() {
             onChange={(e) =>
               setSelectedAccount({ ...selectedAccount, avatar: e.target.value })
             }
-            disabled={!isSelf}
+            disabled={isEditMode && !isSelf}
           />
           {selectedAccount?.avatar && (
             <Box mt={2} display="flex" justifyContent="center">
@@ -253,7 +318,7 @@ export default function ManageUser() {
             variant="contained"
             color="primary"
             onClick={handleSave}
-            disabled={!isSelf && !isEditMode}
+            disabled={loading}
           >
             Lưu thay đổi
           </Button>
