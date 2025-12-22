@@ -6,7 +6,6 @@ import Footer from "../../components/Footer";
 import TestCard from "../../components/TestCard";
 import { mockTests } from "../../data/mockTest";
 
-
 export default function TestPage() {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [page, setPage] = useState(1);
