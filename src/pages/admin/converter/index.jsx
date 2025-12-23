@@ -14,7 +14,6 @@ import {
   Divider,
   Paper,
   Chip,
-  IconButton,
   Tooltip,
 } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -38,13 +37,12 @@ export default function FileConverter() {
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file) {
-      // Validate file type
       const extension = file.name.split('.').pop().toLowerCase();
       if (extension !== 'docx' && extension !== 'pdf') {
         setError("Chỉ hỗ trợ file .docx và .pdf");
         return;
       }
-      
+
       setSelectedFile(file);
       setError("");
       setResult(null);
@@ -65,37 +63,79 @@ export default function FileConverter() {
       const extension = selectedFile.name.split('.').pop().toLowerCase();
       let response;
 
+      console.log("🔄 Converting file:", selectedFile.name);
+      console.log("🔄 File type:", fileType);
+      console.log("🔄 Extension:", extension);
+
       if (extension === 'docx') {
         response = await ConvertDocxToJson(selectedFile, fileType);
       } else if (extension === 'pdf') {
         response = await ConvertPdfToJson(selectedFile, fileType);
       }
 
-      if (response.data.success) {
-        setResult(response.data);
+      console.log("📊 Full response:", response);
+      console.log("📊 Response data:", response.data);
+
+      const responseData = response.data;
+
+      if (responseData.success === true || response.status === 200) {
+        console.log("✅ Chuyển đổi thành công!");
+        // Store the actual data object which contains jsonString
+        setResult(responseData);
         setError("");
       } else {
-        setError(response.data.message || "Lỗi khi chuyển đổi file");
+        console.log("❌ Conversion failed:", responseData.message);
+        setError(responseData.message || "Lỗi khi chuyển đổi file");
       }
     } catch (err) {
-      console.error("Conversion error:", err);
-      setError(err.response?.data?.message || "Lỗi khi chuyển đổi file");
+      console.error("❌ Conversion error:", err);
+      console.error("❌ Error response:", err.response);
+      console.error("❌ Error data:", err.response?.data);
+
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.response?.data) {
+        setError(typeof err.response.data === 'string'
+          ? err.response.data
+          : JSON.stringify(err.response.data));
+      } else if (err.message) {
+        setError(err.message);
+      } else {
+        setError("Lỗi không xác định khi chuyển đổi file");
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const handleCopyJson = () => {
-    if (result?.jsonString) {
-      navigator.clipboard.writeText(result.jsonString);
+    // Try multiple possible locations for the JSON string
+    const jsonString = result?.jsonString ||
+      result?.data?.jsonString ||
+      (result?.data && JSON.stringify(result.data, null, 2)) ||
+      JSON.stringify(result, null, 2);
+
+    if (jsonString) {
+      console.log("📋 Copying JSON to clipboard");
+      navigator.clipboard.writeText(jsonString);
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
+    } else {
+      console.error("❌ No JSON string found in result:", result);
+      setError("Không thể sao chép JSON");
     }
   };
 
   const handleDownloadJson = () => {
-    if (result?.jsonString) {
-      const blob = new Blob([result.jsonString], { type: 'application/json' });
+    // Try multiple possible locations for the JSON string
+    const jsonString = result?.jsonString ||
+      result?.data?.jsonString ||
+      (result?.data && JSON.stringify(result.data, null, 2)) ||
+      JSON.stringify(result, null, 2);
+
+    if (jsonString) {
+      console.log("📥 Downloading JSON file");
+      const blob = new Blob([jsonString], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -104,6 +144,9 @@ export default function FileConverter() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+    } else {
+      console.error("❌ No JSON string found in result:", result);
+      setError("Không thể tải xuống JSON");
     }
   };
 
@@ -126,9 +169,9 @@ export default function FileConverter() {
 
   return (
     <Box p={3}>
-      <Header 
-        title="Chuyển đổi File sang JSON" 
-        subtitle="Chuyển đổi file DOCX/PDF thành định dạng JSON cho Quiz và Test" 
+      <Header
+        title="Chuyển đổi File sang JSON"
+        subtitle="Chuyển đổi file DOCX/PDF thành định dạng JSON cho Quiz và Test"
       />
 
       <Box sx={{ maxWidth: 1200, mx: "auto", mt: 3 }}>
@@ -262,7 +305,7 @@ export default function FileConverter() {
               </Box>
 
               <Alert severity="success" sx={{ mb: 2 }}>
-                {result.message}
+                {result.message || "Chuyển đổi thành công!"}
               </Alert>
 
               {/* Summary */}
@@ -340,7 +383,7 @@ export default function FileConverter() {
                 }}
               >
                 <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>
-                  {result.jsonString}
+                  {result?.jsonString || result?.data?.jsonString || (result?.data && JSON.stringify(result.data, null, 2)) || JSON.stringify(result, null, 2) || "No JSON data available"}
                 </pre>
               </Paper>
             </CardContent>
