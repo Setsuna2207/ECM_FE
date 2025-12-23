@@ -57,33 +57,29 @@ const handleLogin = async (e) => {
     });
 
     if (loginResponse.status === 200) {
-      // Get userName from login response
-      let loginData = loginResponse.data;
-      if (Array.isArray(loginData)) loginData = loginData[0];
-      if (loginData.data) loginData = loginData.data;
-
-      const userName = loginData.userName;
-      console.log("Logged in as:", userName);
-
-      console.log("Fetching complete user data...");
-      const userResponse = await GetUser(userName);
+      // Get user data directly from login response
+      let userData = loginResponse.data;
       
-      console.log("GetUser response:", userResponse);
-      console.log("GetUser response.data:", userResponse.data);
-
-      let userData = userResponse.data;
+      // Handle different response structures
+      if (Array.isArray(userData)) userData = userData[0];
       if (userData.data) userData = userData.data;
 
-      console.log("Complete user data:", userData);
-      console.log("Avatar from GetUser:", userData?.avatar);
+      console.log("Complete user data from login:", userData);
+      console.log("Avatar:", userData?.avatar);
+      console.log("Roles:", userData?.roles);
 
       // Store token if present
-      if (loginData.accessToken) {
-        localStorage.setItem("access_token", loginData.accessToken);
+      if (userData.token || userData.accessToken) {
+        const token = userData.token || userData.accessToken;
+        localStorage.setItem("access_token", token);
       }
 
-      // Store complete user data
-      localStorage.setItem("currentUser", JSON.stringify(userData));
+      // Store complete user data (remove token from user object if present)
+      const userDataToStore = { ...userData };
+      delete userDataToStore.token;
+      delete userDataToStore.accessToken;
+      
+      localStorage.setItem("currentUser", JSON.stringify(userDataToStore));
 
       // Verify
       const saved = JSON.parse(localStorage.getItem("currentUser"));
@@ -93,8 +89,8 @@ const handleLogin = async (e) => {
       // Dispatch event
       window.dispatchEvent(new Event('userUpdated'));
 
-      // Redirect
-      if (userData.access === "admin" || userData.role === "admin" || userData.roles === "Admin") {
+      // Redirect based on role
+      if (userData.roles === "Admin" || userData.role === "Admin" || userData.access === "admin") {
         navigate("/admin");
       } else {
         navigate("/");

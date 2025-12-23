@@ -26,6 +26,7 @@ import ManageCategory from "./pages/admin/categories";
 import ManageQuizz from "./pages/admin/quizzes";
 import ManageUser from "./pages/admin/users";
 import ManageTests from "./pages/admin/tests";
+import FileConverter from "./pages/admin/converter";
 
 export default function AppRouter() {
   return (
@@ -57,6 +58,7 @@ export default function AppRouter() {
           <Route path="quizzes" element={<ManageQuizz />} />
           <Route path="users" element={<ManageUser />} />
           <Route path="tests" element={<ManageTests />} />
+          <Route path="converter" element={<FileConverter />} />
         </Route>
       </Routes>
     </Router>

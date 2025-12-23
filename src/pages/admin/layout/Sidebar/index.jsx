@@ -40,6 +40,7 @@ const menuItems = [
   { text: "Quiz", icon: <QuizIcon />, path: "/admin/quizzes" },
   { text: "Đánh giá", icon: <RateReviewIcon />, path: "/admin/reviews" },
   { text: "Test", icon: <QuizIcon />, path: "/admin/tests" },
+  { text: "Chuyển đổi File", icon: <QuizIcon />, path: "/admin/converter" },
 ];
 
 export default function Sidebar() {
