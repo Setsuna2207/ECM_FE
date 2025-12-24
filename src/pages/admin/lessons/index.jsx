@@ -19,6 +19,7 @@ import {
   Divider,
   alpha,
   CircularProgress,
+  LinearProgress,
 } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import AddIcon from "@mui/icons-material/Add";
@@ -50,6 +51,13 @@ import {
   GetCourseById,
 } from "../../../services/courseService";
 
+import {
+  UploadFile,
+  UploadMultipleFiles,
+  DeleteFile,
+  GetFileUploadInfo,
+} from "../../../services/fileUploadService";
+
 export default function ManageLessons() {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -72,6 +80,12 @@ export default function ManageLessons() {
   const [previewFileUrl, setPreviewFileUrl] = useState(null);
   const [openPreviewFileDialog, setOpenPreviewFileDialog] = useState(false);
 
+  // File upload stat
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadingFileName, setUploadingFileName] = useState("");
+  const [fileUploadLimits, setFileUploadLimits] = useState(null);
+
   // Fetch all courses from backend for autocomplete
   useEffect(() => {
     const fetchCourses = async () => {
@@ -79,17 +93,17 @@ export default function ManageLessons() {
       try {
         const response = await GetAllCourses();
         console.log("Courses API response:", response.data);
-        
+
         // API returns array directly
         const coursesData = Array.isArray(response.data) ? response.data : [];
-        
+
         // Format courses to ensure consistent field names
         const formattedCourses = coursesData.map(course => ({
           ...course,
           courseId: course.courseID || course.courseId || course.id,
           title: course.title || course.courseName || "Untitled Course"
         }));
-        
+
         console.log("Formatted courses:", formattedCourses);
         setCourses(formattedCourses);
       } catch (error) {
@@ -110,7 +124,7 @@ export default function ManageLessons() {
       setLoading(true);
       try {
         let response;
-        
+
         if (selectedCourse && selectedCourse.courseId) {
           // Fetch lessons for specific course
           console.log("Fetching lessons for course:", selectedCourse.courseId);
@@ -120,14 +134,14 @@ export default function ManageLessons() {
           console.log("Fetching all lessons");
           response = await GetAllLessons();
         }
-        
+
         console.log("Lessons API response:", response.data);
-        
+
         // API returns array directly
         const lessonsData = Array.isArray(response.data) ? response.data : [];
-        
+
         console.log("Lessons data:", lessonsData);
-        
+
         // Format lessons to match the component's expected structure
         const formatted = lessonsData.map((lesson, index) => ({
           ...lesson,
@@ -157,7 +171,7 @@ export default function ManageLessons() {
             return [];
           })()
         }));
-        
+
         console.log("Formatted lessons:", formatted);
         setLessons(formatted);
       } catch (error) {
@@ -173,18 +187,76 @@ export default function ManageLessons() {
     fetchLessons();
   }, [selectedCourse]);
 
+  // Fetch file upload limits on mount
+  useEffect(() => {
+    const fetchLimits = async () => {
+      try {
+        const response = await GetFileUploadInfo();
+        setFileUploadLimits(response.data.limits);
+        console.log("File upload limits:", response.data.limits);
+      } catch (error) {
+        console.error("Error fetching upload limits:", error);
+      }
+    };
+    fetchLimits();
+  }, []);
+
+  // Video upload handler with 5GB limit
+  const handleVideoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const maxVideoSize = 5 * 1024 * 1024 * 1024; // 5 GB
+
+    if (file.size > maxVideoSize) {
+      alert(`Video quá lớn! Kích thước tối đa là 5 GB.\nFile của bạn: ${(file.size / (1024 * 1024 * 1024)).toFixed(2)} GB`);
+      e.target.value = ""; // Reset input
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      setUploadProgress(0);
+      setUploadingFileName(file.name);
+
+      const response = await UploadFile(file, "video", (progressEvent) => {
+        const percentCompleted = Math.round(
+          (progressEvent.loaded * 100) / progressEvent.total
+        );
+        setUploadProgress(percentCompleted);
+      });
+
+      setSelectedLesson((prev) => ({
+        ...prev,
+        videoUrl: response.data.url,
+        videoName: response.data.fileName,
+      }));
+
+      alert("✅ Tải video thành công!");
+    } catch (error) {
+      console.error("Error uploading video:", error);
+      const errorMsg = error.response?.data?.message || error.message || "Lỗi không xác định";
+      alert(`❌ Không thể tải video:\n${errorMsg}`);
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+      setUploadingFileName("");
+      e.target.value = ""; // Reset input
+    }
+  };
+
   // Filter lessons by selected course (no filter needed - handled by API)
   const filteredLessons = lessons;
 
   // Handler functions
   const handleAddLesson = () => {
     if (!selectedCourse) return;
-    
+
     const courseId = selectedCourse.courseID || selectedCourse.courseId || selectedCourse.id;
-    
+
     console.log("Adding lesson for course:", selectedCourse);
     console.log("Extracted courseId:", courseId);
-    
+
     setIsEditMode(false);
     setSelectedLesson({
       title: "",
@@ -202,17 +274,17 @@ export default function ManageLessons() {
     try {
       // Use lessonID or lessonId from the row
       const lessonId = row.lessonID || row.lessonId || row.id;
-      
+
       console.log("Editing lesson ID:", lessonId);
-      
+
       // Optionally fetch full lesson details from backend
       const response = await GetLessonById(lessonId);
       const lessonData = response.data || row;
-      
+
       console.log("Lesson data for edit:", lessonData);
-      
+
       setIsEditMode(true);
-      setSelectedLesson({ 
+      setSelectedLesson({
         ...lessonData,
         id: lessonData.lessonID || lessonData.lessonId || lessonData.id,
         lessonId: lessonData.lessonID || lessonData.lessonId || lessonData.id,
@@ -242,7 +314,7 @@ export default function ManageLessons() {
       console.error("Error fetching lesson details:", error);
       // Fallback to row data
       setIsEditMode(true);
-      setSelectedLesson({ 
+      setSelectedLesson({
         ...row,
         lessonId: row.lessonID || row.lessonId || row.id,
         lessonID: row.lessonID || row.lessonId || row.id,
@@ -253,15 +325,15 @@ export default function ManageLessons() {
 
   const handleDeleteLesson = async (row) => {
     if (!window.confirm("Bạn có chắc muốn xóa bài giảng này?")) return;
-    
+
     try {
       setLoading(true);
       const lessonId = row.lessonID || row.lessonId || row.id;
-      
+
       console.log("Deleting lesson ID:", lessonId);
-      
+
       await DeleteLesson(lessonId);
-      
+
       // Remove from local state
       setLessons((prev) => prev.filter((l) => (l.lessonID || l.lessonId || l.id) !== lessonId));
       alert("Xóa thành công!");
@@ -273,37 +345,86 @@ export default function ManageLessons() {
     }
   };
 
-  // Video upload handler
-  const handleVideoUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    // Create local preview URL
-    const url = URL.createObjectURL(file);
-    setSelectedLesson((prev) => ({
-      ...prev,
-      videoUrl: url,
-      videoName: file.name,
-      videoFile: file, // Store file for upload
-    }));
-  };
-
-  // Material upload handler
-  const handleMaterialUpload = (e) => {
+  // Material upload handler with 100MB per file limit
+  const handleMaterialUpload = async (e) => {
     const files = Array.from(e.target.files);
-    files.forEach((file) => {
-      const url = URL.createObjectURL(file);
+    if (files.length === 0) return;
+
+    const maxDocSize = 100 * 1024 * 1024; // 100 MB
+
+    // Check each file size
+    const oversizedFiles = files.filter(f => f.size > maxDocSize);
+    if (oversizedFiles.length > 0) {
+      const fileList = oversizedFiles.map(f =>
+        `${f.name} (${(f.size / (1024 * 1024)).toFixed(2)} MB)`
+      ).join("\n");
+      alert(`❌ Các file sau quá lớn (tối đa 100 MB):\n${fileList}`);
+      e.target.value = ""; // Reset input
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      setUploadProgress(0);
+      setUploadingFileName(`${files.length} tài liệu`);
+
+      const response = await UploadMultipleFiles(files, "document", (progressEvent) => {
+        const percentCompleted = Math.round(
+          (progressEvent.loaded * 100) / progressEvent.total
+        );
+        setUploadProgress(percentCompleted);
+      });
+
+      // Add uploaded files to materials
+      const uploadedFiles = response.data.files.map(file => ({
+        name: file.fileName,
+        url: file.url,
+      }));
+
       setSelectedLesson((prev) => ({
         ...prev,
-        materials: [
-          ...(prev.materials || []),
-          { name: file.name, url: url, file: file }, // Store file for upload
-        ],
+        materials: [...(prev.materials || []), ...uploadedFiles],
       }));
-    });
+
+      if (response.data.errors && response.data.errors.length > 0) {
+        alert(`⚠️ Một số file không tải được:\n${response.data.errors.join("\n")}\n\n✅ Đã tải thành công: ${response.data.successCount} file`);
+      } else {
+        alert(`✅ Tải thành công ${response.data.successCount} tài liệu!`);
+      }
+    } catch (error) {
+      console.error("Error uploading documents:", error);
+      const errorMsg = error.response?.data?.message || error.message || "Lỗi không xác định";
+      alert(`❌ Không thể tải tài liệu:\n${errorMsg}`);
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+      setUploadingFileName("");
+      e.target.value = ""; // Reset input
+    }
   };
 
-  const handleRemoveMaterial = (index) => {
+  // Remove material with optional server deletion
+  const handleRemoveMaterial = async (index) => {
+    const material = selectedLesson.materials[index];
+
+    // If it's already uploaded to server, ask to delete
+    if (material.url.startsWith("/uploads/")) {
+      const confirmDelete = window.confirm(
+        `Xóa file "${material.name}"?\n\nChọn OK để xóa vĩnh viễn khỏi server\nChọn Cancel để chỉ xóa khỏi danh sách`
+      );
+
+      if (confirmDelete) {
+        try {
+          await DeleteFile(material.url);
+          console.log("File deleted from server:", material.url);
+        } catch (error) {
+          console.error("Error deleting file from server:", error);
+          alert("⚠️ Không thể xóa file khỏi server, nhưng sẽ xóa khỏi danh sách");
+        }
+      }
+    }
+
+    // Remove from local state
     setSelectedLesson((prev) => ({
       ...prev,
       materials: prev.materials.filter((_, i) => i !== index),
@@ -362,7 +483,7 @@ export default function ManageLessons() {
       if (isEditMode) {
         // Update existing lesson
         const lessonId = selectedLesson.lessonID || selectedLesson.lessonId || selectedLesson.id;
-        
+
         if (!lessonId) {
           alert("Không tìm thấy ID bài giảng để cập nhật!");
           return;
@@ -370,9 +491,9 @@ export default function ManageLessons() {
 
         console.log("Updating lesson ID:", lessonId);
         const response = await UpdateLesson(lessonId, lessonData);
-        
+
         console.log("Update response:", response.data);
-        
+
         // Refresh the lessons list
         if (selectedCourse && selectedCourse.courseId) {
           const refreshResponse = await GetLessonByCourseId(selectedCourse.courseId);
@@ -434,14 +555,14 @@ export default function ManageLessons() {
           }));
           setLessons(formatted);
         }
-        
+
         alert("Cập nhật thành công!");
       } else {
         // Create new lesson
         const response = await CreateLesson(lessonData);
-        
+
         console.log("Create response:", response.data);
-        
+
         // Refresh the lessons list
         if (selectedCourse && selectedCourse.courseId) {
           const refreshResponse = await GetLessonByCourseId(selectedCourse.courseId);
@@ -479,20 +600,20 @@ export default function ManageLessons() {
           }));
           setLessons(formatted);
         }
-        
+
         alert("Thêm thành công!");
       }
-      
+
       setOpenDialog(false);
     } catch (error) {
       console.error("Error saving lesson:", error);
       console.error("Error response:", error.response?.data);
-      
-      const errorMessage = error.response?.data?.message 
+
+      const errorMessage = error.response?.data?.message
         || error.response?.data?.title
-        || error.message 
+        || error.message
         || "Có lỗi xảy ra";
-      
+
       alert(
         isEditMode
           ? `Không thể cập nhật bài giảng: ${errorMessage}`
@@ -504,17 +625,17 @@ export default function ManageLessons() {
   };
 
   const columns = [
-    { 
-      field: "orderIndex", 
-      headerName: "STT", 
-      width: 80, 
-      align: "center", 
+    {
+      field: "orderIndex",
+      headerName: "STT",
+      width: 80,
+      align: "center",
       headerAlign: "center",
     },
-    { 
-      field: "title", 
-      headerName: "Tên bài giảng", 
-      flex: 1.5, 
+    {
+      field: "title",
+      headerName: "Tên bài giảng",
+      flex: 1.5,
       headerAlign: "center",
     },
     {
@@ -537,7 +658,7 @@ export default function ManageLessons() {
                 label={m.name}
                 size="small"
                 onClick={() => handlePreviewFile(m)}
-                sx={{ 
+                sx={{
                   cursor: "pointer",
                   mb: 0.5,
                   maxWidth: 200,
@@ -566,15 +687,15 @@ export default function ManageLessons() {
       renderCell: (params) =>
         params.value ? (
           <Tooltip title="Xem video" arrow>
-            <IconButton 
-              color="secondary" 
+            <IconButton
+              color="secondary"
               onClick={(e) => {
                 e.stopPropagation();
                 handlePreviewVideo(params.value);
               }}
-              sx={{ 
+              sx={{
                 transition: "all 0.2s",
-                "&:hover": { 
+                "&:hover": {
                   backgroundColor: alpha(colors.greenAccent[500], 0.2),
                   transform: "scale(1.1)",
                 }
@@ -599,13 +720,13 @@ export default function ManageLessons() {
       renderCell: (params) => (
         <Box sx={{ display: "flex", gap: 0.5 }}>
           <Tooltip title="Chỉnh sửa" arrow>
-            <IconButton 
-              color="primary" 
+            <IconButton
+              color="primary"
               onClick={() => handleEditLesson(params.row)}
               size="small"
-              sx={{ 
+              sx={{
                 transition: "all 0.2s",
-                "&:hover": { 
+                "&:hover": {
                   transform: "scale(1.1)",
                 }
               }}
@@ -614,13 +735,13 @@ export default function ManageLessons() {
             </IconButton>
           </Tooltip>
           <Tooltip title="Xóa" arrow>
-            <IconButton 
-              color="error" 
+            <IconButton
+              color="error"
               onClick={() => handleDeleteLesson(params.row)}
               size="small"
-              sx={{ 
+              sx={{
                 transition: "all 0.2s",
-                "&:hover": { 
+                "&:hover": {
                   transform: "scale(1.1)",
                 }
               }}
@@ -638,11 +759,11 @@ export default function ManageLessons() {
       <Header title="Quản lý bài giảng" subtitle="Danh sách các bài giảng" />
 
       {/* Course Selection Card */}
-      <Paper 
+      <Paper
         elevation={0}
-        sx={{ 
-          p: 3, 
-          mt: 3, 
+        sx={{
+          p: 3,
+          mt: 3,
           mb: 3,
           borderRadius: 3,
           background: `linear-gradient(135deg, ${alpha(colors.primary[400], 0.1)} 0%, ${alpha(colors.greenAccent[400], 0.05)} 100%)`,
@@ -653,7 +774,7 @@ export default function ManageLessons() {
           <Autocomplete
             freeSolo={false}
             loading={coursesLoading}
-            sx={{ 
+            sx={{
               minWidth: 350,
               flex: 1,
               "& .MuiOutlinedInput-root": {
@@ -677,7 +798,7 @@ export default function ManageLessons() {
             onChange={(e, value) => {
               console.log("=== COURSE SELECTION ===");
               console.log("Selected course raw:", value);
-              
+
               if (value) {
                 // Normalize the course object
                 const normalizedCourse = {
@@ -685,10 +806,10 @@ export default function ManageLessons() {
                   courseId: value.courseID || value.courseId || value.id,
                   courseID: value.courseID || value.courseId || value.id,
                 };
-                
+
                 console.log("Normalized course:", normalizedCourse);
                 console.log("courseID:", normalizedCourse.courseID, "Type:", typeof normalizedCourse.courseID);
-                
+
                 setSelectedCourse(normalizedCourse);
               } else {
                 console.log("Course cleared");
@@ -696,9 +817,9 @@ export default function ManageLessons() {
               }
             }}
             renderInput={(params) => (
-              <TextField 
-                {...params} 
-                label="Chọn khóa học" 
+              <TextField
+                {...params}
+                label="Chọn khóa học"
                 placeholder="Tìm kiếm hoặc chọn khóa học..."
                 InputProps={{
                   ...params.InputProps,
@@ -719,7 +840,7 @@ export default function ManageLessons() {
             startIcon={<AddIcon />}
             onClick={handleAddLesson}
             disabled={!selectedCourse || loading}
-            sx={{ 
+            sx={{
               borderRadius: 2,
               px: 3,
               py: 1.2,
@@ -739,12 +860,12 @@ export default function ManageLessons() {
 
         {selectedCourse && (
           <Box mt={2} display="flex" alignItems="center" gap={2}>
-            <Chip 
+            <Chip
               label={`📚 ${selectedCourse.title || selectedCourse.courseName || 'Khóa học'}`}
               color="primary"
               sx={{ fontWeight: 600, fontSize: "0.9rem", py: 2.5 }}
             />
-            <Chip 
+            <Chip
               label={`${filteredLessons.length} bài giảng`}
               variant="outlined"
               size="small"
@@ -754,10 +875,10 @@ export default function ManageLessons() {
       </Paper>
 
       {/* DataGrid */}
-      <Paper 
+      <Paper
         elevation={0}
-        sx={{ 
-          height: "calc(100vh - 340px)", 
+        sx={{
+          height: "calc(100vh - 340px)",
           borderRadius: 3,
           overflow: "hidden",
           border: `1px solid ${alpha(colors.primary[400], 0.1)}`,
@@ -773,7 +894,7 @@ export default function ManageLessons() {
           loading={loading}
           sx={{
             border: "none",
-            "& .MuiDataGrid-columnHeaders": { 
+            "& .MuiDataGrid-columnHeaders": {
               background: alpha(colors.primary[400], 0.1),
               borderRadius: 0,
               fontWeight: 700,
@@ -792,10 +913,10 @@ export default function ManageLessons() {
       </Paper>
 
       {/* Dialog thêm/sửa */}
-      <Dialog 
-        open={openDialog} 
-        onClose={() => setOpenDialog(false)} 
-        fullWidth 
+      <Dialog
+        open={openDialog}
+        onClose={() => setOpenDialog(false)}
+        fullWidth
         maxWidth="md"
         PaperProps={{
           sx: {
@@ -804,7 +925,7 @@ export default function ManageLessons() {
           }
         }}
       >
-        <DialogTitle sx={{ 
+        <DialogTitle sx={{
           borderBottom: `1px solid ${alpha(colors.primary[400], 0.1)}`,
           pb: 2,
         }}>
@@ -816,8 +937,8 @@ export default function ManageLessons() {
           {selectedCourse && (
             <Paper
               elevation={0}
-              sx={{ 
-                p: 2, 
+              sx={{
+                p: 2,
                 mb: 3,
                 backgroundColor: alpha(colors.greenAccent[500], 0.1),
                 borderRadius: 2,
@@ -856,8 +977,8 @@ export default function ManageLessons() {
           {/* Video Section */}
           <Paper
             elevation={0}
-            sx={{ 
-              p: 2.5, 
+            sx={{
+              p: 2.5,
               mb: 3,
               backgroundColor: alpha(colors.primary[400], 0.05),
               borderRadius: 2,
@@ -868,7 +989,7 @@ export default function ManageLessons() {
               <VideoLibraryIcon color="secondary" />
               <Typography variant="h6" fontWeight={600}>Video bài giảng</Typography>
             </Box>
-            
+
             <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
               <TextField
                 label="Nhập URL video (YouTube hoặc link trực tiếp)"
@@ -880,21 +1001,58 @@ export default function ManageLessons() {
                 }
                 sx={{ flex: 1, minWidth: 200 }}
               />
-              <Button 
-                variant="contained" 
-                component="label" 
+              <Button
+                variant="contained"
+                component="label"
                 startIcon={<CloudUploadIcon />}
-                sx={{ 
+                disabled={isUploading}
+                sx={{
                   borderRadius: 2,
                   textTransform: "none",
                   fontWeight: 600,
                 }}
               >
-                Tải lên
-                <input type="file" accept="video/*" hidden onChange={handleVideoUpload} />
+                Tải lên video (Max: 5 GB)
+                <input
+                  type="file"
+                  accept="video/*,.mp4,.avi,.mov,.wmv,.flv,.webm,.mkv,.m4v"
+                  hidden
+                  onChange={handleVideoUpload}
+                  disabled={isUploading}
+                />
               </Button>
             </Box>
-            
+
+            {isUploading && (
+              <Box sx={{ mt: 2, mb: 2 }}>
+                <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+                  <Typography variant="body2" color="text.secondary">
+                    📤 Đang tải: {uploadingFileName}
+                  </Typography>
+                  <Typography variant="body2" fontWeight={600} color="primary">
+                    {uploadProgress}%
+                  </Typography>
+                </Box>
+                <LinearProgress
+                  variant="determinate"
+                  value={uploadProgress}
+                  sx={{
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor: alpha(colors.primary[400], 0.1),
+                    '& .MuiLinearProgress-bar': {
+                      borderRadius: 4,
+                    }
+                  }}
+                />
+                {uploadProgress < 100 && (
+                  <Typography variant="caption" color="text.secondary" display="block" mt={1}>
+                    💡 Tip: Đừng đóng cửa sổ trong khi đang tải lên
+                  </Typography>
+                )}
+              </Box>
+            )}
+
             {selectedLesson?.videoName && (
               <Chip
                 icon={<PlayCircleOutlineIcon />}
@@ -908,7 +1066,7 @@ export default function ManageLessons() {
           {/* Materials Section */}
           <Paper
             elevation={0}
-            sx={{ 
+            sx={{
               p: 2.5,
               backgroundColor: alpha(colors.primary[400], 0.05),
               borderRadius: 2,
@@ -920,11 +1078,12 @@ export default function ManageLessons() {
               <Typography variant="h6" fontWeight={600}>Tài liệu đính kèm</Typography>
             </Box>
 
-            <Button 
-              variant="outlined" 
-              component="label" 
+            <Button
+              variant="outlined"
+              component="label"
               startIcon={<CloudUploadIcon />}
-              sx={{ 
+              disabled={isUploading}
+              sx={{
                 borderRadius: 2,
                 textTransform: "none",
                 fontWeight: 600,
@@ -933,13 +1092,14 @@ export default function ManageLessons() {
                 py: 1,
               }}
             >
-              Tải tài liệu (.pdf, .doc, .ppt, .txt)
+              Tải tài liệu (Max: 100 MB/file)
               <input
                 type="file"
-                accept=".pdf,.doc,.docx,.ppt,.pptx,.txt"
+                accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.xls,.xlsx"
                 multiple
                 hidden
                 onChange={handleMaterialUpload}
+                disabled={isUploading}
               />
             </Button>
 
@@ -952,24 +1112,24 @@ export default function ManageLessons() {
                   <Paper
                     key={idx}
                     elevation={0}
-                    sx={{ 
-                      p: 1.5, 
-                      mb: 1, 
+                    sx={{
+                      p: 1.5,
+                      mb: 1,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
                       border: `1px solid ${alpha(colors.primary[300], 0.2)}`,
                       borderRadius: 1.5,
                       transition: "all 0.2s",
-                      "&:hover": { 
+                      "&:hover": {
                         backgroundColor: alpha(colors.primary[400], 0.1),
                         transform: "translateX(4px)",
                       }
                     }}
                   >
-                    <Box 
-                      display="flex" 
-                      alignItems="center" 
+                    <Box
+                      display="flex"
+                      alignItems="center"
                       gap={1.5}
                       sx={{ cursor: "pointer", flex: 1 }}
                       onClick={() => handlePreviewFile(m)}
@@ -978,8 +1138,8 @@ export default function ManageLessons() {
                       <Typography
                         variant="body2"
                         fontWeight={500}
-                        sx={{ 
-                          "&:hover": { 
+                        sx={{
+                          "&:hover": {
                             textDecoration: "underline",
                             color: colors.primary[300],
                           }
@@ -989,9 +1149,9 @@ export default function ManageLessons() {
                       </Typography>
                     </Box>
                     <Tooltip title="Xóa tài liệu" arrow>
-                      <IconButton 
-                        size="small" 
-                        color="error" 
+                      <IconButton
+                        size="small"
+                        color="error"
                         onClick={() => handleRemoveMaterial(idx)}
                         sx={{
                           transition: "all 0.2s",
@@ -1010,14 +1170,14 @@ export default function ManageLessons() {
           </Paper>
         </DialogContent>
 
-        <DialogActions sx={{ 
-          p: 3, 
+        <DialogActions sx={{
+          p: 3,
           borderTop: `1px solid ${alpha(colors.primary[400], 0.1)}`,
         }}>
-          <Button 
+          <Button
             onClick={() => setOpenDialog(false)}
             disabled={loading}
-            sx={{ 
+            sx={{
               borderRadius: 2,
               textTransform: "none",
               px: 3,
@@ -1025,12 +1185,12 @@ export default function ManageLessons() {
           >
             Hủy bỏ
           </Button>
-          <Button 
-            variant="contained" 
-            color="primary" 
+          <Button
+            variant="contained"
+            color="primary"
             onClick={handleSubmit}
             disabled={loading}
-            sx={{ 
+            sx={{
               borderRadius: 2,
               textTransform: "none",
               px: 3,
@@ -1057,7 +1217,7 @@ export default function ManageLessons() {
           }
         }}
       >
-        <DialogTitle sx={{ 
+        <DialogTitle sx={{
           borderBottom: `1px solid ${alpha(colors.primary[400], 0.1)}`,
           display: "flex",
           alignItems: "center",
@@ -1100,7 +1260,7 @@ export default function ManageLessons() {
           )}
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button 
+          <Button
             onClick={() => {
               setOpenPreviewVideoDialog(false);
               setPreviewVideoUrl(null);
@@ -1124,7 +1284,7 @@ export default function ManageLessons() {
           }
         }}
       >
-        <DialogTitle sx={{ 
+        <DialogTitle sx={{
           borderBottom: `1px solid ${alpha(colors.primary[400], 0.1)}`,
           display: "flex",
           alignItems: "center",
@@ -1147,7 +1307,7 @@ export default function ManageLessons() {
           )}
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button 
+          <Button
             onClick={() => setOpenPreviewFileDialog(false)}
             sx={{ borderRadius: 2, textTransform: "none" }}
           >
