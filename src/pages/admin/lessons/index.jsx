@@ -437,12 +437,16 @@ export default function ManageLessons() {
       alert("Không có video để xem!");
       return;
     }
-    setPreviewVideoUrl(url);
+    const fullUrl = getFullUrl(url);
+    console.log("Preview video URL:", url, "->", fullUrl);
+    setPreviewVideoUrl(fullUrl);
     setOpenPreviewVideoDialog(true);
   };
 
   const handlePreviewFile = (file) => {
-    setPreviewFileUrl(file.url);
+    const fullUrl = getFullUrl(file.url);
+    console.log("Preview file URL:", file.url, "->", fullUrl);
+    setPreviewFileUrl(fullUrl);
     setOpenPreviewFileDialog(true);
   };
 
@@ -454,6 +458,67 @@ export default function ManageLessons() {
     return <DescriptionIcon fontSize="small" color="info" />;
   };
 
+  // Helper to convert relative URLs to full URLs
+  const getFullUrl = (url) => {
+    if (!url) return "";
+    // If it's already a full URL (http/https), return as is
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      return url;
+    }
+    // If it's a relative URL, prepend the API base URL
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://localhost:7264/api/v1";
+    // Remove /api/v1 from base URL to get the server root
+    const serverRoot = baseUrl.replace("/api/v1", "");
+    return `${serverRoot}${url}`;
+  };
+
+  // Helper function to refresh lessons list
+  const refreshLessons = async () => {
+    try {
+      let response;
+
+      if (selectedCourse && selectedCourse.courseId) {
+        response = await GetLessonByCourseId(selectedCourse.courseId);
+      } else {
+        response = await GetAllLessons();
+      }
+
+      const lessonsData = Array.isArray(response.data) ? response.data : [];
+
+      const formatted = lessonsData.map((lesson, index) => ({
+        ...lesson,
+        id: lesson.lessonID || lesson.lessonId || lesson.id || index + 1,
+        lessonId: lesson.lessonID || lesson.lessonId || lesson.id,
+        title: lesson.title || "Untitled",
+        videoUrl: lesson.videoUrl || "",
+        courseId: lesson.courseID || lesson.courseId,
+        orderIndex: lesson.orderIndex || index + 1,
+        materials: (() => {
+          if (!lesson.documentUrl) return [];
+          if (Array.isArray(lesson.documentUrl)) {
+            return lesson.documentUrl
+              .filter(url => url && url.trim().length > 0)
+              .map(url => ({
+                name: url.split("/").pop(),
+                url: url
+              }));
+          }
+          if (typeof lesson.documentUrl === 'string' && lesson.documentUrl.length > 0) {
+            return [{
+              name: lesson.documentUrl.split("/").pop(),
+              url: lesson.documentUrl
+            }];
+          }
+          return [];
+        })()
+      }));
+
+      setLessons(formatted);
+    } catch (error) {
+      console.error("Error refreshing lessons:", error);
+    }
+  };
+
   // Submit handler - Create or Update lesson
   const handleSubmit = async () => {
     if (!selectedLesson.title) {
@@ -461,7 +526,7 @@ export default function ManageLessons() {
       return;
     }
 
-    if (!selectedLesson.courseId) {
+    if (!selectedLesson.courseId && !selectedLesson.courseID) {
       alert("Vui lòng chọn khóa học");
       return;
     }
@@ -469,16 +534,23 @@ export default function ManageLessons() {
     try {
       setLoading(true);
 
-      // Prepare data for API - match backend field names
+      // Extract valid URLs from materials (filter out empty strings)
+      const documentUrls = (selectedLesson.materials || [])
+        .map(m => m.url)
+        .filter(url => url && url.trim().length > 0);
+
+      // Prepare data for API - ensure field names match backend exactly
       const lessonData = {
-        title: selectedLesson.title,
+        title: selectedLesson.title || "",
         videoUrl: selectedLesson.videoUrl || "",
-        documentUrl: selectedLesson.materials?.[0]?.url || "", // Take first material as documentUrl
-        courseID: selectedLesson.courseId, // Use courseID (capital D)
+        documentUrl: documentUrls, // Array of strings
+        courseID: selectedLesson.courseID || selectedLesson.courseId, // Use courseID (capital D)
         orderIndex: selectedLesson.orderIndex || 1,
       };
 
-      console.log("Submitting lesson data:", lessonData);
+      console.log("=== SUBMITTING LESSON ===");
+      console.log("Lesson data:", JSON.stringify(lessonData, null, 2));
+      console.log("Is Edit Mode:", isEditMode);
 
       if (isEditMode) {
         // Update existing lesson
@@ -493,131 +565,52 @@ export default function ManageLessons() {
         const response = await UpdateLesson(lessonId, lessonData);
 
         console.log("Update response:", response.data);
-
-        // Refresh the lessons list
-        if (selectedCourse && selectedCourse.courseId) {
-          const refreshResponse = await GetLessonByCourseId(selectedCourse.courseId);
-          const lessonsData = Array.isArray(refreshResponse.data) ? refreshResponse.data : [];
-          const formatted = lessonsData.map((lesson, index) => ({
-            ...lesson,
-            id: lesson.lessonID || lesson.lessonId || lesson.id || index + 1,
-            lessonId: lesson.lessonID || lesson.lessonId || lesson.id,
-            title: lesson.title || "Untitled",
-            videoUrl: lesson.videoUrl || "",
-            courseId: lesson.courseID || lesson.courseId,
-            orderIndex: lesson.orderIndex || index + 1,
-            materials: (() => {
-              if (!lesson.documentUrl) return [];
-              if (Array.isArray(lesson.documentUrl)) {
-                return lesson.documentUrl.map(url => ({
-                  name: url.split("/").pop(),
-                  url: url
-                }));
-              }
-              if (typeof lesson.documentUrl === 'string' && lesson.documentUrl.length > 0) {
-                return [{
-                  name: lesson.documentUrl.split("/").pop(),
-                  url: lesson.documentUrl
-                }];
-              }
-              return [];
-            })()
-          }));
-          setLessons(formatted);
-        } else {
-          // Refresh all lessons
-          const refreshResponse = await GetAllLessons();
-          const lessonsData = Array.isArray(refreshResponse.data) ? refreshResponse.data : [];
-          const formatted = lessonsData.map((lesson, index) => ({
-            ...lesson,
-            id: lesson.lessonID || lesson.lessonId || lesson.id || index + 1,
-            lessonId: lesson.lessonID || lesson.lessonId || lesson.id,
-            title: lesson.title || "Untitled",
-            videoUrl: lesson.videoUrl || "",
-            courseId: lesson.courseID || lesson.courseId,
-            orderIndex: lesson.orderIndex || index + 1,
-            materials: (() => {
-              if (!lesson.documentUrl) return [];
-              if (Array.isArray(lesson.documentUrl)) {
-                return lesson.documentUrl.map(url => ({
-                  name: url.split("/").pop(),
-                  url: url
-                }));
-              }
-              if (typeof lesson.documentUrl === 'string' && lesson.documentUrl.length > 0) {
-                return [{
-                  name: lesson.documentUrl.split("/").pop(),
-                  url: lesson.documentUrl
-                }];
-              }
-              return [];
-            })()
-          }));
-          setLessons(formatted);
-        }
-
-        alert("Cập nhật thành công!");
+        alert("✅ Cập nhật thành công!");
       } else {
         // Create new lesson
+        console.log("Creating new lesson");
         const response = await CreateLesson(lessonData);
 
         console.log("Create response:", response.data);
-
-        // Refresh the lessons list
-        if (selectedCourse && selectedCourse.courseId) {
-          const refreshResponse = await GetLessonByCourseId(selectedCourse.courseId);
-          const lessonsData = Array.isArray(refreshResponse.data) ? refreshResponse.data : [];
-          const formatted = lessonsData.map((lesson, index) => ({
-            ...lesson,
-            id: lesson.lessonID || lesson.lessonId || lesson.id || index + 1,
-            lessonId: lesson.lessonID || lesson.lessonId || lesson.id,
-            title: lesson.title || "Untitled",
-            videoUrl: lesson.videoUrl || "",
-            courseId: lesson.courseID || lesson.courseId,
-            orderIndex: lesson.orderIndex || index + 1,
-            materials: lesson.documentUrl ? [{
-              name: lesson.documentUrl.split("/").pop(),
-              url: lesson.documentUrl
-            }] : []
-          }));
-          setLessons(formatted);
-        } else {
-          // Refresh all lessons
-          const refreshResponse = await GetAllLessons();
-          const lessonsData = Array.isArray(refreshResponse.data) ? refreshResponse.data : [];
-          const formatted = lessonsData.map((lesson, index) => ({
-            ...lesson,
-            id: lesson.lessonID || lesson.lessonId || lesson.id || index + 1,
-            lessonId: lesson.lessonID || lesson.lessonId || lesson.id,
-            title: lesson.title || "Untitled",
-            videoUrl: lesson.videoUrl || "",
-            courseId: lesson.courseID || lesson.courseId,
-            orderIndex: lesson.orderIndex || index + 1,
-            materials: lesson.documentUrl ? [{
-              name: lesson.documentUrl.split("/").pop(),
-              url: lesson.documentUrl
-            }] : []
-          }));
-          setLessons(formatted);
-        }
-
-        alert("Thêm thành công!");
+        alert("✅ Thêm thành công!");
       }
+
+      // Refresh the lessons list
+      await refreshLessons();
 
       setOpenDialog(false);
     } catch (error) {
-      console.error("Error saving lesson:", error);
+      console.error("=== ERROR SAVING LESSON ===");
+      console.error("Error object:", error);
       console.error("Error response:", error.response?.data);
+      console.error("Error status:", error.response?.status);
 
-      const errorMessage = error.response?.data?.message
-        || error.response?.data?.title
-        || error.message
-        || "Có lỗi xảy ra";
+      // Extract error message
+      let errorMessage = "Có lỗi xảy ra";
+
+      if (error.response?.data) {
+        if (typeof error.response.data === 'string') {
+          errorMessage = error.response.data;
+        } else if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response.data.errors) {
+          // Handle validation errors array
+          if (Array.isArray(error.response.data.errors)) {
+            errorMessage = error.response.data.errors.join("\n");
+          } else {
+            errorMessage = JSON.stringify(error.response.data.errors);
+          }
+        } else if (error.response.data.title) {
+          errorMessage = error.response.data.title;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
 
       alert(
         isEditMode
-          ? `Không thể cập nhật bài giảng: ${errorMessage}`
-          : `Không thể thêm bài giảng: ${errorMessage}`
+          ? `❌ Không thể cập nhật bài giảng:\n${errorMessage}`
+          : `❌ Không thể thêm bài giảng:\n${errorMessage}`
       );
     } finally {
       setLoading(false);
