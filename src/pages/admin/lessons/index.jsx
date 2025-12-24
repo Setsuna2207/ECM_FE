@@ -79,6 +79,8 @@ export default function ManageLessons() {
   const [openPreviewVideoDialog, setOpenPreviewVideoDialog] = useState(false);
   const [previewFileUrl, setPreviewFileUrl] = useState(null);
   const [openPreviewFileDialog, setOpenPreviewFileDialog] = useState(false);
+  const [previewVideoError, setPreviewVideoError] = useState(false);
+  const [previewFileError, setPreviewFileError] = useState(false);
 
   // File upload stat
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -431,6 +433,12 @@ export default function ManageLessons() {
     }));
   };
 
+  // Helper to check if URL is a Google Drive preview URL
+  const isGoogleDriveUrl = (url) => {
+    if (!url) return false;
+    return url.includes("drive.google.com") || url.includes("docs.google.com");
+  };
+
   // Preview handlers
   const handlePreviewVideo = (url) => {
     if (!url) {
@@ -439,6 +447,7 @@ export default function ManageLessons() {
     }
     const fullUrl = getFullUrl(url);
     console.log("Preview video URL:", url, "->", fullUrl);
+    setPreviewVideoError(false);
     setPreviewVideoUrl(fullUrl);
     setOpenPreviewVideoDialog(true);
   };
@@ -446,6 +455,17 @@ export default function ManageLessons() {
   const handlePreviewFile = (file) => {
     const fullUrl = getFullUrl(file.url);
     console.log("Preview file URL:", file.url, "->", fullUrl);
+
+    // Check if it's a Google Drive URL
+    if (!isGoogleDriveUrl(fullUrl)) {
+      // Not a Google Drive URL, show error immediately
+      setPreviewFileError(true);
+      setPreviewFileUrl(null);
+      setOpenPreviewFileDialog(true);
+      return;
+    }
+
+    setPreviewFileError(false);
     setPreviewFileUrl(fullUrl);
     setOpenPreviewFileDialog(true);
   };
@@ -465,11 +485,19 @@ export default function ManageLessons() {
     if (url.startsWith("http://") || url.startsWith("https://")) {
       return url;
     }
-    // If it's a relative URL, prepend the API base URL
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://localhost:7264/api/v1";
-    // Remove /api/v1 from base URL to get the server root
-    const serverRoot = baseUrl.replace("/api/v1", "");
-    return `${serverRoot}${url}`;
+    // If it's a frontend asset path (contains /src/), return as is (Vite will handle it)
+    if (url.includes("/src/")) {
+      return url;
+    }
+    // If it's a relative URL starting with /, prepend the API base URL
+    if (url.startsWith("/")) {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://localhost:7264/api/v1";
+      // Remove /api/v1 from base URL to get the server root
+      const serverRoot = baseUrl.replace("/api/v1", "");
+      return `${serverRoot}${url}`;
+    }
+    // Otherwise return as is
+    return url;
   };
 
   // Helper function to refresh lessons list
@@ -1071,6 +1099,60 @@ export default function ManageLessons() {
               <Typography variant="h6" fontWeight={600}>Tài liệu đính kèm</Typography>
             </Box>
 
+            <Box display="flex" alignItems="center" gap={2} flexWrap="wrap" mb={2}>
+              <TextField
+                label="Nhập URL tài liệu (Google Drive, etc.)"
+                fullWidth
+                size="small"
+                placeholder="https://drive.google.com/... hoặc URL khác"
+                sx={{ flex: 1, minWidth: 250 }}
+                onChange={(e) => {
+                  const url = e.target.value.trim();
+                  if (url) {
+                    // Temporarily store in a ref or state to add on button click
+                    window.materialUrlInput = url;
+                  }
+                }}
+              />
+              <Button
+                variant="contained"
+                color="secondary"
+                startIcon={<AddIcon />}
+                onClick={() => {
+                  const url = window.materialUrlInput?.trim();
+                  if (!url) {
+                    alert("Vui lòng nhập URL tài liệu");
+                    return;
+                  }
+
+                  // Extract filename from URL or use generic name
+                  const fileName = url.split("/").pop() || `Tài liệu - ${new Date().getTime()}`;
+
+                  setSelectedLesson((prev) => ({
+                    ...prev,
+                    materials: [
+                      ...(prev.materials || []),
+                      { name: fileName, url: url }
+                    ]
+                  }));
+
+                  // Clear input
+                  window.materialUrlInput = "";
+                  const input = document.querySelector('input[placeholder*="Google Drive"]');
+                  if (input) input.value = "";
+
+                  alert("✅ Thêm tài liệu thành công!");
+                }}
+                sx={{
+                  borderRadius: 2,
+                  textTransform: "none",
+                  fontWeight: 600,
+                }}
+              >
+                Thêm URL
+              </Button>
+            </Box>
+
             <Button
               variant="outlined"
               component="label"
@@ -1201,6 +1283,7 @@ export default function ManageLessons() {
         onClose={() => {
           setOpenPreviewVideoDialog(false);
           setPreviewVideoUrl(null);
+          setPreviewVideoError(false);
         }}
         maxWidth="md"
         fullWidth
@@ -1220,7 +1303,12 @@ export default function ManageLessons() {
           <Typography variant="h6" fontWeight={600}>Xem trước video</Typography>
         </DialogTitle>
         <DialogContent sx={{ p: 0 }}>
-          {previewVideoUrl ? (
+          {previewVideoError ? (
+            <Box sx={{ p: 4, textAlign: "center" }}>
+              <VideoLibraryIcon sx={{ fontSize: 48, color: "text.secondary", mb: 2 }} />
+              <Typography color="text.secondary">Tài liệu không hỗ trợ preview</Typography>
+            </Box>
+          ) : previewVideoUrl ? (
             <Box sx={{ width: "100%", backgroundColor: "#000" }}>
               {previewVideoUrl.includes('youtube.com') || previewVideoUrl.includes('youtu.be') ? (
                 <iframe
@@ -1231,6 +1319,7 @@ export default function ManageLessons() {
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
+                  onError={() => setPreviewVideoError(true)}
                 />
               ) : (
                 <video
@@ -1238,6 +1327,7 @@ export default function ManageLessons() {
                   controls
                   autoPlay
                   style={{ width: "100%", maxHeight: "70vh", display: "block" }}
+                  onError={() => setPreviewVideoError(true)}
                 >
                   <source src={previewVideoUrl} type="video/mp4" />
                   <source src={previewVideoUrl} type="video/webm" />
@@ -1257,6 +1347,7 @@ export default function ManageLessons() {
             onClick={() => {
               setOpenPreviewVideoDialog(false);
               setPreviewVideoUrl(null);
+              setPreviewVideoError(false);
             }}
             sx={{ borderRadius: 2, textTransform: "none" }}
           >
@@ -1268,7 +1359,10 @@ export default function ManageLessons() {
       {/* Dialog Preview File */}
       <Dialog
         open={openPreviewFileDialog}
-        onClose={() => setOpenPreviewFileDialog(false)}
+        onClose={() => {
+          setOpenPreviewFileDialog(false);
+          setPreviewFileError(false);
+        }}
         maxWidth="md"
         fullWidth
         PaperProps={{
@@ -1287,11 +1381,17 @@ export default function ManageLessons() {
           <Typography variant="h6" fontWeight={600}>Xem trước tài liệu</Typography>
         </DialogTitle>
         <DialogContent sx={{ p: 0 }}>
-          {previewFileUrl ? (
+          {previewFileError ? (
+            <Box sx={{ p: 4, textAlign: "center" }}>
+              <DescriptionIcon sx={{ fontSize: 48, color: "text.secondary", mb: 2 }} />
+              <Typography color="text.secondary">Tài liệu không hỗ trợ preview</Typography>
+            </Box>
+          ) : previewFileUrl ? (
             <iframe
               src={previewFileUrl}
               title="Preview Document"
               style={{ width: "100%", height: "80vh", border: "none" }}
+              onError={() => setPreviewFileError(true)}
             />
           ) : (
             <Box sx={{ p: 4, textAlign: "center" }}>
@@ -1301,7 +1401,10 @@ export default function ManageLessons() {
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button
-            onClick={() => setOpenPreviewFileDialog(false)}
+            onClick={() => {
+              setOpenPreviewFileDialog(false);
+              setPreviewFileError(false);
+            }}
             sx={{ borderRadius: 2, textTransform: "none" }}
           >
             Đóng
