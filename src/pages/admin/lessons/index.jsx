@@ -18,6 +18,7 @@ import {
   Badge,
   Divider,
   alpha,
+  CircularProgress,
 } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import AddIcon from "@mui/icons-material/Add";
@@ -32,16 +33,34 @@ import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { tokens } from "../../../theme";
 import Header from "../../../components/Header";
-import { mockLessons } from "../../../data/mockLesson";
-import { mockCourses } from "../../../data/mockCourse";
+// import { mockLessons } from "../../../data/mockLesson";
+// import { mockCourses } from "../../../data/mockCourse";
+
+import {
+  GetAllLessons,
+  GetLessonById,
+  GetLessonByCourseId,
+  CreateLesson,
+  UpdateLesson,
+  DeleteLesson,
+} from "../../../services/lessonService";
+
+import {
+  GetAllCourses,
+  GetCourseById,
+} from "../../../services/courseService";
 
 export default function ManageLessons() {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
+  // State management
   const [lessons, setLessons] = useState([]);
+  const [courses, setCourses] = useState([]); // Backend courses data
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [keyword, setKeyword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [coursesLoading, setCoursesLoading] = useState(false);
 
   const [openDialog, setOpenDialog] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -53,68 +72,223 @@ export default function ManageLessons() {
   const [previewFileUrl, setPreviewFileUrl] = useState(null);
   const [openPreviewFileDialog, setOpenPreviewFileDialog] = useState(false);
 
-  // Format lessons at mount
+  // Fetch all courses from backend for autocomplete
   useEffect(() => {
-    const formatted = mockLessons.map((lesson, index) => ({
-      ...lesson,
-      id: lesson.lessonId || index + 1,
-      materials:
-        lesson.materials ||
-        lesson.documentUrls?.map((url) => ({
-          name: url.split("/").pop(),
-          url,
-        })) ||
-        [],
-    }));
-    setLessons(formatted);
+    const fetchCourses = async () => {
+      setCoursesLoading(true);
+      try {
+        const response = await GetAllCourses();
+        console.log("Courses API response:", response.data);
+        
+        // API returns array directly
+        const coursesData = Array.isArray(response.data) ? response.data : [];
+        
+        // Format courses to ensure consistent field names
+        const formattedCourses = coursesData.map(course => ({
+          ...course,
+          courseId: course.courseID || course.courseId || course.id,
+          title: course.title || course.courseName || "Untitled Course"
+        }));
+        
+        console.log("Formatted courses:", formattedCourses);
+        setCourses(formattedCourses);
+      } catch (error) {
+        console.error("Error fetching courses:", error);
+        console.error("Error details:", error.response?.data);
+        alert("Không thể tải danh sách khóa học. Vui lòng thử lại!");
+      } finally {
+        setCoursesLoading(false);
+      }
+    };
+
+    fetchCourses();
   }, []);
 
-  const filteredLessons =
-    selectedCourse && selectedCourse.courseId
-      ? lessons.filter((l) => l.courseId === selectedCourse.courseId)
-      : lessons;
+  // Fetch lessons when component mounts or when selected course changes
+  useEffect(() => {
+    const fetchLessons = async () => {
+      setLoading(true);
+      try {
+        let response;
+        
+        if (selectedCourse && selectedCourse.courseId) {
+          // Fetch lessons for specific course
+          console.log("Fetching lessons for course:", selectedCourse.courseId);
+          response = await GetLessonByCourseId(selectedCourse.courseId);
+        } else {
+          // Fetch all lessons when no course is selected
+          console.log("Fetching all lessons");
+          response = await GetAllLessons();
+        }
+        
+        console.log("Lessons API response:", response.data);
+        
+        // API returns array directly
+        const lessonsData = Array.isArray(response.data) ? response.data : [];
+        
+        console.log("Lessons data:", lessonsData);
+        
+        // Format lessons to match the component's expected structure
+        const formatted = lessonsData.map((lesson, index) => ({
+          ...lesson,
+          id: lesson.lessonID || lesson.lessonId || lesson.id || index + 1,
+          lessonId: lesson.lessonID || lesson.lessonId || lesson.id, // Handle both lessonID and lessonId
+          title: lesson.title || "Untitled",
+          videoUrl: lesson.videoUrl || "",
+          courseId: lesson.courseID || lesson.courseId,
+          orderIndex: lesson.orderIndex || index + 1,
+          materials: (() => {
+            // Handle different documentUrl formats
+            if (!lesson.documentUrl) return [];
+            if (Array.isArray(lesson.documentUrl)) {
+              // If it's an array, map each URL
+              return lesson.documentUrl.map(url => ({
+                name: url.split("/").pop(),
+                url: url
+              }));
+            }
+            if (typeof lesson.documentUrl === 'string' && lesson.documentUrl.length > 0) {
+              // If it's a string, create single material
+              return [{
+                name: lesson.documentUrl.split("/").pop(),
+                url: lesson.documentUrl
+              }];
+            }
+            return [];
+          })()
+        }));
+        
+        console.log("Formatted lessons:", formatted);
+        setLessons(formatted);
+      } catch (error) {
+        console.error("Error fetching lessons:", error);
+        console.error("Error details:", error.response?.data);
+        alert("Không thể tải danh sách bài giảng. Vui lòng thử lại!");
+        setLessons([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    fetchLessons();
+  }, [selectedCourse]);
+
+  // Filter lessons by selected course (no filter needed - handled by API)
+  const filteredLessons = lessons;
+
+  // Handler functions
   const handleAddLesson = () => {
     if (!selectedCourse) return;
+    
+    const courseId = selectedCourse.courseID || selectedCourse.courseId || selectedCourse.id;
+    
+    console.log("Adding lesson for course:", selectedCourse);
+    console.log("Extracted courseId:", courseId);
+    
     setIsEditMode(false);
     setSelectedLesson({
       title: "",
-      description: "",
       videoUrl: "",
       videoName: "",
       materials: [],
-      courseId: selectedCourse.courseId,
+      courseId: courseId,
+      courseID: courseId,
       orderIndex: filteredLessons.length + 1,
     });
     setOpenDialog(true);
   };
 
-  const handleEditLesson = (row) => {
-    setIsEditMode(true);
-    setSelectedLesson({ ...row });
-    setOpenDialog(true);
-  };
-
-  const handleDeleteLesson = (row) => {
-    if (window.confirm("Bạn có chắc muốn xóa bài giảng này?")) {
-      setLessons((prev) => prev.filter((l) => l.id !== row.id));
-      alert("Xóa thành công!");
+  const handleEditLesson = async (row) => {
+    try {
+      // Use lessonID or lessonId from the row
+      const lessonId = row.lessonID || row.lessonId || row.id;
+      
+      console.log("Editing lesson ID:", lessonId);
+      
+      // Optionally fetch full lesson details from backend
+      const response = await GetLessonById(lessonId);
+      const lessonData = response.data || row;
+      
+      console.log("Lesson data for edit:", lessonData);
+      
+      setIsEditMode(true);
+      setSelectedLesson({ 
+        ...lessonData,
+        id: lessonData.lessonID || lessonData.lessonId || lessonData.id,
+        lessonId: lessonData.lessonID || lessonData.lessonId || lessonData.id,
+        lessonID: lessonData.lessonID || lessonData.lessonId || lessonData.id,
+        courseId: lessonData.courseID || lessonData.courseId,
+        materials: (() => {
+          if (!lessonData.documentUrl) return [];
+          if (Array.isArray(lessonData.documentUrl)) {
+            return lessonData.documentUrl
+              .filter(url => url && url.length > 0)  // Filter out empty strings
+              .map(url => ({
+                name: url.split("/").pop(),
+                url: url
+              }));
+          }
+          if (typeof lessonData.documentUrl === 'string' && lessonData.documentUrl.length > 0) {
+            return [{
+              name: lessonData.documentUrl.split("/").pop(),
+              url: lessonData.documentUrl
+            }];
+          }
+          return [];
+        })(),
+      });
+      setOpenDialog(true);
+    } catch (error) {
+      console.error("Error fetching lesson details:", error);
+      // Fallback to row data
+      setIsEditMode(true);
+      setSelectedLesson({ 
+        ...row,
+        lessonId: row.lessonID || row.lessonId || row.id,
+        lessonID: row.lessonID || row.lessonId || row.id,
+      });
+      setOpenDialog(true);
     }
   };
 
-  // Video upload
+  const handleDeleteLesson = async (row) => {
+    if (!window.confirm("Bạn có chắc muốn xóa bài giảng này?")) return;
+    
+    try {
+      setLoading(true);
+      const lessonId = row.lessonID || row.lessonId || row.id;
+      
+      console.log("Deleting lesson ID:", lessonId);
+      
+      await DeleteLesson(lessonId);
+      
+      // Remove from local state
+      setLessons((prev) => prev.filter((l) => (l.lessonID || l.lessonId || l.id) !== lessonId));
+      alert("Xóa thành công!");
+    } catch (error) {
+      console.error("Error deleting lesson:", error);
+      alert("Không thể xóa bài giảng. Vui lòng thử lại!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Video upload handler
   const handleVideoUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    
+    // Create local preview URL
     const url = URL.createObjectURL(file);
     setSelectedLesson((prev) => ({
       ...prev,
       videoUrl: url,
       videoName: file.name,
+      videoFile: file, // Store file for upload
     }));
   };
 
-  // Material upload
+  // Material upload handler
   const handleMaterialUpload = (e) => {
     const files = Array.from(e.target.files);
     files.forEach((file) => {
@@ -123,7 +297,7 @@ export default function ManageLessons() {
         ...prev,
         materials: [
           ...(prev.materials || []),
-          { name: file.name, url: url },
+          { name: file.name, url: url, file: file }, // Store file for upload
         ],
       }));
     });
@@ -159,24 +333,174 @@ export default function ManageLessons() {
     return <DescriptionIcon fontSize="small" color="info" />;
   };
 
-  const handleSubmit = () => {
+  // Submit handler - Create or Update lesson
+  const handleSubmit = async () => {
     if (!selectedLesson.title) {
       alert("Vui lòng nhập tên bài giảng");
       return;
     }
-    if (isEditMode) {
-      setLessons((prev) =>
-        prev.map((l) => (l.id === selectedLesson.id ? selectedLesson : l))
-      );
-      alert("Cập nhật thành công!");
-    } else {
-      setLessons((prev) => [
-        { ...selectedLesson, id: prev.length + 1, lessonId: prev.length + 1 },
-        ...prev,
-      ]);
-      alert("Thêm thành công!");
+
+    if (!selectedLesson.courseId) {
+      alert("Vui lòng chọn khóa học");
+      return;
     }
-    setOpenDialog(false);
+
+    try {
+      setLoading(true);
+
+      // Prepare data for API - match backend field names
+      const lessonData = {
+        title: selectedLesson.title,
+        videoUrl: selectedLesson.videoUrl || "",
+        documentUrl: selectedLesson.materials?.[0]?.url || "", // Take first material as documentUrl
+        courseID: selectedLesson.courseId, // Use courseID (capital D)
+        orderIndex: selectedLesson.orderIndex || 1,
+      };
+
+      console.log("Submitting lesson data:", lessonData);
+
+      if (isEditMode) {
+        // Update existing lesson
+        const lessonId = selectedLesson.lessonID || selectedLesson.lessonId || selectedLesson.id;
+        
+        if (!lessonId) {
+          alert("Không tìm thấy ID bài giảng để cập nhật!");
+          return;
+        }
+
+        console.log("Updating lesson ID:", lessonId);
+        const response = await UpdateLesson(lessonId, lessonData);
+        
+        console.log("Update response:", response.data);
+        
+        // Refresh the lessons list
+        if (selectedCourse && selectedCourse.courseId) {
+          const refreshResponse = await GetLessonByCourseId(selectedCourse.courseId);
+          const lessonsData = Array.isArray(refreshResponse.data) ? refreshResponse.data : [];
+          const formatted = lessonsData.map((lesson, index) => ({
+            ...lesson,
+            id: lesson.lessonID || lesson.lessonId || lesson.id || index + 1,
+            lessonId: lesson.lessonID || lesson.lessonId || lesson.id,
+            title: lesson.title || "Untitled",
+            videoUrl: lesson.videoUrl || "",
+            courseId: lesson.courseID || lesson.courseId,
+            orderIndex: lesson.orderIndex || index + 1,
+            materials: (() => {
+              if (!lesson.documentUrl) return [];
+              if (Array.isArray(lesson.documentUrl)) {
+                return lesson.documentUrl.map(url => ({
+                  name: url.split("/").pop(),
+                  url: url
+                }));
+              }
+              if (typeof lesson.documentUrl === 'string' && lesson.documentUrl.length > 0) {
+                return [{
+                  name: lesson.documentUrl.split("/").pop(),
+                  url: lesson.documentUrl
+                }];
+              }
+              return [];
+            })()
+          }));
+          setLessons(formatted);
+        } else {
+          // Refresh all lessons
+          const refreshResponse = await GetAllLessons();
+          const lessonsData = Array.isArray(refreshResponse.data) ? refreshResponse.data : [];
+          const formatted = lessonsData.map((lesson, index) => ({
+            ...lesson,
+            id: lesson.lessonID || lesson.lessonId || lesson.id || index + 1,
+            lessonId: lesson.lessonID || lesson.lessonId || lesson.id,
+            title: lesson.title || "Untitled",
+            videoUrl: lesson.videoUrl || "",
+            courseId: lesson.courseID || lesson.courseId,
+            orderIndex: lesson.orderIndex || index + 1,
+            materials: (() => {
+              if (!lesson.documentUrl) return [];
+              if (Array.isArray(lesson.documentUrl)) {
+                return lesson.documentUrl.map(url => ({
+                  name: url.split("/").pop(),
+                  url: url
+                }));
+              }
+              if (typeof lesson.documentUrl === 'string' && lesson.documentUrl.length > 0) {
+                return [{
+                  name: lesson.documentUrl.split("/").pop(),
+                  url: lesson.documentUrl
+                }];
+              }
+              return [];
+            })()
+          }));
+          setLessons(formatted);
+        }
+        
+        alert("Cập nhật thành công!");
+      } else {
+        // Create new lesson
+        const response = await CreateLesson(lessonData);
+        
+        console.log("Create response:", response.data);
+        
+        // Refresh the lessons list
+        if (selectedCourse && selectedCourse.courseId) {
+          const refreshResponse = await GetLessonByCourseId(selectedCourse.courseId);
+          const lessonsData = Array.isArray(refreshResponse.data) ? refreshResponse.data : [];
+          const formatted = lessonsData.map((lesson, index) => ({
+            ...lesson,
+            id: lesson.lessonID || lesson.lessonId || lesson.id || index + 1,
+            lessonId: lesson.lessonID || lesson.lessonId || lesson.id,
+            title: lesson.title || "Untitled",
+            videoUrl: lesson.videoUrl || "",
+            courseId: lesson.courseID || lesson.courseId,
+            orderIndex: lesson.orderIndex || index + 1,
+            materials: lesson.documentUrl ? [{
+              name: lesson.documentUrl.split("/").pop(),
+              url: lesson.documentUrl
+            }] : []
+          }));
+          setLessons(formatted);
+        } else {
+          // Refresh all lessons
+          const refreshResponse = await GetAllLessons();
+          const lessonsData = Array.isArray(refreshResponse.data) ? refreshResponse.data : [];
+          const formatted = lessonsData.map((lesson, index) => ({
+            ...lesson,
+            id: lesson.lessonID || lesson.lessonId || lesson.id || index + 1,
+            lessonId: lesson.lessonID || lesson.lessonId || lesson.id,
+            title: lesson.title || "Untitled",
+            videoUrl: lesson.videoUrl || "",
+            courseId: lesson.courseID || lesson.courseId,
+            orderIndex: lesson.orderIndex || index + 1,
+            materials: lesson.documentUrl ? [{
+              name: lesson.documentUrl.split("/").pop(),
+              url: lesson.documentUrl
+            }] : []
+          }));
+          setLessons(formatted);
+        }
+        
+        alert("Thêm thành công!");
+      }
+      
+      setOpenDialog(false);
+    } catch (error) {
+      console.error("Error saving lesson:", error);
+      console.error("Error response:", error.response?.data);
+      
+      const errorMessage = error.response?.data?.message 
+        || error.response?.data?.title
+        || error.message 
+        || "Có lỗi xảy ra";
+      
+      alert(
+        isEditMode
+          ? `Không thể cập nhật bài giảng: ${errorMessage}`
+          : `Không thể thêm bài giảng: ${errorMessage}`
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const columns = [
@@ -327,7 +651,8 @@ export default function ManageLessons() {
       >
         <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
           <Autocomplete
-            freeSolo
+            freeSolo={false}
+            loading={coursesLoading}
             sx={{ 
               minWidth: 350,
               flex: 1,
@@ -336,18 +661,54 @@ export default function ManageLessons() {
                 borderRadius: 2,
               }
             }}
-            options={mockCourses.map((c) => c.title)}
-            value={selectedCourse ? selectedCourse.title : ""}
+            options={courses}
+            getOptionLabel={(option) => {
+              if (typeof option === 'string') return option;
+              return option.title || option.courseName || option.name || '';
+            }}
+            isOptionEqualToValue={(option, value) => {
+              if (!option || !value) return false;
+              const optionId = option.courseID || option.courseId || option.id;
+              const valueId = value.courseID || value.courseId || value.id;
+              return optionId === valueId;
+            }}
+            value={selectedCourse}
             onInputChange={(e, value) => setKeyword(value)}
             onChange={(e, value) => {
-              const found = mockCourses.find((c) => c.title === value);
-              setSelectedCourse(found || null);
+              console.log("=== COURSE SELECTION ===");
+              console.log("Selected course raw:", value);
+              
+              if (value) {
+                // Normalize the course object
+                const normalizedCourse = {
+                  ...value,
+                  courseId: value.courseID || value.courseId || value.id,
+                  courseID: value.courseID || value.courseId || value.id,
+                };
+                
+                console.log("Normalized course:", normalizedCourse);
+                console.log("courseID:", normalizedCourse.courseID, "Type:", typeof normalizedCourse.courseID);
+                
+                setSelectedCourse(normalizedCourse);
+              } else {
+                console.log("Course cleared");
+                setSelectedCourse(null);
+              }
             }}
             renderInput={(params) => (
               <TextField 
                 {...params} 
                 label="Chọn khóa học" 
                 placeholder="Tìm kiếm hoặc chọn khóa học..."
+                InputProps={{
+                  ...params.InputProps,
+                  endAdornment: (
+                    <>
+                      {coursesLoading ? <CircularProgress color="inherit" size={20} /> : null}
+                      {params.InputProps.endAdornment}
+                    </>
+                  ),
+                }}
               />
             )}
           />
@@ -357,7 +718,7 @@ export default function ManageLessons() {
             color="secondary"
             startIcon={<AddIcon />}
             onClick={handleAddLesson}
-            disabled={!selectedCourse}
+            disabled={!selectedCourse || loading}
             sx={{ 
               borderRadius: 2,
               px: 3,
@@ -379,7 +740,7 @@ export default function ManageLessons() {
         {selectedCourse && (
           <Box mt={2} display="flex" alignItems="center" gap={2}>
             <Chip 
-              label={`📚 ${selectedCourse.title}`}
+              label={`📚 ${selectedCourse.title || selectedCourse.courseName || 'Khóa học'}`}
               color="primary"
               sx={{ fontWeight: 600, fontSize: "0.9rem", py: 2.5 }}
             />
@@ -409,6 +770,7 @@ export default function ManageLessons() {
           slots={{ toolbar: GridToolbar }}
           pageSizeOptions={[10, 25, 50]}
           getRowHeight={() => 'auto'}
+          loading={loading}
           sx={{
             border: "none",
             "& .MuiDataGrid-columnHeaders": { 
@@ -463,7 +825,7 @@ export default function ManageLessons() {
               }}
             >
               <Typography variant="body1" fontWeight={600} color="secondary">
-                📚 Khóa học: {selectedCourse.title}
+                📚 Khóa học: {selectedCourse.title || selectedCourse.courseName || 'N/A'}
               </Typography>
             </Paper>
           )}
@@ -474,19 +836,6 @@ export default function ManageLessons() {
             fullWidth
             value={selectedLesson?.title || ""}
             onChange={(e) => setSelectedLesson({ ...selectedLesson, title: e.target.value })}
-            sx={{ mb: 2 }}
-          />
-
-          <TextField
-            margin="dense"
-            label="Mô tả chi tiết"
-            fullWidth
-            multiline
-            rows={3}
-            value={selectedLesson?.description || ""}
-            onChange={(e) =>
-              setSelectedLesson({ ...selectedLesson, description: e.target.value })
-            }
             sx={{ mb: 2 }}
           />
 
@@ -667,6 +1016,7 @@ export default function ManageLessons() {
         }}>
           <Button 
             onClick={() => setOpenDialog(false)}
+            disabled={loading}
             sx={{ 
               borderRadius: 2,
               textTransform: "none",
@@ -679,6 +1029,7 @@ export default function ManageLessons() {
             variant="contained" 
             color="primary" 
             onClick={handleSubmit}
+            disabled={loading}
             sx={{ 
               borderRadius: 2,
               textTransform: "none",
@@ -686,7 +1037,7 @@ export default function ManageLessons() {
               fontWeight: 600,
             }}
           >
-            {isEditMode ? "💾 Lưu thay đổi" : "➕ Thêm mới"}
+            {loading ? <CircularProgress size={20} /> : (isEditMode ? "💾 Lưu thay đổi" : "➕ Thêm mới")}
           </Button>
         </DialogActions>
       </Dialog>
