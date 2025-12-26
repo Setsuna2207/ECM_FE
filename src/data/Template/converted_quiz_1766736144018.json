@@ -1,0 +1,174 @@
+{
+  "Title": "Converted Quiz",
+  "Description": "Quiz converted from file",
+  "Duration": 30,
+  "TotalQuestions": 9,
+  "PassingScore": null,
+  "Sections": [
+    {
+      "SectionId": 1,
+      "Title": "Quiz Questions",
+      "Description": "Converted quiz questions",
+      "MediaUrl": null,
+      "Duration": null,
+      "Questions": [
+        {
+          "QuestionId": 1,
+          "Type": "multiple-choice",
+          "Question": ": What is the correct form of the verb?",
+          "Passage": null,
+          "Options": [
+            "go",
+            "goes",
+            "going",
+            "gone"
+          ],
+          "CorrectAnswer": 0,
+          "CorrectAnswerText": null,
+          "Points": 1,
+          "MinWords": null,
+          "MaxWords": null
+        },
+        {
+          "QuestionId": 2,
+          "Type": "multiple-choice",
+          "Question": ": Choose the correct preposition.",
+          "Passage": null,
+          "Options": [
+            "in",
+            "on",
+            "at",
+            "by"
+          ],
+          "CorrectAnswer": 0,
+          "CorrectAnswerText": null,
+          "Points": 1,
+          "MinWords": null,
+          "MaxWords": null
+        },
+        {
+          "QuestionId": 3,
+          "Type": "multiple-choice",
+          "Question": ": Which sentence is grammatically correct?",
+          "Passage": null,
+          "Options": [
+            "She don't like coffee",
+            "She doesn't like coffee",
+            "She didn't likes coffee",
+            "She doesn't likes coffee"
+          ],
+          "CorrectAnswer": 0,
+          "CorrectAnswerText": null,
+          "Points": 1,
+          "MinWords": null,
+          "MaxWords": null
+        },
+        {
+          "QuestionId": 4,
+          "Type": "multiple-choice",
+          "Question": ": Where does this conversation most likely take place?",
+          "Passage": null,
+          "Options": [
+            "At a restaurant",
+            "At a hotel reception",
+            "At an airport",
+            "At a bank",
+            "She lost her reservation",
+            "Her room is not ready",
+            "She can't find her luggage",
+            "Her credit card was declined"
+          ],
+          "CorrectAnswer": 0,
+          "CorrectAnswerText": null,
+          "Points": 1,
+          "MinWords": null,
+          "MaxWords": null
+        },
+        {
+          "QuestionId": 5,
+          "Type": "multiple-choice",
+          "Question": ": What is the main purpose of this notice?",
+          "Passage": null,
+          "Options": [
+            "To announce new parking rates",
+            "To inform about parking lot closure",
+            "To promote carpooling",
+            "To introduce a new parking system"
+          ],
+          "CorrectAnswer": 0,
+          "CorrectAnswerText": null,
+          "Points": 1,
+          "MinWords": null,
+          "MaxWords": null
+        },
+        {
+          "QuestionId": 6,
+          "Type": "multiple-choice",
+          "Question": ": How long will the parking lot be closed?",
+          "Passage": null,
+          "Options": [
+            "3 days",
+            "5 days",
+            "1 week",
+            "2 weeks"
+          ],
+          "CorrectAnswer": 0,
+          "CorrectAnswerText": null,
+          "Points": 1,
+          "MinWords": null,
+          "MaxWords": null
+        },
+        {
+          "QuestionId": 7,
+          "Type": "multiple-choice",
+          "Question": ": The company will _____ a new product line next quarter.",
+          "Passage": null,
+          "Options": [
+            "launch",
+            "lunch",
+            "lounge",
+            "latch"
+          ],
+          "CorrectAnswer": 0,
+          "CorrectAnswerText": null,
+          "Points": 1,
+          "MinWords": null,
+          "MaxWords": null
+        },
+        {
+          "QuestionId": 8,
+          "Type": "multiple-choice",
+          "Question": ": Please _____ the meeting minutes to all department heads.",
+          "Passage": null,
+          "Options": [
+            "distribute",
+            "contribute",
+            "attribute  D) tribute"
+          ],
+          "CorrectAnswer": 0,
+          "CorrectAnswerText": null,
+          "Points": 1,
+          "MinWords": null,
+          "MaxWords": null
+        },
+        {
+          "QuestionId": 9,
+          "Type": "multiple-choice",
+          "Question": ": Read the following passage and answer the question. Passage: \"Thompson Electronics is pleased to announce the launch of our new customer service hotline. Starting next month, customers can call 1-800-TECH-HELP 24 hours a day, 7 days a week for technical support.\" What is Thompson Electronics announcing?",
+          "Passage": null,
+          "Options": [
+            "A new product line",
+            "Extended business hours",
+            "A customer service hotline",
+            "A special promotion"
+          ],
+          "CorrectAnswer": 0,
+          "CorrectAnswerText": null,
+          "Points": 1,
+          "MinWords": null,
+          "MaxWords": null
+        }
+      ]
+    }
+  ]
+}

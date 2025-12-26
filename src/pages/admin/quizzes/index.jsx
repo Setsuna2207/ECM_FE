@@ -18,6 +18,8 @@ import {
   Autocomplete,
   Paper,
   Divider,
+  CircularProgress,
+  alpha,
 } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import AddIcon from "@mui/icons-material/Add";
@@ -29,10 +31,24 @@ import VideoLibraryIcon from "@mui/icons-material/VideoLibrary";
 
 import { tokens } from "../../../theme";
 import Header from "../../../components/Header";
-import { mockQuizzes } from "../../../data/mockQuiz";
-import { mockLessons } from "../../../data/mockLesson";
-import { mockCourses } from "../../../data/mockCourse";
-import { getQuizById } from "../../../data/quiz/quizRegistry";
+
+// Backend API services
+import {
+  GetAllQuizzes,
+  GetQuizById,
+  CreateQuiz,
+  UpdateQuiz,
+  DeleteQuiz,
+} from "../../../services/quizService";
+
+import {
+  GetAllLessons,
+  GetLessonByCourseId,
+} from "../../../services/lessonService";
+
+import {
+  GetAllCourses,
+} from "../../../services/courseService";
 
 /* QUESTION PREVIEW CARD */
 const QuestionPreviewCard = ({
@@ -132,7 +148,12 @@ export default function ManageQuiz() {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
+  // Data from backend
   const [quizzes, setQuizzes] = useState([]);
+  const [lessons, setLessons] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(false);
+
   const [openDialog, setOpenDialog] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedQuiz, setSelectedQuiz] = useState(null);
@@ -149,20 +170,57 @@ export default function ManageQuiz() {
   const [previewMedia, setPreviewMedia] = useState(null);
   const [isEditingDetails, setIsEditingDetails] = useState(false);
 
-  /*  LOAD QUIZ LIST  */
+  // Fetch all data from backend
   useEffect(() => {
-    const formatted = mockQuizzes.map((q, idx) => {
-      const lesson = mockLessons.find((l) => l.lessonId === q.lessonId);
-      const course = lesson ? mockCourses.find((c) => c.courseId === lesson.courseId) : null;
-      return {
-        ...q,
-        id: q.quizId || idx + 1,
-        lessonTitle: lesson ? lesson.title : "Không tìm thấy bài giảng",
-        courseTitle: course ? course.title : "Không tìm thấy khóa học",
-      };
-    });
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Fetch courses
+        const coursesRes = await GetAllCourses();
+        const coursesData = Array.isArray(coursesRes.data) ? coursesRes.data : [];
+        const formattedCourses = coursesData.map(c => ({
+          ...c,
+          courseId: c.courseID || c.courseId || c.id,
+          title: c.title || c.courseName || "Untitled"
+        }));
+        setCourses(formattedCourses);
 
-    setQuizzes(formatted);
+        // Fetch lessons
+        const lessonsRes = await GetAllLessons();
+        const lessonsData = Array.isArray(lessonsRes.data) ? lessonsRes.data : [];
+        const formattedLessons = lessonsData.map(l => ({
+          ...l,
+          lessonId: l.lessonID || l.lessonId || l.id,
+          courseId: l.courseID || l.courseId,
+          title: l.title || "Untitled"
+        }));
+        setLessons(formattedLessons);
+
+        // Fetch quizzes
+        const quizzesRes = await GetAllQuizzes();
+        const quizzesData = Array.isArray(quizzesRes.data) ? quizzesRes.data : [];
+        const formattedQuizzes = quizzesData.map((q, idx) => {
+          const lesson = formattedLessons.find((l) => l.lessonId === (q.lessonID || q.lessonId));
+          const course = lesson ? formattedCourses.find((c) => c.courseId === lesson.courseId) : null;
+          return {
+            ...q,
+            id: q.quizID || q.quizId || q.id || idx + 1,
+            quizId: q.quizID || q.quizId || q.id,
+            lessonId: q.lessonID || q.lessonId,
+            lessonTitle: lesson ? lesson.title : "Không tìm thấy bài giảng",
+            courseTitle: course ? course.title : "Không tìm thấy khóa học",
+          };
+        });
+        setQuizzes(formattedQuizzes);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        alert("Không thể tải dữ liệu. Vui lòng thử lại!");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   const filteredQuizzes = quizzes.filter((q) => {
@@ -177,17 +235,49 @@ export default function ManageQuiz() {
 
     try {
       const text = await file.text();
-      const fileUrl = URL.createObjectURL(file);
-      const json = JSON.parse(text);
+      let quizData = null;
 
+      if (file.name.endsWith('.js')) {
+        // For .js files, extract the object from "export default { ... }"
+        const match = text.match(/export\s+default\s+({[\s\S]*})/);
+        if (match) {
+          quizData = eval('(' + match[1] + ')');
+        } else {
+          throw new Error("Invalid .js file format. Must contain 'export default { ... }'");
+        }
+      } else if (file.name.endsWith('.json')) {
+        // For .json files, parse directly
+        quizData = JSON.parse(text);
+      } else {
+        throw new Error("File must be .js or .json format");
+      }
+
+      // Validate structure - Quiz format should have questions array at root level
+      if (!quizData.questions || !Array.isArray(quizData.questions)) {
+        throw new Error("File must contain a 'questions' array at root level (Quiz format)");
+      }
+
+      // Validate each question has required fields
+      const invalidQuestions = quizData.questions.filter(q =>
+        !q.question || !Array.isArray(q.options) || q.correctAnswer === undefined
+      );
+
+      if (invalidQuestions.length > 0) {
+        throw new Error(`${invalidQuestions.length} question(s) missing required fields (question, options, correctAnswer)`);
+      }
+
+      // Store the parsed data
       setSelectedQuiz((prev) => ({
         ...prev,
         uploadedFileName: file.name,
-        questionFileUrl: fileUrl,
-        uploadedQuizData: json,
+        uploadedQuizData: quizData,
+        questionFileUrl: file.name,
       }));
+
+      alert(`✅ Tải file thành công! (${quizData.questions.length} câu hỏi)`);
     } catch (error) {
-      alert("Lỗi đọc file JSON.");
+      console.error("Error reading file:", error);
+      alert(`❌ Lỗi đọc file: ${error.message}`);
     }
   };
 
@@ -220,43 +310,102 @@ export default function ManageQuiz() {
   const handleEdit = (row) => {
     setSelectedQuiz({ ...row });
 
-    const lesson = mockLessons.find((l) => l.lessonId === row.lessonId);
+    // Find lesson from backend data
+    const lesson = lessons.find((l) => l.lessonId === row.lessonId);
     setLessonTitle(lesson?.title || "");
 
-    const course = mockCourses.find((c) => c.courseId === lesson?.courseId);
+    // Find course from backend data
+    const course = courses.find((c) => c.courseId === lesson?.courseId);
     setCourseTitle(course?.title || "");
 
     setIsEditMode(true);
     setOpenDialog(true);
   };
 
-  const handleDelete = (row) => {
-    if (window.confirm("Xóa quiz này?")) {
-      setQuizzes((prev) => prev.filter((q) => q.id !== row.id));
+  const handleDelete = async (row) => {
+    if (!window.confirm("Xóa quiz này?")) return;
+
+    try {
+      setLoading(true);
+      const quizId = row.quizId || row.id;
+      await DeleteQuiz(quizId);
+      setQuizzes((prev) => prev.filter((q) => (q.quizId || q.id) !== quizId));
+      alert("Xóa thành công!");
+    } catch (error) {
+      console.error("Error deleting quiz:", error);
+      alert("Không thể xóa quiz. Vui lòng thử lại!");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!selectedQuiz.lessonId || !selectedQuiz.questionFileUrl) {
       return alert("Vui lòng chọn bài giảng + upload file quiz.");
     }
 
-    const updated = isEditMode
-      ? quizzes.map((q) => (q.id === selectedQuiz.id ? selectedQuiz : q))
-      : [
-          {
-            ...selectedQuiz,
-            id: quizzes.length + 1,
-            quizId: quizzes.length + 1,
-          },
-          ...quizzes,
-        ];
+    try {
+      setLoading(true);
 
-    setQuizzes(updated);
-    setOpenDialog(false);
+      // Prepare quiz data for backend
+      const quizData = {
+        lessonID: selectedQuiz.lessonId,
+        questionFileUrl: selectedQuiz.questionFileUrl,
+        mediaUrl: selectedQuiz.mediaUrl || "",
+        description: selectedQuiz.description || "",
+      };
+
+      if (isEditMode) {
+        // Update existing quiz
+        const quizId = selectedQuiz.quizId || selectedQuiz.id;
+        await UpdateQuiz(quizId, quizData);
+
+        // Update local state - preserve uploadedQuizData for preview
+        setQuizzes((prev) =>
+          prev.map((q) =>
+            (q.quizId || q.id) === quizId
+              ? {
+                ...selectedQuiz,
+                ...quizData,
+                uploadedQuizData: selectedQuiz.uploadedQuizData // Preserve uploaded data
+              }
+              : q
+          )
+        );
+        alert("Cập nhật thành công!");
+      } else {
+        // Create new quiz
+        const response = await CreateQuiz(quizData);
+        const newQuiz = response.data;
+
+        // Format and add to list
+        const lesson = lessons.find((l) => l.lessonId === (newQuiz.lessonID || newQuiz.lessonId));
+        const course = lesson ? courses.find((c) => c.courseId === lesson.courseId) : null;
+
+        const formattedQuiz = {
+          ...newQuiz,
+          id: newQuiz.quizID || newQuiz.quizId || newQuiz.id,
+          quizId: newQuiz.quizID || newQuiz.quizId || newQuiz.id,
+          lessonId: newQuiz.lessonID || newQuiz.lessonId,
+          lessonTitle: lesson ? lesson.title : "Không tìm thấy bài giảng",
+          courseTitle: course ? course.title : "Không tìm thấy khóa học",
+          uploadedQuizData: selectedQuiz.uploadedQuizData, // Preserve uploaded data for preview
+        };
+
+        setQuizzes([formattedQuiz, ...quizzes]);
+        alert("Thêm thành công!");
+      }
+
+      setOpenDialog(false);
+    } catch (error) {
+      console.error("Error saving quiz:", error);
+      alert("Không thể lưu quiz. Vui lòng thử lại!");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  /* PREVIEW LOADER */
+  /* PREVIEW LOADER - Loads questions from uploaded .js/.json data */
   const handlePreview = async (q) => {
     setOpenPreview(true);
     setIsEditingDetails(false);
@@ -264,13 +413,30 @@ export default function ManageQuiz() {
 
     let questions = null;
 
-    if (q.uploadedQuizData) {
+    console.log("Preview quiz:", q);
+    console.log("Has uploadedQuizData:", !!q.uploadedQuizData);
+
+    // Try to get questions from uploaded data (stored during add/edit)
+    if (q.uploadedQuizData && q.uploadedQuizData.questions) {
       questions = q.uploadedQuizData.questions;
-    } else {
-      const stored = getQuizById(q.quizId);
-      if (stored) questions = stored.questions;
+      console.log("Loaded questions from uploadedQuizData:", questions.length);
+    } else if (q.questionFileUrl) {
+      // Try to fetch from backend if URL is provided
+      try {
+        console.log("Fetching quiz from backend:", q.quizId || q.id);
+        const response = await GetQuizById(q.quizId || q.id);
+        console.log("Backend response:", response.data);
+
+        if (response.data && response.data.questions) {
+          questions = response.data.questions;
+          console.log("Loaded questions from backend:", questions.length);
+        }
+      } catch (error) {
+        console.error("Error fetching quiz details:", error);
+      }
     }
 
+    console.log("Final questions to display:", questions);
     setPreviewQuestions(questions || []);
   };
 
@@ -373,11 +539,11 @@ export default function ManageQuiz() {
         </Button>
       </Box>
 
-      {/* FILTERS */}
+      {/* FILTERS - Using backend data */}
       <Box display="flex" gap={2} mb={2}>
         <Autocomplete
           sx={{ width: "40%" }}
-          options={mockCourses}
+          options={courses}
           getOptionLabel={(opt) => opt.title || ""}
           value={filterCourse}
           onChange={(e, val) => {
@@ -389,7 +555,7 @@ export default function ManageQuiz() {
 
         <Autocomplete
           sx={{ width: "60%" }}
-          options={filterCourse ? mockLessons.filter((l) => l.courseId === filterCourse.courseId) : []}
+          options={filterCourse ? lessons.filter((l) => l.courseId === filterCourse.courseId) : []}
           getOptionLabel={(opt) => opt.title || ""}
           value={filterLesson}
           onChange={(e, val) => setFilterLesson(val || null)}
@@ -408,15 +574,15 @@ export default function ManageQuiz() {
         />
       </Box>
 
-      {/* DIALOG ADD/EDIT */}
+      {/* DIALOG ADD/EDIT - Using backend data */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{isEditMode ? "Chỉnh sửa Quiz" : "Thêm Quiz mới"}</DialogTitle>
         <DialogContent>
           <Box mt={1}>
             <Autocomplete
-              options={mockCourses}
+              options={courses}
               getOptionLabel={(opt) => opt.title}
-              value={mockCourses.find((c) => c.title === courseTitle) || null}
+              value={courses.find((c) => c.title === courseTitle) || null}
               onChange={(e, val) => {
                 setCourseTitle(val?.title || "");
                 setLessonTitle("");
@@ -430,13 +596,13 @@ export default function ManageQuiz() {
             <Autocomplete
               options={
                 courseTitle
-                  ? mockLessons.filter(
-                      (l) => l.courseId === mockCourses.find((c) => c.title === courseTitle)?.courseId
-                    )
+                  ? lessons.filter(
+                    (l) => l.courseId === courses.find((c) => c.title === courseTitle)?.courseId
+                  )
                   : []
               }
               getOptionLabel={(opt) => opt.title}
-              value={mockLessons.find((l) => l.title === lessonTitle) || null}
+              value={lessons.find((l) => l.title === lessonTitle) || null}
               onChange={(e, val) => {
                 setLessonTitle(val?.title || "");
                 setSelectedQuiz((prev) => ({ ...prev, lessonId: val?.lessonId || "" }));
@@ -462,8 +628,8 @@ export default function ManageQuiz() {
             </Typography>
 
             <Button variant="outlined" component="label" startIcon={<UploadFileIcon />}>
-              Upload file (.json)
-              <input type="file" accept=".json" hidden onChange={handleUploadQuizFile} />
+              Upload file (.js hoặc .json)
+              <input type="file" accept=".js,.json" hidden onChange={handleUploadQuizFile} />
             </Button>
 
             {selectedQuiz?.uploadedFileName && (
