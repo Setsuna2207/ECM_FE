@@ -31,6 +31,7 @@ import VideoLibraryIcon from "@mui/icons-material/VideoLibrary";
 
 import { tokens } from "../../../theme";
 import Header from "../../../components/Header";
+import api from "../../../services/axios/axios.customize";
 
 // Backend API services
 import {
@@ -199,9 +200,20 @@ export default function ManageQuiz() {
         // Fetch quizzes
         const quizzesRes = await GetAllQuizzes();
         const quizzesData = Array.isArray(quizzesRes.data) ? quizzesRes.data : [];
+        console.log("Raw quizzes from backend:", quizzesData); // DEBUG
         const formattedQuizzes = quizzesData.map((q, idx) => {
           const lesson = formattedLessons.find((l) => l.lessonId === (q.lessonID || q.lessonId));
           const course = lesson ? formattedCourses.find((c) => c.courseId === lesson.courseId) : null;
+
+          // Extract questions - handle both flat array and nested sections structure
+          let questions = null;
+          if (q.questions && Array.isArray(q.questions)) {
+            questions = q.questions;
+          } else if (q.sections && Array.isArray(q.sections)) {
+            questions = q.sections.flatMap(section => section.questions || []);
+          }
+
+          console.log("Quiz questions:", questions); // DEBUG
           return {
             ...q,
             id: q.quizID || q.quizId || q.id || idx + 1,
@@ -209,6 +221,7 @@ export default function ManageQuiz() {
             lessonId: q.lessonID || q.lessonId,
             lessonTitle: lesson ? lesson.title : "Không tìm thấy bài giảng",
             courseTitle: course ? course.title : "Không tìm thấy khóa học",
+            uploadedQuizData: questions ? { questions } : null, // Store questions from backend
           };
         });
         setQuizzes(formattedQuizzes);
@@ -229,68 +242,119 @@ export default function ManageQuiz() {
     return matchCourse && matchLesson;
   });
 
+  // Helper function to refresh quizzes from backend
+  const refreshQuizzes = async () => {
+    try {
+      const quizzesRes = await GetAllQuizzes();
+      const quizzesData = Array.isArray(quizzesRes.data) ? quizzesRes.data : [];
+
+      const formattedQuizzes = quizzesData.map((q, idx) => {
+        const lesson = lessons.find((l) => l.lessonId === (q.lessonID || q.lessonId));
+        const course = lesson ? courses.find((c) => c.courseId === lesson.courseId) : null;
+
+        let questions = null;
+        if (q.questions && Array.isArray(q.questions)) {
+          questions = q.questions;
+        } else if (q.sections && Array.isArray(q.sections)) {
+          questions = q.sections.flatMap(section => section.questions || []);
+        }
+
+        return {
+          ...q,
+          id: q.quizID || q.quizId || q.id || idx + 1,
+          quizId: q.quizID || q.quizId || q.id,
+          lessonId: q.lessonID || q.lessonId,
+          lessonTitle: lesson ? lesson.title : "Không tìm thấy bài giảng",
+          courseTitle: course ? course.title : "Không tìm thấy khóa học",
+          uploadedQuizData: questions ? { questions } : null,
+        };
+      });
+      setQuizzes(formattedQuizzes);
+    } catch (error) {
+      console.error("Error refreshing quizzes:", error);
+    }
+  };
+
   const handleUploadQuizFile = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
+    if (!selectedQuiz.lessonId) {
+      alert("Vui lòng chọn bài giảng trước khi upload file");
+      return;
+    }
+
     try {
-      const text = await file.text();
-      let quizData = null;
+      setLoading(true);
+      const formData = new FormData();
+      formData.append('file', file);
 
-      if (file.name.endsWith('.js')) {
-        // For .js files, extract the object from "export default { ... }"
-        const match = text.match(/export\s+default\s+({[\s\S]*})/);
-        if (match) {
-          quizData = eval('(' + match[1] + ')');
-        } else {
-          throw new Error("Invalid .js file format. Must contain 'export default { ... }'");
-        }
-      } else if (file.name.endsWith('.json')) {
-        // For .json files, parse directly
-        quizData = JSON.parse(text);
+      // Build URL with quizId if editing
+      let uploadUrl = `/Quiz/upload?lessonId=${selectedQuiz.lessonId}&description=${encodeURIComponent(selectedQuiz.description || "")}`;
+      if (isEditMode && selectedQuiz.quizId) {
+        uploadUrl += `&quizId=${selectedQuiz.quizId}`;
+        console.log("Editing quiz with ID:", selectedQuiz.quizId);
       } else {
-        throw new Error("File must be .js or .json format");
+        console.log("Creating new quiz");
       }
 
-      // Validate structure - Quiz format should have questions array at root level
-      if (!quizData.questions || !Array.isArray(quizData.questions)) {
-        throw new Error("File must contain a 'questions' array at root level (Quiz format)");
+      console.log("Upload URL:", uploadUrl);
+
+      const uploadRes = await api.post(uploadUrl, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      const { quizId, questions } = uploadRes.data;
+
+      if (!questions || questions.length === 0) {
+        throw new Error("No questions found in file");
       }
 
-      // Validate each question has required fields
-      const invalidQuestions = quizData.questions.filter(q =>
-        !q.question || !Array.isArray(q.options) || q.correctAnswer === undefined
-      );
-
-      if (invalidQuestions.length > 0) {
-        throw new Error(`${invalidQuestions.length} question(s) missing required fields (question, options, correctAnswer)`);
-      }
-
-      // Store the parsed data
+      // Update selectedQuiz with the created/updated quiz data
       setSelectedQuiz((prev) => ({
         ...prev,
+        quizId: quizId,
         uploadedFileName: file.name,
-        uploadedQuizData: quizData,
-        questionFileUrl: file.name,
+        uploadedQuizData: { questions },
       }));
 
-      alert(`✅ Tải file thành công! (${quizData.questions.length} câu hỏi)`);
+      alert(`✅ Tải file thành công! (${questions.length} câu hỏi)`);
     } catch (error) {
-      console.error("Error reading file:", error);
-      alert(`❌ Lỗi đọc file: ${error.message}`);
+      console.error("Error uploading file:", error);
+      alert(`❌ Lỗi tải file: ${error.response?.data?.message || error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleUploadMediaFile = (e) => {
+  const handleUploadMediaFile = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const url = URL.createObjectURL(file);
-    setSelectedQuiz((prev) => ({
-      ...prev,
-      mediaUrl: url,
-      uploadedMediaName: file.name,
-    }));
+    try {
+      setLoading(true);
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const uploadRes = await api.post('/Quiz/upload-media', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      const mediaUrl = uploadRes.data.mediaUrl;
+
+      setSelectedQuiz((prev) => ({
+        ...prev,
+        mediaUrl: mediaUrl,
+        uploadedMediaName: file.name,
+      }));
+
+      alert(`✅ Tải media thành công!`);
+    } catch (error) {
+      console.error("Error uploading media:", error);
+      alert(`❌ Lỗi tải media: ${error.response?.data?.message || error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAdd = () => {
@@ -329,8 +393,8 @@ export default function ManageQuiz() {
       setLoading(true);
       const quizId = row.quizId || row.id;
       await DeleteQuiz(quizId);
-      setQuizzes((prev) => prev.filter((q) => (q.quizId || q.id) !== quizId));
       alert("Xóa thành công!");
+      await refreshQuizzes();
     } catch (error) {
       console.error("Error deleting quiz:", error);
       alert("Không thể xóa quiz. Vui lòng thử lại!");
@@ -340,63 +404,45 @@ export default function ManageQuiz() {
   };
 
   const handleSave = async () => {
-    if (!selectedQuiz.lessonId || !selectedQuiz.questionFileUrl) {
-      return alert("Vui lòng chọn bài giảng + upload file quiz.");
+    if (!selectedQuiz.lessonId) {
+      return alert("Vui lòng chọn bài giảng.");
+    }
+
+    if (!selectedQuiz.uploadedQuizData || !selectedQuiz.uploadedQuizData.questions) {
+      return alert("Vui lòng upload file quiz.");
     }
 
     try {
       setLoading(true);
 
-      // Prepare quiz data for backend
-      const quizData = {
-        lessonID: selectedQuiz.lessonId,
-        questionFileUrl: selectedQuiz.questionFileUrl,
-        mediaUrl: selectedQuiz.mediaUrl || "",
-        description: selectedQuiz.description || "",
-      };
-
-      if (isEditMode) {
-        // Update existing quiz
-        const quizId = selectedQuiz.quizId || selectedQuiz.id;
-        await UpdateQuiz(quizId, quizData);
-
-        // Update local state - preserve uploadedQuizData for preview
-        setQuizzes((prev) =>
-          prev.map((q) =>
-            (q.quizId || q.id) === quizId
-              ? {
-                ...selectedQuiz,
-                ...quizData,
-                uploadedQuizData: selectedQuiz.uploadedQuizData // Preserve uploaded data
-              }
-              : q
-          )
-        );
-        alert("Cập nhật thành công!");
-      } else {
-        // Create new quiz
-        const response = await CreateQuiz(quizData);
-        const newQuiz = response.data;
-
-        // Format and add to list
-        const lesson = lessons.find((l) => l.lessonId === (newQuiz.lessonID || newQuiz.lessonId));
-        const course = lesson ? courses.find((c) => c.courseId === lesson.courseId) : null;
-
-        const formattedQuiz = {
-          ...newQuiz,
-          id: newQuiz.quizID || newQuiz.quizId || newQuiz.id,
-          quizId: newQuiz.quizID || newQuiz.quizId || newQuiz.id,
-          lessonId: newQuiz.lessonID || newQuiz.lessonId,
-          lessonTitle: lesson ? lesson.title : "Không tìm thấy bài giảng",
-          courseTitle: course ? course.title : "Không tìm thấy khóa học",
-          uploadedQuizData: selectedQuiz.uploadedQuizData, // Preserve uploaded data for preview
+      // If quiz was just created from upload, it's already in DB
+      if (selectedQuiz.quizId && !isEditMode) {
+        // Just update media and description if needed
+        const quizData = {
+          lessonID: selectedQuiz.lessonId,
+          questionFileUrl: selectedQuiz.questionFileUrl || "",
+          mediaUrl: selectedQuiz.mediaUrl || "",
+          description: selectedQuiz.description || "",
         };
 
-        setQuizzes([formattedQuiz, ...quizzes]);
-        alert("Thêm thành công!");
+        await UpdateQuiz(selectedQuiz.quizId, quizData);
+        alert("Cập nhật thành công!");
+      } else if (isEditMode) {
+        // Update existing quiz
+        const quizId = selectedQuiz.quizId || selectedQuiz.id;
+        const quizData = {
+          lessonID: selectedQuiz.lessonId,
+          questionFileUrl: selectedQuiz.questionFileUrl || "",
+          mediaUrl: selectedQuiz.mediaUrl || "",
+          description: selectedQuiz.description || "",
+        };
+
+        await UpdateQuiz(quizId, quizData);
+        alert("Cập nhật thành công!");
       }
 
       setOpenDialog(false);
+      await refreshQuizzes();
     } catch (error) {
       console.error("Error saving quiz:", error);
       alert("Không thể lưu quiz. Vui lòng thử lại!");
@@ -405,7 +451,7 @@ export default function ManageQuiz() {
     }
   };
 
-  /* PREVIEW LOADER - Loads questions from uploaded .js/.json data */
+  /* PREVIEW LOADER - Loads questions from file URL */
   const handlePreview = async (q) => {
     setOpenPreview(true);
     setIsEditingDetails(false);
@@ -415,24 +461,88 @@ export default function ManageQuiz() {
 
     console.log("Preview quiz:", q);
     console.log("Has uploadedQuizData:", !!q.uploadedQuizData);
+    console.log("uploadedQuizData content:", q.uploadedQuizData);
+    console.log("q.questions:", q.questions);
+    console.log("q.sections:", q.sections);
 
     // Try to get questions from uploaded data (stored during add/edit)
     if (q.uploadedQuizData && q.uploadedQuizData.questions) {
       questions = q.uploadedQuizData.questions;
       console.log("Loaded questions from uploadedQuizData:", questions.length);
+    } else if (q.questions && Array.isArray(q.questions)) {
+      // Direct questions from backend response
+      questions = q.questions;
+      console.log("Loaded questions directly from q.questions:", questions.length);
+    } else if (q.sections && Array.isArray(q.sections)) {
+      // Nested sections structure - flatten all questions
+      questions = q.sections.flatMap(section => section.questions || []);
+      console.log("Loaded questions from sections:", questions.length);
     } else if (q.questionFileUrl) {
-      // Try to fetch from backend if URL is provided
+      // Fetch the quiz file from the URL
       try {
-        console.log("Fetching quiz from backend:", q.quizId || q.id);
-        const response = await GetQuizById(q.quizId || q.id);
-        console.log("Backend response:", response.data);
+        console.log("Fetching quiz file from URL:", q.questionFileUrl);
 
-        if (response.data && response.data.questions) {
-          questions = response.data.questions;
-          console.log("Loaded questions from backend:", questions.length);
+        // Build full URL - the backend returns relative paths like "/uploads/..."
+        let fileUrl = q.questionFileUrl;
+        if (!fileUrl.startsWith('http')) {
+          fileUrl = `https://localhost:7264${fileUrl.startsWith('/') ? '' : '/'}${fileUrl}`;
+        }
+
+        console.log("Full file URL:", fileUrl);
+
+        const fileRes = await fetch(fileUrl);
+        if (!fileRes.ok) throw new Error(`Failed to fetch quiz file: ${fileRes.status}`);
+
+        const text = await fileRes.text();
+        console.log("File content length:", text.length);
+        let quizData = null;
+
+        if (q.questionFileUrl.endsWith('.js')) {
+          // For .js files, extract the export default object
+          const match = text.match(/export\s+default\s+({[\s\S]*})/);
+          if (match) {
+            try {
+              quizData = eval('(' + match[1] + ')');
+            } catch (e) {
+              console.error("Error parsing JS file:", e);
+              // Try JSON parse as fallback
+              quizData = JSON.parse(match[1]);
+            }
+          }
+        } else if (q.questionFileUrl.endsWith('.json')) {
+          quizData = JSON.parse(text);
+        }
+
+        console.log("Parsed quiz data:", quizData);
+
+        // Extract questions - handle both flat array and nested sections structure
+        if (quizData) {
+          if (quizData.questions && Array.isArray(quizData.questions)) {
+            // Direct questions array
+            questions = quizData.questions;
+            console.log("Found direct questions array:", questions.length);
+          } else if (quizData.sections && Array.isArray(quizData.sections)) {
+            // Nested sections structure - flatten all questions
+            questions = quizData.sections.flatMap(section => section.questions || []);
+            console.log("Found questions in sections:", questions.length);
+          }
+
+          if (questions && questions.length > 0) {
+            console.log("Loaded questions from file:", questions.length);
+
+            // Cache in state for future previews
+            setQuizzes((prev) =>
+              prev.map((quiz) =>
+                (quiz.quizId || quiz.id) === (q.quizId || q.id)
+                  ? { ...quiz, uploadedQuizData: { questions } }
+                  : quiz
+              )
+            );
+          }
         }
       } catch (error) {
-        console.error("Error fetching quiz details:", error);
+        console.error("Error fetching quiz file:", error);
+        alert(`❌ Không thể tải file quiz: ${error.message}`);
       }
     }
 
@@ -614,27 +724,14 @@ export default function ManageQuiz() {
 
           {/* Upload quiz file */}
           <Box mt={2}>
-            <TextField
-              label="URL File câu hỏi"
-              fullWidth
-              value={selectedQuiz?.questionFileUrl || ""}
-              onChange={(e) =>
-                setSelectedQuiz((prev) => ({ ...prev, questionFileUrl: e.target.value }))
-              }
-            />
-
-            <Typography align="center" mt={1}>
-              — hoặc —
-            </Typography>
-
-            <Button variant="outlined" component="label" startIcon={<UploadFileIcon />}>
+            <Button variant="outlined" component="label" startIcon={<UploadFileIcon />} fullWidth>
               Upload file (.js hoặc .json)
               <input type="file" accept=".js,.json" hidden onChange={handleUploadQuizFile} />
             </Button>
 
             {selectedQuiz?.uploadedFileName && (
-              <Typography mt={1} color="text.secondary">
-                📄 {selectedQuiz.uploadedFileName}
+              <Typography mt={1} color="success.main" fontWeight="500">
+                ✅ {selectedQuiz.uploadedFileName} ({selectedQuiz.uploadedQuizData?.questions?.length || 0} câu hỏi)
               </Typography>
             )}
           </Box>
@@ -680,8 +777,8 @@ export default function ManageQuiz() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenDialog(false)}>Hủy</Button>
-          <Button variant="contained" onClick={handleSave}>
-            {isEditMode ? "Lưu thay đổi" : "Thêm Quiz"}
+          <Button variant="contained" onClick={handleSave} disabled={!selectedQuiz?.uploadedQuizData}>
+            {isEditMode ? "Lưu thay đổi" : "Hoàn tất"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -726,11 +823,11 @@ export default function ManageQuiz() {
 
               {previewMedia.endsWith(".mp4") || previewMedia.endsWith(".webm") ? (
                 <video controls style={{ width: "100%", maxHeight: "400px", borderRadius: 8 }}>
-                  <source src={previewMedia} type="video/mp4" />
+                  <source src={previewMedia.startsWith('http') ? previewMedia : `https://localhost:7264${previewMedia.startsWith('/') ? '' : '/'}${previewMedia}`} type="video/mp4" />
                 </video>
               ) : (
                 <audio controls style={{ width: "100%" }}>
-                  <source src={previewMedia} type="audio/mpeg" />
+                  <source src={previewMedia.startsWith('http') ? previewMedia : `https://localhost:7264${previewMedia.startsWith('/') ? '' : '/'}${previewMedia}`} type="audio/mpeg" />
                 </audio>
               )}
             </Box>

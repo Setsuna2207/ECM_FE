@@ -4,14 +4,11 @@ export default {
       sectionId: 1,
       title: "Listening Comprehension",
       description: "Listen to audio clips and answer questions",
-      mediaUrl: "https://example.com/audio/placement_listening.mp3",
-      duration: 20,
       questions: [
         {
           questionId: 1,
           type: "multiple-choice",
           question: "Where does this conversation most likely take place?",
-          audioTimestamp: "0:00-0:30",
           options: [
             "At a restaurant",
             "At a hotel reception",
@@ -25,7 +22,6 @@ export default {
           questionId: 2,
           type: "multiple-choice",
           question: "What is the woman's problem?",
-          audioTimestamp: "0:30-1:00",
           options: [
             "She lost her reservation",
             "Her room is not ready",
@@ -39,7 +35,6 @@ export default {
           questionId: 3,
           type: "multiple-choice",
           question: "What time does the man suggest meeting?",
-          audioTimestamp: "1:00-1:30",
           options: [
             "9:00 AM",
             "10:30 AM",
@@ -53,7 +48,6 @@ export default {
           questionId: 4,
           type: "multiple-choice",
           question: "What is being advertised?",
-          audioTimestamp: "1:30-2:00",
           options: [
             "A new smartphone",
             "A fitness center membership",
@@ -67,7 +61,6 @@ export default {
           questionId: 5,
           type: "multiple-choice",
           question: "Why is the meeting being postponed?",
-          audioTimestamp: "2:00-2:30",
           options: [
             "The manager is sick",
             "The room is unavailable",
@@ -488,23 +481,4 @@ export default {
       ]
     }
   ],
-
-  // Scoring guidelines
-  scoring: {
-    total: 100,
-    breakdown: {
-      listening: 10,
-      reading: 10,
-      vocabulary: 20,
-      grammar: 20,
-      writing: 40
-    },
-    levels: [
-      { min: 0, max: 39, level: "Beginner", recommendation: "Basic English courses" },
-      { min: 40, max: 59, level: "Elementary", recommendation: "Elementary TOEIC preparation" },
-      { min: 60, max: 74, level: "Intermediate", recommendation: "Intermediate TOEIC courses" },
-      { min: 75, max: 89, level: "Upper-Intermediate", recommendation: "Advanced TOEIC preparation" },
-      { min: 90, max: 100, level: "Advanced", recommendation: "TOEIC exam ready / Business English" }
-    ]
-  }
 };
