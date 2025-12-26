@@ -461,6 +461,7 @@ export default function ManageQuiz() {
     setOpenPreview(true);
     setIsEditingDetails(false);
     setPreviewMedia(q.mediaUrl || null);
+    setSelectedQuiz(q); // Store the quiz being previewed
 
     let questions = null;
 
@@ -576,11 +577,60 @@ export default function ManageQuiz() {
     });
   };
 
-  const handleSaveQuizDetails = () => {
-    console.log("New Quiz Details:", previewQuestions);
-    alert("Đã lưu thay đổi nội dung quiz!");
-    setIsEditingDetails(false);
-    setOpenPreview(false);
+  const handleSaveQuizDetails = async () => {
+    if (!selectedQuiz?.quizId && !selectedQuiz?.id) {
+      alert("Không thể lưu: Quiz ID không tìm thấy");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const quizId = selectedQuiz.quizId || selectedQuiz.id;
+
+      console.log("Saving quiz details:");
+      console.log("- Quiz ID:", quizId);
+      console.log("- Questions count:", previewQuestions.length);
+
+      // Create a JavaScript file content with the updated questions
+      const fileContent = `export default {
+  questions: ${JSON.stringify(previewQuestions, null, 2)}
+};`;
+
+      // Create a Blob from the file content
+      const blob = new Blob([fileContent], { type: 'text/javascript' });
+      const file = new File([blob], 'updated-questions.js', { type: 'text/javascript' });
+
+      // Upload the updated questions file
+      const formData = new FormData();
+      formData.append('file', file);
+
+      console.log("Uploading updated questions file...");
+
+      const uploadRes = await api.post(`/Quiz/upload?quizId=${quizId}&lessonId=${selectedQuiz.lessonId}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      console.log("Upload response:", uploadRes.data);
+
+      // Update the quiz in state with new questions
+      setQuizzes((prev) =>
+        prev.map((quiz) =>
+          (quiz.quizId || quiz.id) === quizId
+            ? { ...quiz, uploadedQuizData: { questions: previewQuestions } }
+            : quiz
+        )
+      );
+
+      alert("✅ Đã lưu thay đổi nội dung quiz!");
+      setIsEditingDetails(false);
+      setOpenPreview(false);
+    } catch (error) {
+      console.error("Error saving quiz details:", error);
+      console.error("Error response:", error.response?.data);
+      alert(`❌ Lỗi lưu quiz: ${error.response?.data?.message || error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const columns = [
@@ -641,7 +691,8 @@ export default function ManageQuiz() {
   return (
     <Box flex={1} p={3}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-        <Header title="Quản lý Quiz" subtitle="Danh sách bài quiz" />
+        <Header title="Quản lý Quiz" subtitle="Danh sách bài quiz. Lưu ý:
+        Chuyển đổi định dạng file trước khi upload." />
 
         <Button
           variant="contained"
@@ -860,9 +911,9 @@ export default function ManageQuiz() {
         <DialogActions>
           {isEditingDetails ? (
             <>
-              <Button onClick={handleClosePreview}>Hủy</Button>
-              <Button variant="contained" onClick={handleSaveQuizDetails}>
-                Lưu thay đổi
+              <Button onClick={handleClosePreview} disabled={loading}>Hủy</Button>
+              <Button variant="contained" onClick={handleSaveQuizDetails} disabled={loading}>
+                {loading ? "Đang lưu..." : "Lưu thay đổi"}
               </Button>
             </>
           ) : (

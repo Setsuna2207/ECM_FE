@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Box, IconButton, useTheme, TextField, Autocomplete } from "@mui/material";
+import { Box, IconButton, useTheme, TextField, Autocomplete, CircularProgress, Alert } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { tokens } from "../../../theme";
 import Header from "../../../components/Header";
-import { mockReviews } from "../../../data/mockReview";
+import { GetAllReview, DeleteReview } from "../../../services/reviewService";
 import { mockCourses } from "../../../data/mockCourse";
 
 // Hàm chuyển đổi định dạng ngày
@@ -24,30 +24,49 @@ const ManageReviews = () => {
   const [reviews, setReviews] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
   const [filterCourse, setFilterCourse] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Lấy dữ liệu từ mock
+  // Lấy dữ liệu từ backend
   useEffect(() => {
-    const reviewsWithId = mockReviews.map((review, index) => ({
-      ...review,
-      reviewId: review.reviewId || index + 1,
-    }));
-
-    const reviewsWithCourseTitle = reviewsWithId.map((review) => {
-      const foundCourse = mockCourses.find((c) => c.courseId === review.courseId);
-      return {
-        ...review,
-        courseTitle: foundCourse ? foundCourse.title : "Không tìm thấy khóa học",
-      };
-    });
-
-    setReviews(reviewsWithCourseTitle);
+    fetchReviews();
   }, []);
 
+  const fetchReviews = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await GetAllReview();
+
+      const reviewsData = response.data || [];
+      const reviewsWithCourseTitle = reviewsData.map((review) => {
+        const foundCourse = mockCourses.find((c) => c.courseId === review.courseId);
+        return {
+          ...review,
+          courseTitle: foundCourse ? foundCourse.title : "Không tìm thấy khóa học",
+        };
+      });
+
+      setReviews(reviewsWithCourseTitle);
+    } catch (err) {
+      setError("Lỗi khi tải dữ liệu đánh giá");
+      console.error("Error fetching reviews:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Xóa review
-  const handleDeleteSelected = (row) => {
+  const handleDeleteSelected = async (row) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa đánh giá này không?")) {
-      setReviews((prev) => prev.filter((r) => r.reviewId !== row.reviewId));
-      alert("Xóa đánh giá thành công!");
+      try {
+        await DeleteReview(row.reviewId);
+        setReviews((prev) => prev.filter((r) => r.reviewId !== row.reviewId));
+        alert("Xóa đánh giá thành công!");
+      } catch (err) {
+        console.error("Error deleting review:", err);
+        alert("Lỗi khi xóa đánh giá");
+      }
     }
   };
 
@@ -103,6 +122,13 @@ const ManageReviews = () => {
         <Header title="Quản lý đánh giá" subtitle="Danh sách đánh giá khóa học" />
       </Box>
 
+      {/* Error Alert */}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
       {/* Filter */}
       <Box mb={2} width="300px">
         <Autocomplete
@@ -140,15 +166,21 @@ const ManageReviews = () => {
           },
         }}
       >
-        <DataGrid
-          rows={filteredReviews}
-          columns={columns}
-          getRowId={(row) => row.reviewId}
-          selectionModel={selectedRows}
-          onRowSelectionModelChange={(ids) => setSelectedRows(ids)}
-          slots={{ toolbar: GridToolbar }}
-          initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
-        />
+        {loading ? (
+          <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+            <CircularProgress />
+          </Box>
+        ) : (
+          <DataGrid
+            rows={filteredReviews}
+            columns={columns}
+            getRowId={(row) => row.reviewId}
+            selectionModel={selectedRows}
+            onRowSelectionModelChange={(ids) => setSelectedRows(ids)}
+            slots={{ toolbar: GridToolbar }}
+            initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+          />
+        )}
       </Box>
     </Box>
   );

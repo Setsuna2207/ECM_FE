@@ -18,6 +18,7 @@ import {
   Chip,
   Paper,
   Divider,
+  CircularProgress,
 } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import AddIcon from "@mui/icons-material/Add";
@@ -29,8 +30,15 @@ import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import QuizIcon from "@mui/icons-material/Quiz";
 import ArticleIcon from "@mui/icons-material/Article";
 import Header from "../../../components/Header";
-import { mockTests } from "../../../data/mockTest";
-import { getTestById } from "../../../data/test/testRegistry";
+import api from "../../../services/axios/axios.customize";
+import {
+  GetAllPlacementTests,
+  GetPlacementTestById,
+  CreatePlacementTest,
+  UpdatePlacementTest,
+  DeletePlacementTest,
+} from "../../../services/placementTestService";
+import { UploadFile, UploadVideo } from "../../../services/fileUploadService";
 
 const testCategories = ["TOEIC", "TOEFL", "IELTS", "GENERAL"];
 
@@ -42,7 +50,7 @@ function QuestionPreviewCard({ question, index, isEditingDetails, onUpdateQuesti
         {question.sectionTitle && (
           <Chip label={question.sectionTitle} size="small" color="info" sx={{ mb: 2 }} />
         )}
-        
+
         {isEditingDetails ? (
           <>
             <TextField
@@ -53,7 +61,7 @@ function QuestionPreviewCard({ question, index, isEditingDetails, onUpdateQuesti
               sx={{ mb: 2 }}
               multiline
             />
-            
+
             {question.passage !== undefined && (
               <TextField
                 fullWidth
@@ -65,7 +73,7 @@ function QuestionPreviewCard({ question, index, isEditingDetails, onUpdateQuesti
                 rows={6}
               />
             )}
-            
+
             {question.options?.map((opt, i) => (
               <Box key={i} display="flex" alignItems="center" gap={1} mb={1}>
                 <Radio
@@ -92,42 +100,42 @@ function QuestionPreviewCard({ question, index, isEditingDetails, onUpdateQuesti
                 <Chip label={`${question.points} điểm`} size="small" color="success" variant="outlined" />
               )}
             </Box>
-            
+
             {question.passage && (
-              <Paper 
+              <Paper
                 elevation={0}
-                sx={{ 
-                  p: 3, 
-                  mb: 3, 
+                sx={{
+                  p: 3,
+                  mb: 3,
                   backgroundColor: "#f8f9fa",
                   border: "2px solid #e3f2fd",
                   borderLeft: "5px solid #2196f3",
                   borderRadius: 2,
                 }}
               >
-                <Box 
-                  sx={{ 
-                    display: "flex", 
-                    alignItems: "center", 
-                    gap: 1, 
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
                     mb: 2,
                     pb: 1.5,
                     borderBottom: "1px solid #e0e0e0"
                   }}
                 >
                   <ArticleIcon sx={{ color: "#2196f3", fontSize: 24 }} />
-                  <Typography 
-                    variant="subtitle2" 
-                    fontWeight="700" 
+                  <Typography
+                    variant="subtitle2"
+                    fontWeight="700"
                     color="primary"
                     sx={{ textTransform: "uppercase", letterSpacing: 1 }}
                   >
                     Reading Passage
                   </Typography>
                 </Box>
-                <Typography 
-                  variant="body1" 
-                  sx={{ 
+                <Typography
+                  variant="body1"
+                  sx={{
                     lineHeight: 1.8,
                     color: "#2c3e50",
                     fontSize: "1rem",
@@ -139,19 +147,19 @@ function QuestionPreviewCard({ question, index, isEditingDetails, onUpdateQuesti
                 </Typography>
               </Paper>
             )}
-            
+
             <Divider sx={{ mb: 2 }} />
-            
+
             <Typography variant="body1" fontWeight="500" mb={2} color="text.primary">
               {question.question}
             </Typography>
-            
+
             {question.audioTimestamp && (
               <Typography variant="caption" color="text.secondary" display="block" mb={2}>
                 🎧 Audio: {question.audioTimestamp}
               </Typography>
             )}
-            
+
             {question.options && (
               <RadioGroup>
                 {question.options.map((opt, i) => (
@@ -170,10 +178,10 @@ function QuestionPreviewCard({ question, index, isEditingDetails, onUpdateQuesti
                       value={i}
                       control={<Radio disabled />}
                       label={
-                        <Typography 
-                          sx={{ 
-                            color: question.correctAnswer === i ? "#2e7d32" : "inherit", 
-                            fontWeight: question.correctAnswer === i ? 600 : 400 
+                        <Typography
+                          sx={{
+                            color: question.correctAnswer === i ? "#2e7d32" : "inherit",
+                            fontWeight: question.correctAnswer === i ? 600 : 400
                           }}
                         >
                           {opt} {question.correctAnswer === i && "✓"}
@@ -185,7 +193,7 @@ function QuestionPreviewCard({ question, index, isEditingDetails, onUpdateQuesti
                 ))}
               </RadioGroup>
             )}
-            
+
             {question.type && (
               <Box mt={2}>
                 <Chip label={question.type} size="small" variant="outlined" />
@@ -200,6 +208,7 @@ function QuestionPreviewCard({ question, index, isEditingDetails, onUpdateQuesti
 
 export default function ManageTest() {
   const [tests, setTests] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedTest, setSelectedTest] = useState(null);
@@ -212,26 +221,94 @@ export default function ManageTest() {
   const [previewMedia, setPreviewMedia] = useState(null);
   const [isEditingDetails, setIsEditingDetails] = useState(false);
 
+  // Fetch tests from backend
   useEffect(() => {
-    const formatted = mockTests.map((t, idx) => ({
-      ...t,
-      id: t.testId || idx + 1,
-      name: t.title || t.name || "",
-      title: t.title || t.name || "",
-      description: t.description || "",
-      category: t.category || "GENERAL",
-      duration: t.duration || 60,
-      totalQuestions: t.totalQuestions || 0,
-      level: t.level || "All Levels"
-    }));
-    setTests(formatted);
+    fetchTests();
   }, []);
+
+  const fetchTests = async () => {
+    try {
+      setLoading(true);
+      const response = await GetAllPlacementTests();
+      const testsData = Array.isArray(response.data) ? response.data : [];
+      console.log("Raw tests from backend:", testsData);
+
+      const formatted = testsData.map((t, idx) => {
+        console.log(`Processing test ${idx}:`, t.title || t.Title);
+        
+        // Parse sections - check both lowercase and uppercase
+        let sections = null;
+        let uploadedTestData = null;
+
+        const sectionsData = t.sections || t.Sections;
+        
+        console.log("  - sectionsData type:", typeof sectionsData);
+        console.log("  - sectionsData isArray:", Array.isArray(sectionsData));
+        console.log("  - sectionsData sample:", sectionsData);
+
+        if (sectionsData) {
+          if (typeof sectionsData === 'string') {
+            try {
+              sections = JSON.parse(sectionsData);
+              uploadedTestData = { sections };
+              console.log("  ✅ Parsed sections from string:", sections.length);
+            } catch (e) {
+              console.error("  ❌ Error parsing sections string:", e);
+            }
+          } else if (Array.isArray(sectionsData)) {
+            sections = sectionsData;
+            uploadedTestData = { sections };
+            console.log("  ✅ Using sections array:", sections.length, "sections");
+          } else if (typeof sectionsData === 'object') {
+            sections = sectionsData;
+            uploadedTestData = { sections };
+            console.log("  ✅ Using sections object");
+          }
+        } else {
+          console.log("  ⚠️ No sections data found");
+        }
+
+        // Calculate total questions from sections
+        let totalQuestionsCalc = 0;
+        if (sections && Array.isArray(sections)) {
+          sections.forEach(section => {
+            if (section.questions && Array.isArray(section.questions)) {
+              totalQuestionsCalc += section.questions.length;
+            }
+          });
+        }
+
+        return {
+          ...t,
+          id: t.testID || t.TestID || t.testId || idx + 1,
+          testId: t.testID || t.TestID || t.testId,
+          name: t.title || t.Title || "",
+          title: t.title || t.Title || "",
+          description: t.description || t.Description || "",
+          category: t.category || t.Category || "GENERAL",
+          duration: t.duration || t.Duration || 85,
+          totalQuestions: totalQuestionsCalc || t.totalQuestions || t.TotalQuestions || 0,
+          level: t.level || t.Level || "All Levels",
+          questionFileUrl: t.questionFileURL || t.QuestionFileURL || "",
+          mediaUrl: t.mediaURL || t.MediaURL || "",
+          sections: sections,
+          uploadedTestData: uploadedTestData,
+        };
+      });
+      setTests(formatted);
+    } catch (error) {
+      console.error("Error fetching tests:", error);
+      alert("Không thể tải danh sách test. Vui lòng thử lại!");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredTests = tests.filter(t => {
     const matchCategory = filterCategory ? t.category === filterCategory : true;
-    const matchName = searchName 
-      ? (t.name?.toLowerCase().includes(searchName.toLowerCase()) || 
-         t.title?.toLowerCase().includes(searchName.toLowerCase()))
+    const matchName = searchName
+      ? (t.name?.toLowerCase().includes(searchName.toLowerCase()) ||
+        t.title?.toLowerCase().includes(searchName.toLowerCase()))
       : true;
     return matchCategory && matchName;
   });
@@ -239,33 +316,71 @@ export default function ManageTest() {
   const handleUploadTestFile = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
     try {
+      setLoading(true);
       const text = await file.text();
-      const fileUrl = URL.createObjectURL(file);
       let testData = null;
-      if (file.name.endsWith('.json')) testData = JSON.parse(text);
-      setSelectedTest(prev => ({
-        ...prev,
-        questionFileUrl: fileUrl,
+
+      if (file.name.endsWith('.json')) {
+        testData = JSON.parse(text);
+      } else {
+        throw new Error("File must be .json format");
+      }
+
+      if (!testData) {
+        throw new Error("No test data found in file");
+      }
+
+      // Store the parsed data in memory for preview
+      const updatedTest = {
+        ...selectedTest,
         uploadedFileName: file.name,
-        uploadedTestData: testData
-      }));
+        uploadedTestData: testData,
+      };
+
+      setSelectedTest(updatedTest);
+
+      alert(`✅ Tải file thành công! (${testData.sections?.length || 0} sections)`);
+
+      // Auto-open preview
+      setTimeout(() => {
+        handlePreview(updatedTest);
+      }, 500);
     } catch (error) {
-      alert("Lỗi đọc file test. Kiểm tra định dạng.");
-      console.error(error);
+      console.error("Error reading test file:", error);
+      alert(`❌ Lỗi tải file: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleUploadMediaFile = (e) => {
+  const handleUploadMediaFile = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const fileUrl = URL.createObjectURL(file);
-    setSelectedTest(prev => ({ ...prev, mediaUrl: fileUrl, uploadedMediaName: file.name }));
+
+    try {
+      setLoading(true);
+      const url = URL.createObjectURL(file);
+
+      setSelectedTest((prev) => ({
+        ...prev,
+        mediaUrl: url,
+        uploadedMediaName: file.name,
+      }));
+
+      alert(`✅ Tải media thành công!`);
+    } catch (error) {
+      console.error("Error uploading media:", error);
+      alert(`❌ Lỗi tải media: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAdd = () => {
-    setSelectedTest({ 
-      name: "", title: "", category: "GENERAL", 
+    setSelectedTest({
+      name: "", title: "", category: "GENERAL",
       questionFileUrl: "", mediaUrl: "", description: "",
       duration: 60, totalQuestions: 0, level: "All Levels"
     });
@@ -279,30 +394,72 @@ export default function ManageTest() {
     setOpenDialog(true);
   };
 
-  const handleDelete = (row) => {
-    if (window.confirm("Bạn có chắc muốn xóa test này không?")) {
-      setTests(prev => prev.filter(t => t.id !== row.id));
+  const handleDelete = async (row) => {
+    if (!window.confirm("Bạn có chắc muốn xóa test này không?")) return;
+
+    try {
+      setLoading(true);
+      const testId = row.testId || row.id;
+      await DeletePlacementTest(testId);
+      alert("Xóa thành công!");
+      await fetchTests();
+    } catch (error) {
+      console.error("Error deleting test:", error);
+      alert("Không thể xóa test. Vui lòng thử lại!");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSave = () => {
-    if (!selectedTest.category || !selectedTest.name) {
+  const handleSave = async () => {
+    if (!selectedTest.category || !selectedTest.title) {
       alert("Nhập tiêu đề và chọn danh mục!");
       return;
     }
-    
-    const testToSave = {
-      ...selectedTest,
-      title: selectedTest.name,
-      testId: isEditMode ? selectedTest.testId : `custom_${Date.now()}`
-    };
-    
-    const updated = isEditMode
-      ? tests.map(t => t.id === selectedTest.id ? testToSave : t)
-      : [{ ...testToSave, id: tests.length + 1 }, ...tests];
-    setTests(updated);
-    alert(isEditMode ? "Cập nhật thành công!" : "Đã thêm test mới!");
-    setOpenDialog(false);
+
+    if (!selectedTest.uploadedTestData) {
+      alert("Vui lòng upload file test!");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Use the upload endpoint which handles both create and update
+      const formData = new FormData();
+
+      // Create a temporary file from the uploaded test data
+      const testDataJson = JSON.stringify(selectedTest.uploadedTestData);
+      const blob = new Blob([testDataJson], { type: 'application/json' });
+      const file = new File([blob], `${selectedTest.title}.json`, { type: 'application/json' });
+
+      formData.append('file', file);
+      formData.append('title', selectedTest.title);
+      formData.append('description', selectedTest.description || "");
+
+      if (isEditMode && selectedTest.testId) {
+        formData.append('testId', selectedTest.testId);
+      }
+
+      const uploadRes = await api.post('/PlacementTest/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      console.log("Save response:", uploadRes.data);
+
+      if (uploadRes.data.success) {
+        alert(isEditMode ? "Cập nhật thành công!" : "Thêm test thành công!");
+        setOpenDialog(false);
+        await fetchTests();
+      } else {
+        alert(`Lỗi: ${uploadRes.data.message}`);
+      }
+    } catch (error) {
+      console.error("Error saving test:", error);
+      alert(`Không thể lưu test: ${error.response?.data?.message || error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handlePreview = async (test) => {
@@ -312,28 +469,95 @@ export default function ManageTest() {
     setPreviewMedia(null);
     setIsEditingDetails(false);
     setOpenPreview(true);
-    
+
     try {
+      setLoading(true);
       let testData = null;
       let mediaUrl = null;
-      
+
+      console.log("=== PREVIEW DEBUG ===");
+      console.log("Full test object:", test);
+      console.log("Has uploadedTestData:", !!test.uploadedTestData);
+      console.log("Has sections:", !!test.sections);
+      console.log("Sections type:", typeof test.sections);
+      console.log("Sections value:", test.sections);
+      console.log("questionFileUrl:", test.questionFileUrl);
+
+      // Try to get test data from uploaded data first
       if (test.uploadedTestData) {
         testData = test.uploadedTestData;
-      } else if (test.testId) {
-        testData = getTestById(test.testId);
+        console.log("✅ Using uploadedTestData");
       }
-      
+      // Try to get from sections stored in backend
+      else if (test.sections) {
+        // Handle if sections is still a string
+        if (typeof test.sections === 'string') {
+          try {
+            const parsed = JSON.parse(test.sections);
+            testData = { sections: parsed };
+            console.log("✅ Parsed sections from string:", parsed.length);
+          } catch (e) {
+            console.error("❌ Failed to parse sections string:", e);
+          }
+        } else if (Array.isArray(test.sections)) {
+          testData = { sections: test.sections };
+          console.log("✅ Using sections array from backend:", test.sections.length);
+        } else {
+          testData = { sections: test.sections };
+          console.log("✅ Using sections object from backend");
+        }
+      }
+      // Fetch from file URL
+      else if (test.questionFileUrl) {
+        try {
+          const fileUrl = test.questionFileUrl.startsWith('http')
+            ? test.questionFileUrl
+            : `https://localhost:7264/uploads/${test.questionFileUrl}`;
+
+          console.log("Fetching from URL:", fileUrl);
+          const fileRes = await fetch(fileUrl);
+          if (fileRes.ok) {
+            const text = await fileRes.text();
+            console.log("File content length:", text.length);
+
+            if (test.questionFileUrl.endsWith('.json')) {
+              testData = JSON.parse(text);
+              console.log("Parsed JSON test data");
+            } else if (test.questionFileUrl.endsWith('.js')) {
+              // Handle JS files
+              const match = text.match(/export\s+default\s+({[\s\S]*})/);
+              if (match) {
+                testData = JSON.parse(match[1]);
+                console.log("Parsed JS test data");
+              }
+            }
+          } else {
+            console.error("File fetch failed:", fileRes.status);
+          }
+        } catch (e) {
+          console.error("Error fetching test file:", e);
+        }
+      }
+
+      // Get media URL
       if (test.mediaUrl) {
-        mediaUrl = test.mediaUrl;
+        mediaUrl = test.mediaUrl.startsWith('http')
+          ? test.mediaUrl
+          : `https://localhost:7264${test.mediaUrl.startsWith('/') ? '' : '/'}${test.mediaUrl}`;
       } else if (testData?.sections) {
         const sectionWithMedia = testData.sections.find(s => s.mediaUrl);
-        if (sectionWithMedia) mediaUrl = sectionWithMedia.mediaUrl;
+        if (sectionWithMedia) {
+          mediaUrl = sectionWithMedia.mediaUrl.startsWith('http')
+            ? sectionWithMedia.mediaUrl
+            : `https://localhost:7264${sectionWithMedia.mediaUrl.startsWith('/') ? '' : '/'}${sectionWithMedia.mediaUrl}`;
+        }
       }
-      
+
       setPreviewMedia(mediaUrl);
-      
+
       if (testData) {
         if (testData.sections && Array.isArray(testData.sections)) {
+          console.log("Found sections:", testData.sections.length);
           setPreviewSections(testData.sections);
           const allQuestions = [];
           testData.sections.forEach(section => {
@@ -347,14 +571,22 @@ export default function ManageTest() {
               });
             }
           });
+          console.log("Total questions:", allQuestions.length);
           setPreviewQuestions(allQuestions);
         } else if (testData.questions && Array.isArray(testData.questions)) {
+          console.log("Found questions:", testData.questions.length);
           setPreviewQuestions(testData.questions);
+        } else {
+          console.log("No questions or sections found in testData");
         }
+      } else {
+        console.log("No testData available");
       }
     } catch (error) {
       console.error("Error loading test:", error);
       alert("Không thể tải câu hỏi test.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -374,19 +606,55 @@ export default function ManageTest() {
     });
   };
 
-  const handleSaveTestDetails = () => {
-    console.log("Saving test details:", previewQuestions);
-    alert("Đã lưu thay đổi chi tiết test!");
-    setIsEditingDetails(false);
+  const handleSaveTestDetails = async () => {
+    try {
+      setLoading(true);
+
+      // Reconstruct sections with updated questions
+      const updatedSections = previewSections.map(section => ({
+        ...section,
+        questions: previewQuestions.filter(q => q.sectionId === section.sectionId)
+      }));
+
+      const updatedTestData = { sections: updatedSections };
+
+      // Create form data for update
+      const formData = new FormData();
+      const testDataJson = JSON.stringify(updatedTestData);
+      const blob = new Blob([testDataJson], { type: 'application/json' });
+      const file = new File([blob], `${previewTest.title}.json`, { type: 'application/json' });
+
+      formData.append('file', file);
+      formData.append('title', previewTest.title);
+      formData.append('description', previewTest.description || "");
+      formData.append('testId', previewTest.testId);
+
+      const uploadRes = await api.post('/PlacementTest/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      if (uploadRes.data.success) {
+        alert("Đã lưu thay đổi chi tiết test!");
+        setIsEditingDetails(false);
+        await fetchTests();
+      } else {
+        alert(`Lỗi: ${uploadRes.data.message}`);
+      }
+    } catch (error) {
+      console.error("Error saving test details:", error);
+      alert(`Không thể lưu: ${error.response?.data?.message || error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const columns = [
     { field: "id", headerName: "ID", width: 70 },
     { field: "name", headerName: "Tiêu đề", flex: 1, minWidth: 300 },
-    { 
-      field: "description", 
-      headerName: "Mô tả", 
-      flex: 1, 
+    {
+      field: "description",
+      headerName: "Mô tả",
+      flex: 1,
       minWidth: 400,
       renderCell: params => (
         <Typography variant="body2" sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -418,7 +686,8 @@ export default function ManageTest() {
   return (
     <Box flex="1" overflow="auto" p={3}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-        <Header title="Quản lý Test" subtitle="Danh sách bài kiểm tra" />
+        <Header title="Quản lý Test" subtitle="Danh sách bài kiểm tra. Lưu ý:
+        Chuyển đổi định dạng file trước khi upload." />
         <Button variant="contained" color="secondary" startIcon={<AddIcon />} onClick={handleAdd} sx={{ borderRadius: 2 }}>
           Thêm Test
         </Button>
@@ -438,7 +707,78 @@ export default function ManageTest() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} fullWidth maxWidth="sm">
-        {/* ... existing dialog code ... */}
+        <DialogTitle>{isEditMode ? "Chỉnh sửa Test" : "Thêm Test mới"}</DialogTitle>
+        <DialogContent>
+          <Box mt={2} display="flex" flexDirection="column" gap={2}>
+            <TextField
+              label="Tiêu đề"
+              fullWidth
+              value={selectedTest?.title || ""}
+              onChange={(e) => setSelectedTest(prev => ({ ...prev, title: e.target.value }))}
+            />
+
+            <Autocomplete
+              options={["TOEIC", "TOEFL", "IELTS", "GENERAL"]}
+              value={selectedTest?.category || "GENERAL"}
+              onChange={(e, val) => setSelectedTest(prev => ({ ...prev, category: val || "GENERAL" }))}
+              renderInput={(params) => <TextField {...params} label="Danh mục" />}
+            />
+
+            <TextField
+              label="Mô tả"
+              fullWidth
+              multiline
+              rows={3}
+              value={selectedTest?.description || ""}
+              onChange={(e) => setSelectedTest(prev => ({ ...prev, description: e.target.value }))}
+            />
+
+            <TextField
+              label="Thời gian (phút)"
+              type="number"
+              fullWidth
+              value={selectedTest?.duration || 60}
+              onChange={(e) => setSelectedTest(prev => ({ ...prev, duration: parseInt(e.target.value) || 60 }))}
+            />
+
+            <TextField
+              label="Cấp độ"
+              fullWidth
+              value={selectedTest?.level || "All Levels"}
+              onChange={(e) => setSelectedTest(prev => ({ ...prev, level: e.target.value }))}
+            />
+
+            <Box>
+              <Button variant="outlined" component="label" startIcon={<UploadFileIcon />} fullWidth>
+                Upload file test (.json)
+                <input type="file" accept=".json" hidden onChange={handleUploadTestFile} disabled={loading} />
+              </Button>
+              {selectedTest?.uploadedFileName && (
+                <Typography mt={1} color="success.main" fontWeight="500">
+                  ✅ {selectedTest.uploadedFileName}
+                </Typography>
+              )}
+            </Box>
+
+            <Box>
+              <Button variant="outlined" component="label" startIcon={<UploadFileIcon />} fullWidth>
+                Upload media
+                <input type="file" accept="audio/*,video/*" hidden onChange={handleUploadMediaFile} disabled={loading} />
+              </Button>
+              {selectedTest?.uploadedMediaName && (
+                <Typography mt={1} color="success.main" fontWeight="500">
+                  ✅ {selectedTest.uploadedMediaName}
+                </Typography>
+              )}
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDialog(false)}>Hủy</Button>
+          <Button variant="contained" onClick={handleSave} disabled={loading}>
+            {loading ? <CircularProgress size={24} /> : (isEditMode ? "Cập nhật" : "Thêm")}
+          </Button>
+        </DialogActions>
       </Dialog>
 
       {/* Preview Dialog */}
@@ -456,7 +796,7 @@ export default function ManageTest() {
             )}
           </Box>
         </DialogTitle>
-        
+
         <DialogContent dividers>
           {previewTest && (
             <Box mb={3} p={2} bgcolor="#f5f5f5" borderRadius={2}>
@@ -495,7 +835,7 @@ export default function ManageTest() {
           ) : (
             <>
               <Typography variant="subtitle2" mb={2} color="text.secondary">Tổng số: {previewQuestions.length} câu hỏi</Typography>
-              
+
               {previewSections.length > 0 ? (
                 previewSections.map((section, idx) => (
                   <Box key={idx} mb={4}>
@@ -503,7 +843,7 @@ export default function ManageTest() {
                       <Typography variant="h6" fontWeight="700">{section.title}</Typography>
                       {section.description && <Typography variant="body2" sx={{ opacity: 0.95 }}>{section.description}</Typography>}
                     </Paper>
-                    
+
                     {section.questions?.map((q, qIdx) => (
                       <QuestionPreviewCard
                         key={qIdx}
@@ -531,7 +871,7 @@ export default function ManageTest() {
             </>
           )}
         </DialogContent>
-        
+
         <DialogActions>
           {isEditingDetails ? (
             <>
