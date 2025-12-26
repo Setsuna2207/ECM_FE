@@ -331,12 +331,17 @@ export default function ManageQuiz() {
     const file = e.target.files[0];
     if (!file) return;
 
+    if (!selectedQuiz.quizId) {
+      alert("Vui lòng upload file quiz trước khi upload media");
+      return;
+    }
+
     try {
       setLoading(true);
       const formData = new FormData();
       formData.append('file', file);
 
-      const uploadRes = await api.post('/Quiz/upload-media', formData, {
+      const uploadRes = await api.post(`/Quiz/upload-media?quizId=${selectedQuiz.quizId}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
