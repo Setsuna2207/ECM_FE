@@ -435,6 +435,8 @@ export default function ManageTest() {
         file,
         selectedTest.title,
         selectedTest.description || "",
+        selectedTest.category || "GENERAL",
+        selectedTest.level || "All Levels",
         testId
       );
 

@@ -30,16 +30,20 @@ const DeletePlacementTest = (testId) => {
  * @param {File} file - The test file
  * @param {string} title - Test title
  * @param {string} description - Test description (optional)
+ * @param {string} category - Test category (optional)
+ * @param {string} level - Test level (optional)
  * @param {number} testId - Test ID for update (optional)
  * @returns {Promise} - API response
  */
-const UploadTestFile = (file, title, description = "", testId = null) => {
+const UploadTestFile = (file, title, description = "", category = null, level = null, testId = null) => {
     const formData = new FormData();
     formData.append('file', file);
 
     const params = new URLSearchParams();
     params.append('title', title);
     if (description) params.append('description', description);
+    if (category) params.append('category', category);
+    if (level) params.append('level', level);
     if (testId) params.append('testId', testId);
 
     const URL_API = `/PlacementTest/upload?${params.toString()}`;

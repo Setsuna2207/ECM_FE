@@ -19,12 +19,12 @@ import {
   DialogContent,
   DialogActions,
   Divider,
+  Alert,
 } from "@mui/material";
 import ArticleIcon from "@mui/icons-material/Article";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
-import { mockTests } from "../../data/mockTest";
-import { getTestById } from "../../data/test/testRegistry";
+import { GetPlacementTestById } from "../../services/placementTestService";
 
 export default function TestDetailPage() {
   const { testId } = useParams();
@@ -33,6 +33,7 @@ export default function TestDetailPage() {
   const [answers, setAnswers] = useState({});
   const [score, setScore] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [timeRemaining, setTimeRemaining] = useState(null);
   const [hasStarted, setHasStarted] = useState(false);
   const [listenCount, setListenCount] = useState(0);
@@ -44,26 +45,72 @@ export default function TestDetailPage() {
   const questionRefs = useRef({});
   const audioRef = useRef(null);
 
-  // Load test data
+  // Load test data from backend
   useEffect(() => {
-    const selectedTest = mockTests.find((t) => t.testId === testId);
-    if (!selectedTest) {
-      setLoading(false);
-      return;
-    }
-    const testData = getTestById(testId);
-    if (testData) {
-      setTest(testData);
-      const questions = [];
-      testData.sections.forEach((section) => {
-        section.questions.forEach((q) => {
-          questions.push({ ...q, sectionTitle: section.title, sectionId: section.sectionId });
+    const fetchTest = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await GetPlacementTestById(testId);
+        const testData = response.data || response.Data;
+
+        if (!testData) {
+          setError("Không tìm thấy bài kiểm tra");
+          setLoading(false);
+          return;
+        }
+
+        // Parse sections if stored as JSON string
+        let sections = testData.sections;
+        if (typeof sections === 'string') {
+          sections = JSON.parse(sections);
+        }
+
+        // Transform test data
+        const transformedTest = {
+          testId: testData.testID || testData.testId,
+          title: testData.title,
+          description: testData.description,
+          category: testData.category,
+          level: testData.level,
+          duration: testData.duration,
+          totalQuestions: testData.totalQuestions,
+          mediaURL: testData.mediaURL || testData.mediaUrl,
+          sections: sections || [],
+        };
+
+        setTest(transformedTest);
+
+        // Flatten questions from all sections
+        const questions = [];
+        transformedTest.sections.forEach((section) => {
+          // Parse questions if stored as JSON string
+          let sectionQuestions = section.questions;
+          if (typeof sectionQuestions === 'string') {
+            sectionQuestions = JSON.parse(sectionQuestions);
+          }
+
+          sectionQuestions.forEach((q) => {
+            questions.push({
+              ...q,
+              sectionTitle: section.title,
+              sectionId: section.sectionId
+            });
+          });
         });
-      });
-      setAllQuestions(questions);
-      setTimeRemaining(testData.duration * 60);
-    }
-    setLoading(false);
+
+        setAllQuestions(questions);
+        setTimeRemaining(transformedTest.duration * 60);
+        setLoading(false);
+      } catch (err) {
+        console.error("Error fetching test:", err);
+        setError("Không thể tải bài kiểm tra. Vui lòng thử lại sau.");
+        setLoading(false);
+      }
+    };
+
+    fetchTest();
   }, [testId]);
 
   // Timer countdown
@@ -250,19 +297,25 @@ export default function TestDetailPage() {
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
-        <CircularProgress />
-      </Box>
+      <>
+        <Navbar />
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh" }}>
+          <CircularProgress size={60} />
+        </Box>
+        <Footer />
+      </>
     );
   }
 
-  if (!test) {
+  if (error || !test) {
     return (
       <>
         <Navbar />
-        <Box textAlign="center" mt={10}>
-          <Typography variant="h5">Không tìm thấy bài test!</Typography>
-          <Button variant="contained" sx={{ mt: 2 }} onClick={() => navigate("/tests")}>
+        <Box textAlign="center" mt={10} px={3}>
+          <Alert severity="error" sx={{ maxWidth: 600, mx: "auto", mb: 3 }}>
+            {error || "Không tìm thấy bài kiểm tra!"}
+          </Alert>
+          <Button variant="contained" onClick={() => navigate("/tests")}>
             Quay lại danh sách test
           </Button>
         </Box>
@@ -618,12 +671,28 @@ export default function TestDetailPage() {
               </Box>
             )}
 
-            {/* Audio Player - Check if any section has audio */}
+            {/* Audio Player - Check if test or any section has audio */}
             {(() => {
-              const hasAudio = test?.sections?.some(s => s.mediaUrl);
-              const audioUrl = test?.sections?.find(s => s.mediaUrl)?.mediaUrl;
+              // Check test-level media URL first
+              let audioUrl = test?.mediaURL;
 
-              return hasAudio && audioUrl && score === null ? (
+              // If no test-level media, check sections
+              if (!audioUrl) {
+                const sectionWithMedia = test?.sections?.find(s => s.mediaUrl || s.MediaURL);
+                audioUrl = sectionWithMedia?.mediaUrl || sectionWithMedia?.MediaURL;
+              }
+
+              // Construct full media URL if it's a relative path
+              let fullAudioUrl = audioUrl;
+              if (audioUrl && !audioUrl.startsWith('http')) {
+                const baseUrl = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://localhost:7264';
+                fullAudioUrl = `${baseUrl}${audioUrl.startsWith('/') ? '' : '/'}${audioUrl}`;
+              }
+
+              console.log("Audio URL:", audioUrl);
+              console.log("Full Audio URL:", fullAudioUrl);
+
+              return audioUrl && fullAudioUrl && score === null ? (
                 <Box sx={{ mb: 3, p: 2, backgroundColor: "#fff3e0", borderRadius: 3, border: "2px solid #ff9800" }}>
                   <Box display="flex" alignItems="center" justifyContent="space-between" mb={1.5}>
                     <Typography variant="subtitle1" fontWeight="700" color="#e65100">
@@ -652,8 +721,12 @@ export default function TestDetailPage() {
                         alert("Bạn đã nghe đủ 2 lần!");
                       }
                     }}
+                    onError={(e) => {
+                      console.error("Audio error:", e);
+                      console.error("Audio URL:", fullAudioUrl);
+                    }}
                   >
-                    <source src={audioUrl} type="audio/mpeg" />
+                    <source src={fullAudioUrl} type="audio/mpeg" />
                     Your browser does not support the audio element.
                   </audio>
                   <Typography variant="caption" color="text.secondary" display="block" mt={1} textAlign="center">
