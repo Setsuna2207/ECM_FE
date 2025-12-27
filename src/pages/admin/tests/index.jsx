@@ -30,15 +30,15 @@ import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import QuizIcon from "@mui/icons-material/Quiz";
 import ArticleIcon from "@mui/icons-material/Article";
 import Header from "../../../components/Header";
-import api from "../../../services/axios/axios.customize";
 import {
   GetAllPlacementTests,
   GetPlacementTestById,
   CreatePlacementTest,
   UpdatePlacementTest,
   DeletePlacementTest,
+  UploadTestFile,
+  UploadTestMedia,
 } from "../../../services/placementTestService";
-import { UploadFile, UploadVideo } from "../../../services/fileUploadService";
 
 const testCategories = ["TOEIC", "TOEFL", "IELTS", "GENERAL"];
 
@@ -235,13 +235,13 @@ export default function ManageTest() {
 
       const formatted = testsData.map((t, idx) => {
         console.log(`Processing test ${idx}:`, t.title || t.Title);
-        
+
         // Parse sections - check both lowercase and uppercase
         let sections = null;
         let uploadedTestData = null;
 
         const sectionsData = t.sections || t.Sections;
-        
+
         console.log("  - sectionsData type:", typeof sectionsData);
         console.log("  - sectionsData isArray:", Array.isArray(sectionsData));
         console.log("  - sectionsData sample:", sectionsData);
@@ -328,8 +328,8 @@ export default function ManageTest() {
         throw new Error("File must be .json format");
       }
 
-      if (!testData) {
-        throw new Error("No test data found in file");
+      if (!testData || !testData.sections) {
+        throw new Error("No test data or sections found in file");
       }
 
       // Store the parsed data in memory for preview
@@ -337,6 +337,7 @@ export default function ManageTest() {
         ...selectedTest,
         uploadedFileName: file.name,
         uploadedTestData: testData,
+        uploadedFile: file, // Store the actual file for later upload
       };
 
       setSelectedTest(updatedTest);
@@ -361,12 +362,13 @@ export default function ManageTest() {
 
     try {
       setLoading(true);
-      const url = URL.createObjectURL(file);
 
+      // Store the file for later upload to backend
       setSelectedTest((prev) => ({
         ...prev,
-        mediaUrl: url,
+        uploadedMediaFile: file,
         uploadedMediaName: file.name,
+        mediaUrl: URL.createObjectURL(file), // For preview only
       }));
 
       alert(`✅ Tải media thành công!`);
@@ -417,7 +419,7 @@ export default function ManageTest() {
       return;
     }
 
-    if (!selectedTest.uploadedTestData) {
+    if (!selectedTest.uploadedFile && !isEditMode) {
       alert("Vui lòng upload file test!");
       return;
     }
@@ -426,28 +428,29 @@ export default function ManageTest() {
       setLoading(true);
 
       // Use the upload endpoint which handles both create and update
-      const formData = new FormData();
+      const file = selectedTest.uploadedFile;
+      const testId = isEditMode && selectedTest.testId ? selectedTest.testId : null;
 
-      // Create a temporary file from the uploaded test data
-      const testDataJson = JSON.stringify(selectedTest.uploadedTestData);
-      const blob = new Blob([testDataJson], { type: 'application/json' });
-      const file = new File([blob], `${selectedTest.title}.json`, { type: 'application/json' });
-
-      formData.append('file', file);
-      formData.append('title', selectedTest.title);
-      formData.append('description', selectedTest.description || "");
-
-      if (isEditMode && selectedTest.testId) {
-        formData.append('testId', selectedTest.testId);
-      }
-
-      const uploadRes = await api.post('/PlacementTest/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-
-      console.log("Save response:", uploadRes.data);
+      const uploadRes = await UploadTestFile(
+        file,
+        selectedTest.title,
+        selectedTest.description || "",
+        testId
+      );
 
       if (uploadRes.data.success) {
+        const createdTestId = uploadRes.data.data?.testId || uploadRes.data.testId;
+
+        // If media file was uploaded, upload it separately
+        if (selectedTest.uploadedMediaFile && createdTestId) {
+          try {
+            await UploadTestMedia(createdTestId, selectedTest.uploadedMediaFile);
+          } catch (mediaError) {
+            console.error("Error uploading media:", mediaError);
+            alert("Test đã lưu nhưng không thể upload media. Vui lòng thử lại sau.");
+          }
+        }
+
         alert(isEditMode ? "Cập nhật thành công!" : "Thêm test thành công!");
         setOpenDialog(false);
         await fetchTests();
@@ -456,7 +459,8 @@ export default function ManageTest() {
       }
     } catch (error) {
       console.error("Error saving test:", error);
-      alert(`Không thể lưu test: ${error.response?.data?.message || error.message}`);
+      const errorMsg = error.response?.data?.message || error.message;
+      alert(`Không thể lưu test: ${errorMsg}`);
     } finally {
       setLoading(false);
     }
@@ -475,18 +479,9 @@ export default function ManageTest() {
       let testData = null;
       let mediaUrl = null;
 
-      console.log("=== PREVIEW DEBUG ===");
-      console.log("Full test object:", test);
-      console.log("Has uploadedTestData:", !!test.uploadedTestData);
-      console.log("Has sections:", !!test.sections);
-      console.log("Sections type:", typeof test.sections);
-      console.log("Sections value:", test.sections);
-      console.log("questionFileUrl:", test.questionFileUrl);
-
       // Try to get test data from uploaded data first
       if (test.uploadedTestData) {
         testData = test.uploadedTestData;
-        console.log("✅ Using uploadedTestData");
       }
       // Try to get from sections stored in backend
       else if (test.sections) {
@@ -495,92 +490,84 @@ export default function ManageTest() {
           try {
             const parsed = JSON.parse(test.sections);
             testData = { sections: parsed };
-            console.log("✅ Parsed sections from string:", parsed.length);
           } catch (e) {
-            console.error("❌ Failed to parse sections string:", e);
+            console.error("Failed to parse sections string:", e);
           }
         } else if (Array.isArray(test.sections)) {
           testData = { sections: test.sections };
-          console.log("✅ Using sections array from backend:", test.sections.length);
         } else {
           testData = { sections: test.sections };
-          console.log("✅ Using sections object from backend");
         }
       }
-      // Fetch from file URL
-      else if (test.questionFileUrl) {
+      // Fetch from backend by ID
+      else if (test.testId) {
         try {
-          const fileUrl = test.questionFileUrl.startsWith('http')
-            ? test.questionFileUrl
-            : `https://localhost:7264/uploads/${test.questionFileUrl}`;
+          const response = await GetPlacementTestById(test.testId);
+          const backendTest = response.data;
 
-          console.log("Fetching from URL:", fileUrl);
-          const fileRes = await fetch(fileUrl);
-          if (fileRes.ok) {
-            const text = await fileRes.text();
-            console.log("File content length:", text.length);
-
-            if (test.questionFileUrl.endsWith('.json')) {
-              testData = JSON.parse(text);
-              console.log("Parsed JSON test data");
-            } else if (test.questionFileUrl.endsWith('.js')) {
-              // Handle JS files
-              const match = text.match(/export\s+default\s+({[\s\S]*})/);
-              if (match) {
-                testData = JSON.parse(match[1]);
-                console.log("Parsed JS test data");
-              }
+          if (backendTest.sections || backendTest.Sections) {
+            const sectionsData = backendTest.sections || backendTest.Sections;
+            if (typeof sectionsData === 'string') {
+              testData = { sections: JSON.parse(sectionsData) };
+            } else {
+              testData = { sections: sectionsData };
             }
-          } else {
-            console.error("File fetch failed:", fileRes.status);
+          }
+
+          // Get media URL from backend
+          if (backendTest.mediaURL || backendTest.MediaURL) {
+            const backendMediaUrl = backendTest.mediaURL || backendTest.MediaURL;
+            if (backendMediaUrl.startsWith('http')) {
+              mediaUrl = backendMediaUrl;
+            } else {
+              const baseUrl = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://localhost:7264';
+              mediaUrl = backendMediaUrl.startsWith('/')
+                ? `${baseUrl}${backendMediaUrl}`
+                : `${baseUrl}/${backendMediaUrl}`;
+            }
           }
         } catch (e) {
-          console.error("Error fetching test file:", e);
+          console.error("Error fetching test from backend:", e);
         }
       }
 
       // Get media URL
-      if (test.mediaUrl) {
-        mediaUrl = test.mediaUrl.startsWith('http')
-          ? test.mediaUrl
-          : `https://localhost:7264${test.mediaUrl.startsWith('/') ? '' : '/'}${test.mediaUrl}`;
-      } else if (testData?.sections) {
-        const sectionWithMedia = testData.sections.find(s => s.mediaUrl);
-        if (sectionWithMedia) {
-          mediaUrl = sectionWithMedia.mediaUrl.startsWith('http')
-            ? sectionWithMedia.mediaUrl
-            : `https://localhost:7264${sectionWithMedia.mediaUrl.startsWith('/') ? '' : '/'}${sectionWithMedia.mediaUrl}`;
+      if (!mediaUrl && test.mediaUrl) {
+        if (test.mediaUrl.startsWith('blob:')) {
+          // Local preview URL
+          mediaUrl = test.mediaUrl;
+        } else if (test.mediaUrl.startsWith('http')) {
+          mediaUrl = test.mediaUrl;
+        } else {
+          // Backend URL - ensure proper path construction
+          const baseUrl = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://localhost:7264';
+          mediaUrl = test.mediaUrl.startsWith('/')
+            ? `${baseUrl}${test.mediaUrl}`
+            : `${baseUrl}/${test.mediaUrl}`;
         }
       }
 
+      console.log("Preview media URL:", mediaUrl);
       setPreviewMedia(mediaUrl);
 
       if (testData) {
         if (testData.sections && Array.isArray(testData.sections)) {
-          console.log("Found sections:", testData.sections.length);
           setPreviewSections(testData.sections);
           const allQuestions = [];
           testData.sections.forEach(section => {
-            if (section.questions && Array.isArray(section.questions)) {
-              section.questions.forEach(q => {
-                allQuestions.push({
-                  ...q,
-                  sectionTitle: section.title,
-                  sectionId: section.sectionId
-                });
+            const questions = section.questions || section.Questions || [];
+            questions.forEach(q => {
+              allQuestions.push({
+                ...q,
+                sectionTitle: section.title || section.Title,
+                sectionId: section.sectionId || section.SectionId
               });
-            }
+            });
           });
-          console.log("Total questions:", allQuestions.length);
           setPreviewQuestions(allQuestions);
         } else if (testData.questions && Array.isArray(testData.questions)) {
-          console.log("Found questions:", testData.questions.length);
           setPreviewQuestions(testData.questions);
-        } else {
-          console.log("No questions or sections found in testData");
         }
-      } else {
-        console.log("No testData available");
       }
     } catch (error) {
       console.error("Error loading test:", error);
@@ -613,36 +600,37 @@ export default function ManageTest() {
       // Reconstruct sections with updated questions
       const updatedSections = previewSections.map(section => ({
         ...section,
-        questions: previewQuestions.filter(q => q.sectionId === section.sectionId)
+        questions: previewQuestions.filter(q =>
+          (q.sectionId || q.SectionId) === (section.sectionId || section.SectionId)
+        )
       }));
 
       const updatedTestData = { sections: updatedSections };
 
-      // Create form data for update
-      const formData = new FormData();
+      // Create a file from the updated test data
       const testDataJson = JSON.stringify(updatedTestData);
       const blob = new Blob([testDataJson], { type: 'application/json' });
       const file = new File([blob], `${previewTest.title}.json`, { type: 'application/json' });
 
-      formData.append('file', file);
-      formData.append('title', previewTest.title);
-      formData.append('description', previewTest.description || "");
-      formData.append('testId', previewTest.testId);
-
-      const uploadRes = await api.post('/PlacementTest/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const uploadRes = await UploadTestFile(
+        file,
+        previewTest.title,
+        previewTest.description || "",
+        previewTest.testId
+      );
 
       if (uploadRes.data.success) {
         alert("Đã lưu thay đổi chi tiết test!");
         setIsEditingDetails(false);
         await fetchTests();
+        setOpenPreview(false);
       } else {
         alert(`Lỗi: ${uploadRes.data.message}`);
       }
     } catch (error) {
       console.error("Error saving test details:", error);
-      alert(`Không thể lưu: ${error.response?.data?.message || error.message}`);
+      const errorMsg = error.response?.data?.message || error.message;
+      alert(`Không thể lưu: ${errorMsg}`);
     } finally {
       setLoading(false);
     }
@@ -817,12 +805,29 @@ export default function ManageTest() {
             <Box mb={3} p={2} bgcolor="#f9f9f9" borderRadius={2} border="1px solid #e0e0e0">
               <Typography variant="subtitle1" fontWeight="bold" mb={2}>🎧 Media Preview</Typography>
               {previewMedia.endsWith(".mp4") || previewMedia.endsWith(".webm") ? (
-                <video controls style={{ width: "100%", maxHeight: "400px", borderRadius: 8 }}>
+                <video
+                  controls
+                  style={{ width: "100%", maxHeight: "400px", borderRadius: 8 }}
+                  onError={(e) => {
+                    console.error("Video load error:", e);
+                    console.error("Video src:", previewMedia);
+                  }}
+                >
                   <source src={previewMedia} type="video/mp4" />
+                  Your browser does not support the video tag.
                 </video>
               ) : (
-                <audio controls style={{ width: "100%" }}>
+                <audio
+                  controls
+                  style={{ width: "100%" }}
+                  onError={(e) => {
+                    console.error("Audio load error:", e);
+                    console.error("Audio src:", previewMedia);
+                  }}
+                >
                   <source src={previewMedia} type="audio/mpeg" />
+                  <source src={previewMedia} type="audio/mp3" />
+                  Your browser does not support the audio tag.
                 </audio>
               )}
             </Box>
