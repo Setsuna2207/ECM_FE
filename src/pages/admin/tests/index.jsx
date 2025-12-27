@@ -588,7 +588,13 @@ export default function ManageTest() {
   const handleUpdateOption = (qIndex, optIndex, value) => {
     setPreviewQuestions(prev => {
       const updated = [...prev];
-      updated[qIndex].options[optIndex] = value;
+      if (updated[qIndex] && updated[qIndex].options) {
+        updated[qIndex] = {
+          ...updated[qIndex],
+          options: [...updated[qIndex].options]
+        };
+        updated[qIndex].options[optIndex] = value;
+      }
       return updated;
     });
   };
@@ -842,25 +848,40 @@ export default function ManageTest() {
               <Typography variant="subtitle2" mb={2} color="text.secondary">Tổng số: {previewQuestions.length} câu hỏi</Typography>
 
               {previewSections.length > 0 ? (
-                previewSections.map((section, idx) => (
-                  <Box key={idx} mb={4}>
-                    <Paper sx={{ p: 2, mb: 2, background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "white", borderRadius: 2 }}>
-                      <Typography variant="h6" fontWeight="700">{section.title}</Typography>
-                      {section.description && <Typography variant="body2" sx={{ opacity: 0.95 }}>{section.description}</Typography>}
-                    </Paper>
+                previewSections.map((section, sectionIdx) => {
+                  // Get questions for this section from the flat array
+                  const sectionQuestions = previewQuestions.filter(q =>
+                    (q.sectionId || q.SectionId) === (section.sectionId || section.SectionId)
+                  );
 
-                    {section.questions?.map((q, qIdx) => (
-                      <QuestionPreviewCard
-                        key={qIdx}
-                        question={{ ...q, sectionTitle: section.title }}
-                        index={qIdx}
-                        isEditingDetails={isEditingDetails}
-                        onUpdateQuestion={handleUpdateQuestion}
-                        onUpdateOption={handleUpdateOption}
-                      />
-                    ))}
-                  </Box>
-                ))
+                  return (
+                    <Box key={sectionIdx} mb={4}>
+                      <Paper sx={{ p: 2, mb: 2, background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "white", borderRadius: 2 }}>
+                        <Typography variant="h6" fontWeight="700">{section.title}</Typography>
+                        {section.description && <Typography variant="body2" sx={{ opacity: 0.95 }}>{section.description}</Typography>}
+                      </Paper>
+
+                      {sectionQuestions.map((q) => {
+                        // Find the actual index in the flat previewQuestions array
+                        const actualIndex = previewQuestions.findIndex(pq =>
+                          pq.questionId === q.questionId ||
+                          (pq.question === q.question && pq.sectionId === q.sectionId)
+                        );
+
+                        return (
+                          <QuestionPreviewCard
+                            key={actualIndex}
+                            question={q}
+                            index={actualIndex}
+                            isEditingDetails={isEditingDetails}
+                            onUpdateQuestion={handleUpdateQuestion}
+                            onUpdateOption={handleUpdateOption}
+                          />
+                        );
+                      })}
+                    </Box>
+                  );
+                })
               ) : (
                 previewQuestions.map((q, index) => (
                   <QuestionPreviewCard
