@@ -10,17 +10,13 @@ import {
 } from "@mui/material";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
-import { mockLessons } from "../data/mockLesson";
-import { mockReviews } from "../data/mockReview";
 import { useNavigate } from "react-router-dom";
 
-export default function MiniCourseCard({ course }) {
+export default function MiniCourseCard({
+  course,
+  lessonCount = 0  // Passed from parent - no need to fetch
+}) {
   const navigate = useNavigate();
-
-  // Calculate lesson count
-  const lessonCount = mockLessons.filter(
-    (lesson) => lesson.courseId === course.courseId
-  ).length;
 
   // Get categories
   const levelCategory = course.categories?.find(

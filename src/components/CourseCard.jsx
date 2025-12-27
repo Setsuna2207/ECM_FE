@@ -11,27 +11,15 @@ import {
 import StarIcon from "@mui/icons-material/Star";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
-import { mockLessons } from "../data/mockLesson";
-import { mockReviews } from "../data/mockReview";
 import { useNavigate } from "react-router-dom";
 
-export default function CourseCard({ course }) {
+export default function CourseCard({
+  course,
+  lessonCount = 0,      // Passed from parent - no need to fetch
+  averageRating = 0,    // Passed from parent - no need to calculate
+  reviewCount = 0       // Passed from parent - no need to count
+}) {
   const navigate = useNavigate();
-
-  // Calculate lesson count
-  const lessonCount = mockLessons.filter(
-    (lesson) => lesson.courseId === course.courseId
-  ).length;
-
-  // Calculate average rating
-  const courseReviews = mockReviews.filter(
-    (review) => review.courseId === course.courseId
-  );
-  const averageRating =
-    courseReviews.length > 0
-      ? courseReviews.reduce((sum, r) => sum + r.ratingScore, 0) /
-      courseReviews.length
-      : 0;
 
   // Render stars
   const renderStars = (rating) => {
@@ -232,7 +220,7 @@ export default function CourseCard({ course }) {
             {averageRating.toFixed(1)}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            ({courseReviews.length} đánh giá)
+            ({reviewCount} đánh giá)
           </Typography>
         </Box>
 
