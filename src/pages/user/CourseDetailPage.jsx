@@ -7,6 +7,8 @@ import {
   CardContent,
   Divider,
   Chip,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import StarIcon from "@mui/icons-material/Star";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
@@ -14,47 +16,68 @@ import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import { useParams, useNavigate } from "react-router-dom";
-import { mockCourses } from "../../data/mockCourse";
-import { mockLessons } from "../../data/mockLesson";
-import { mockReviews } from "../../data/mockReview";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import CourseReview from "../../components/CourseReview";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { GetCourseById } from "../../services/courseService";
+import { GetLessonByCourseId } from "../../services/lessonService";
+import { GetReviewByCourseId } from "../../services/reviewService";
 
 export default function CourseDetailPage() {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const [isFollowed, setIsFollowed] = useState(false);
-  const [isJoined, setIsJoined] = useState(false);
+  const [course, setCourse] = useState(null);
+  const [lessons, setLessons] = useState([]);
+  const [courseReviews, setCourseReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const course = mockCourses.find(
-    (c) => c.courseId === parseInt(courseId, 10)
-  );
+  // Fetch course data from backend
+  useEffect(() => {
+    const fetchCourseData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-  if (!course) {
-    return (
-      <>
-        <Navbar />
-        <Container sx={{ mt: 6, mb: 6 }}>
-          <Typography variant="h5" textAlign="center">
-            Không tìm thấy khóa học.
-          </Typography>
-        </Container>
-        <Footer />
-      </>
-    );
-  }
+        const [courseRes, lessonsRes, reviewsRes] = await Promise.all([
+          GetCourseById(courseId),
+          GetLessonByCourseId(courseId),
+          GetReviewByCourseId(courseId),
+        ]);
 
-  const lessons = mockLessons.filter((l) => l.courseId === course.courseId);
-  const courseReviews = mockReviews.filter(
-    (r) => r.courseId === course.courseId
-  );
+        const courseData = courseRes.data;
+        const lessonsData = lessonsRes.data || [];
+        const reviewsData = reviewsRes.data || [];
 
-  const averageRating =
-    courseReviews.length > 0
-      ? courseReviews.reduce((acc, r) => acc + r.ratingScore, 0) / courseReviews.length
-      : 0;
+        // Transform course data
+        const transformedCourse = {
+          courseId: courseData.courseID || courseData.courseId,
+          title: courseData.title,
+          description: courseData.description,
+          thumbnail: courseData.thumbnailUrl || courseData.ThumbnailUrl,
+          categories: courseData.categories || courseData.Categories || [],
+          averageRating: courseData.averageRating || 0,
+        };
+
+        setCourse(transformedCourse);
+        setLessons(lessonsData.map(l => ({
+          ...l,
+          lessonId: l.lessonID || l.lessonId,
+          courseId: l.courseID || l.courseId,
+        })));
+        setCourseReviews(reviewsData);
+      } catch (err) {
+        console.error("Error fetching course data:", err);
+        setError("Không thể tải thông tin khóa học. Vui lòng thử lại sau.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCourseData();
+  }, [courseId]);
 
   // Hiển thị rating
   const renderStars = (rating) => {
@@ -74,14 +97,6 @@ export default function CourseDetailPage() {
     }
     return stars;
   };
-
-  // Lấy level và skill từ categories
-  const levelCategory = course.categories?.find(
-    (cat) => cat.description === "LEVEL"
-  );
-  const skillCategory = course.categories?.find(
-    (cat) => cat.description === "SKILL"
-  );
 
   const generateRandomBrightColor = () => {
     const colors = [
@@ -107,14 +122,100 @@ export default function CourseDetailPage() {
 
   // Kiểm tra đã theo dõi / đã tham gia
   useEffect(() => {
+    if (!course) return;
+
     const followed =
       JSON.parse(localStorage.getItem("followedCourses")) || [];
     const joined =
       JSON.parse(localStorage.getItem("courseHistory")) || [];
 
     setIsFollowed(followed.some((f) => f.courseId === course.courseId));
-    setIsJoined(joined.some((c) => c.courseId === course.courseId));
-  }, [course.courseId]);
+  }, [course]);
+
+  // Calculate values using useMemo (must be before any conditional returns)
+  const averageRating = useMemo(() => {
+    if (!course) return 0;
+    return course.averageRating ||
+      (courseReviews.length > 0
+        ? courseReviews.reduce((acc, r) => acc + (r.reviewScore || r.ratingScore || 0), 0) / courseReviews.length
+        : 0);
+  }, [course, courseReviews]);
+
+  const thumbnailUrl = useMemo(() => {
+    if (!course || !course.thumbnail) return "";
+    const thumbnail = course.thumbnail;
+    if (thumbnail.startsWith('http')) return thumbnail;
+
+    const baseUrl = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://localhost:7264';
+    return `${baseUrl}${thumbnail.startsWith('/') ? '' : '/'}${thumbnail}`;
+  }, [course]);
+
+  // Categories are returned as objects with name and description
+  const levelCategory = useMemo(() => {
+    if (!course || !course.categories || !Array.isArray(course.categories)) return undefined;
+    // Find category where description equals "level"
+    return course.categories.find(cat => {
+      if (typeof cat === 'object' && cat) {
+        return cat.description && cat.description.toLowerCase() === 'level';
+      }
+      return false;
+    });
+  }, [course]);
+
+  const skillCategory = useMemo(() => {
+    if (!course || !course.categories || !Array.isArray(course.categories)) return undefined;
+    // Find category where description equals "skill"
+    return course.categories.find(cat => {
+      if (typeof cat === 'object' && cat) {
+        return cat.description && cat.description.toLowerCase() === 'skill';
+      }
+      return false;
+    });
+  }, [course]);
+
+  const validCategories = useMemo(() => {
+    if (!course || !course.categories || !Array.isArray(course.categories)) return [];
+    return course.categories.filter(cat => {
+      if (typeof cat === 'object' && cat?.name) {
+        return cat.name.trim().length > 0;
+      }
+      if (typeof cat === 'string') {
+        return cat.trim().length > 0;
+      }
+      return false;
+    });
+  }, [course]);
+
+  if (loading) {
+    return (
+      <>
+        <Navbar />
+        <Container sx={{ mt: 6, mb: 6, display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh" }}>
+          <CircularProgress size={60} />
+        </Container>
+        <Footer />
+      </>
+    );
+  }
+
+  if (error || !course) {
+    return (
+      <>
+        <Navbar />
+        <Container sx={{ mt: 6, mb: 6 }}>
+          <Alert severity="error" sx={{ maxWidth: 600, mx: "auto", mb: 3 }}>
+            {error || "Không tìm thấy khóa học."}
+          </Alert>
+          <Box textAlign="center">
+            <Button variant="contained" onClick={() => navigate("/courses")}>
+              Quay lại danh sách khóa học
+            </Button>
+          </Box>
+        </Container>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>
@@ -342,8 +443,12 @@ export default function CourseDetailPage() {
             >
               <Box
                 component="img"
-                src={course.thumbnail}
+                src={thumbnailUrl}
                 alt={course.title}
+                onError={(e) => {
+                  console.error("Image failed to load:", thumbnailUrl);
+                  e.target.style.display = 'none';
+                }}
                 sx={{
                   width: "100%",
                   maxWidth: 420,
@@ -390,7 +495,7 @@ export default function CourseDetailPage() {
           <Box display="flex" flexWrap="wrap" gap={1.5}>
             {levelCategory && (
               <Chip
-                label={levelCategory.name}
+                label={typeof levelCategory === 'object' ? levelCategory.name : levelCategory}
                 clickable
                 sx={{
                   background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
@@ -409,13 +514,13 @@ export default function CourseDetailPage() {
                   },
                 }}
                 onClick={() =>
-                  navigate(`/courses/${levelCategory.name.toLowerCase()}`)
+                  navigate(`/courses/${encodeURIComponent(typeof levelCategory === 'object' ? levelCategory.name : levelCategory)}`)
                 }
               />
             )}
             {skillCategory && (
               <Chip
-                label={skillCategory.name}
+                label={typeof skillCategory === 'object' ? skillCategory.name : skillCategory}
                 clickable
                 sx={{
                   background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
@@ -434,9 +539,42 @@ export default function CourseDetailPage() {
                   },
                 }}
                 onClick={() =>
-                  navigate(`/courses/${skillCategory.name.toLowerCase()}`)
+                  navigate(`/courses/${encodeURIComponent(typeof skillCategory === 'object' ? skillCategory.name : skillCategory)}`)
                 }
               />
+            )}
+            {/* Show all categories if LEVEL/SKILL not found */}
+            {!levelCategory && !skillCategory && validCategories.length > 0 && validCategories.map((cat, index) => (
+              <Chip
+                key={index}
+                label={typeof cat === 'object' ? cat.name : cat}
+                clickable
+                sx={{
+                  background: index % 2 === 0
+                    ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                    : "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+                  color: "white",
+                  fontWeight: 700,
+                  fontSize: "0.9rem",
+                  height: 36,
+                  px: 2,
+                  borderRadius: 3,
+                  boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)",
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 6px 16px rgba(102, 126, 234, 0.4)",
+                  },
+                }}
+                onClick={() =>
+                  navigate(`/courses/${encodeURIComponent(typeof cat === 'object' ? cat.name : cat)}`)
+                }
+              />
+            ))}
+            {validCategories.length === 0 && (
+              <Typography variant="body2" color="text.secondary">
+                Chưa có chủ đề liên quan
+              </Typography>
             )}
           </Box>
         </Box>

@@ -21,6 +21,17 @@ export default function CourseCard({
 }) {
   const navigate = useNavigate();
 
+  // Construct full thumbnail URL if it's a relative path
+  const getThumbnailUrl = (thumbnail) => {
+    if (!thumbnail) return "";
+    if (thumbnail.startsWith('http')) return thumbnail;
+
+    const baseUrl = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://localhost:7264';
+    return `${baseUrl}${thumbnail.startsWith('/') ? '' : '/'}${thumbnail}`;
+  };
+
+  const thumbnailUrl = getThumbnailUrl(course.thumbnail);
+
   // Render stars
   const renderStars = (rating) => {
     const stars = [];
@@ -76,8 +87,12 @@ export default function CourseCard({
         <CardMedia
           component="img"
           height="200"
-          image={course.thumbnail}
+          image={thumbnailUrl}
           alt={course.title}
+          onError={(e) => {
+            console.error("CourseCard image failed to load:", thumbnailUrl);
+            e.target.style.display = 'none';
+          }}
           sx={{
             transition: "transform 0.3s ease",
             "&:hover": {
