@@ -61,7 +61,16 @@ export default function ManageProfile() {
     };
 
     const handleSave = () => {
-        localStorage.setItem("currentUser", JSON.stringify(formData));
+        const updatedUser = {
+            ...currentUser,
+            ...formData
+        };
+        localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+
+        // Dispatch custom event to notify other components
+        window.dispatchEvent(new Event('userUpdated'));
+        window.dispatchEvent(new Event('storage'));
+
         alert("✅ Cập nhật hồ sơ thành công!");
     };
 

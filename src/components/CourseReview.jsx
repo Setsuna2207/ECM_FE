@@ -9,6 +9,7 @@ import {
   Paper,
   CircularProgress,
   Alert,
+  Avatar,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -19,11 +20,9 @@ import {
   UpdateReview,
   DeleteReview,
 } from "../services/reviewService";
-import { GetAllUsers } from "../services/userService";
 
 export default function CourseReview({ courseId }) {
   const [reviews, setReviews] = useState([]);
-  const [users, setUsers] = useState([]);
   const [averageRating, setAverageRating] = useState(0);
   const [newRating, setNewRating] = useState(0);
   const [newContent, setNewContent] = useState("");
@@ -48,15 +47,10 @@ export default function CourseReview({ courseId }) {
       setLoading(true);
       setError(null);
 
-      const [reviewsRes, usersRes] = await Promise.all([
-        GetReviewByCourseId(courseId),
-        GetAllUsers(),
-      ]);
-
+      const reviewsRes = await GetReviewByCourseId(courseId);
       const reviewsData = reviewsRes.data || [];
-      const usersData = usersRes.data || [];
 
-      setUsers(usersData);
+      console.log("Reviews data:", reviewsData);
 
       // Sort reviews: current user's review first, then others
       const sortedReviews = reviewsData.sort((a, b) => {
@@ -70,18 +64,19 @@ export default function CourseReview({ courseId }) {
 
       setReviews(sortedReviews);
     } catch (err) {
+      console.error("Error fetching data:", err);
       setError("Lỗi khi tải đánh giá");
     } finally {
       setLoading(false);
     }
   };
 
-  const getUserFullName = (userId) => {
-    const user = users.find((u) => u.id === userId || u.userID === userId);
-    if (user && user.fullName) {
-      return user.fullName;
-    }
-    return user?.userName || `Người dùng #${userId}`;
+  const getUserInfo = (review) => {
+    // Use data directly from review (backend now includes FullName and Avatar)
+    return {
+      fullName: review.FullName || review.fullName || review.UserName || review.userName || `Người dùng #${review.userID}`,
+      avatar: review.Avatar || review.avatar || ""
+    };
   };
 
   useEffect(() => {
@@ -136,6 +131,7 @@ export default function CourseReview({ courseId }) {
       setNewContent("");
       setNewRating(0);
     } catch (err) {
+      console.error("Error submitting review:", err);
       setError("Lỗi khi lưu đánh giá");
     } finally {
       setSubmitting(false);
@@ -152,6 +148,7 @@ export default function CourseReview({ courseId }) {
           (r.userID || r.userId) !== userId || (r.courseID || r.courseId) !== courseIdVal
         ));
       } catch (err) {
+        console.error("Error deleting review:", err);
         setError("Lỗi khi xóa đánh giá");
       }
     }
@@ -249,7 +246,7 @@ export default function CourseReview({ courseId }) {
               const reviewUserId = r.userID || r.userId;
               const isOwner = reviewUserId === currentUserId;
               const isAdmin = currentUserRole === "admin" || currentUserRole === "Admin";
-              const fullName = getUserFullName(reviewUserId);
+              const userInfo = getUserInfo(r);
 
               return (
                 <Paper
@@ -265,21 +262,33 @@ export default function CourseReview({ courseId }) {
                 >
                   {/* Dòng đầu tiên */}
                   <Box display="flex" justifyContent="space-between">
-                    <Box>
-                      <Typography fontWeight="bold">
-                        {fullName}
-                      </Typography>
+                    <Box display="flex" gap={2} alignItems="flex-start">
+                      {/* Avatar */}
+                      <Avatar
+                        src={userInfo.avatar}
+                        alt={userInfo.fullName}
+                        sx={{ width: 48, height: 48 }}
+                      >
+                        {!userInfo.avatar && userInfo.fullName.charAt(0)}
+                      </Avatar>
 
-                      <Rating
-                        value={r.reviewScore || r.ratingScore || 0}
-                        readOnly
-                        precision={0.5}
-                        size="small"
-                      />
+                      {/* User info and rating */}
+                      <Box>
+                        <Typography fontWeight="bold">
+                          {userInfo.fullName}
+                        </Typography>
 
-                      <Typography variant="body2" color="text.secondary">
-                        {new Date(r.createdAt).toLocaleDateString("vi-VN")}
-                      </Typography>
+                        <Rating
+                          value={r.reviewScore || r.ratingScore || 0}
+                          readOnly
+                          precision={0.5}
+                          size="small"
+                        />
+
+                        <Typography variant="body2" color="text.secondary">
+                          {new Date(r.createdAt).toLocaleDateString("vi-VN")}
+                        </Typography>
+                      </Box>
                     </Box>
 
                     {/* Nút hành động */}
@@ -311,7 +320,7 @@ export default function CourseReview({ courseId }) {
                   </Box>
 
                   {/* Nội dung */}
-                  <Typography sx={{ mt: 1.5, lineHeight: 1.6 }}>
+                  <Typography sx={{ mt: 1.5, ml: 8, lineHeight: 1.6 }}>
                     {r.reviewContent || r.ratingContent}
                   </Typography>
                 </Paper>
