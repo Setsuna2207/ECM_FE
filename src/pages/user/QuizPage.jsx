@@ -172,22 +172,41 @@ export default function QuizPage() {
 
       // Save quiz result to backend (this will create a new entry, replacing the old one conceptually)
       try {
+        // Clean the answers object to only include question IDs and their answers
+        const cleanAnswers = {};
+        Object.keys(answers).forEach(key => {
+          const numKey = parseInt(key);
+          if (!isNaN(numKey)) { // Only include numeric keys (question IDs)
+            cleanAnswers[numKey] = answers[key];
+          }
+        });
+
         const quizResultData = {
           QuizID: parseInt(quizId),
-          UserAnswers: JSON.stringify(answers),
-          Score: resultScore,
-          TotalQuestions: questions.length,
+          UserAnswers: JSON.stringify(cleanAnswers),
+          Score: parseFloat(resultScore),
+          TotalQuestions: parseInt(questions.length),
           SubmittedAt: new Date().toISOString(),
+          // Don't send UserID - the backend controller will set it from the authenticated user
         };
 
-        await CreateQuizResult(quizResultData);
-        console.log("Quiz result saved successfully");
+        console.log("Sending quiz result data:", quizResultData);
+        console.log("Quiz ID:", quizId, "Course ID:", courseId, "Lesson ID:", lessonId);
+
+        const response = await CreateQuizResult(quizResultData);
+        console.log("Quiz result saved successfully:", response.data);
 
         // Update progress after saving quiz result
         await UpdateProgress(courseId);
         console.log("Progress updated successfully");
       } catch (err) {
         console.error("Error saving quiz result or updating progress:", err);
+        if (err.response) {
+          console.error("Response status:", err.response.status);
+          console.error("Response data:", err.response.data);
+          console.error("Response headers:", err.response.headers);
+        }
+        alert("Không thể lưu kết quả quiz. Vui lòng thử lại.");
       }
 
       // Save to localStorage - this REPLACES the previous result
