@@ -1,29 +1,20 @@
-import { Grid, Container, Typography, Button, Box, Chip, Avatar } from "@mui/material";
+import { Grid, Container, Typography, Button, Box, Chip, Avatar, CircularProgress, Alert } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import CourseCard from "../../components/CourseCard";
-import { mockCourses } from "../../data/mockCourse";
-import { mockReviews } from "../../data/mockReview";
+import { GetAllCourses } from "../../services/courseService";
 import Footer from "../../components/Footer";
 import Navbar from "../../components/Navbar";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import FiberNewIcon from "@mui/icons-material/FiberNew";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 
-// Hàm tính rating trung bình cho mỗi khóa học
-const getAverageRating = (courseId) => {
-  const courseReviews = mockReviews.filter((r) => r.courseId === courseId);
-  if (courseReviews.length === 0) return 0;
-  const total = courseReviews.reduce((sum, r) => sum + r.ratingScore, 0);
-  return total / courseReviews.length;
-};
-
 // Hàm giả lập AI recommendation dựa trên mục tiêu học tập của user
 const getAIRecommendations = (userGoal, courses) => {
   if (!userGoal || userGoal.trim() === "") return [];
 
   const goalLower = userGoal.toLowerCase();
-  
+
   // Phân tích mục tiêu để tìm keywords
   const keywords = {
     toeic: goalLower.includes("toeic"),
@@ -39,11 +30,11 @@ const getAIRecommendations = (userGoal, courses) => {
 
   // Lọc courses phù hợp với keywords
   const recommended = courses.filter((course) => {
-    const categories = course.categories || [];
-    
+    const categories = course.Categories || course.categories || [];
+
     return categories.some((cat) => {
-      const catName = cat.name.toLowerCase();
-      
+      const catName = typeof cat === 'string' ? cat.toLowerCase() : cat.name?.toLowerCase() || '';
+
       if (keywords.toeic && catName.includes("toeic")) return true;
       if (keywords.ielts && catName.includes("ielts")) return true;
       if (keywords.toefl && catName.includes("toefl")) return true;
@@ -53,14 +44,14 @@ const getAIRecommendations = (userGoal, courses) => {
       if (keywords.speaking && catName.includes("speaking")) return true;
       if (keywords.reading && catName.includes("reading")) return true;
       if (keywords.writing && catName.includes("writing")) return true;
-      
+
       return false;
     });
   });
 
   // Sắp xếp theo rating và trả về tối đa 6 courses
   return recommended
-    .sort((a, b) => b.rating - a.rating)
+    .sort((a, b) => (b.AverageRating || b.averageRating || 0) - (a.AverageRating || a.averageRating || 0))
     .slice(0, 6);
 };
 
@@ -68,6 +59,9 @@ export default function HomePage() {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
   const [learningGoal, setLearningGoal] = useState("");
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     // Lấy thông tin user và mục tiêu học tập
@@ -75,48 +69,83 @@ export default function HomePage() {
     const goal = localStorage.getItem("learningGoal") || "";
     setCurrentUser(user);
     setLearningGoal(goal);
+
+    // Fetch courses from backend
+    fetchCourses();
   }, []);
 
-  // Gắn rating trung bình vào danh sách khóa học
-  const coursesWithRating = mockCourses.map((course) => ({
-    ...course,
-    rating: getAverageRating(course.courseId),
-  }));
+  const fetchCourses = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await GetAllCourses();
+      const coursesData = response.data || [];
+
+      // Normalize property names for consistency
+      const normalizedCourses = coursesData.map(course => ({
+        ...course,
+        courseId: course.CourseID || course.courseId,
+        title: course.Title || course.title,
+        description: course.Description || course.description,
+        thumbnailUrl: course.ThumbnailUrl || course.thumbnailUrl,
+        createdAt: course.CreatedAt || course.createdAt,
+        totalLessons: course.TotalLessons || course.totalLessons || 0,
+        totalReviews: course.TotalReviews || course.totalReviews || 0,
+        rating: course.AverageRating || course.averageRating || 0,
+        categories: course.Categories || course.categories || [],
+      }));
+
+      setCourses(normalizedCourses);
+    } catch (err) {
+      console.error("Error fetching courses:", err);
+      setError("Không thể tải danh sách khóa học");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // AI Recommendations
-  const aiRecommendedCourses = currentUser 
-    ? getAIRecommendations(learningGoal, coursesWithRating)
+  const aiRecommendedCourses = currentUser
+    ? getAIRecommendations(learningGoal, courses)
     : [];
 
   // New Courses - Sort by createdAt (newest first), max 6
-  const newCourses = coursesWithRating
+  const newCourses = [...courses]
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 6);
 
-  // Lọc khóa học theo từng nhóm LEVEL
-  const toeicCourses = coursesWithRating.filter((c) =>
-    c.categories?.some(
-      (cat) => cat.description === "LEVEL" && cat.name.toUpperCase() === "TOEIC"
-    )
-  );
+  // Lọc khóa học theo từng nhóm LEVEL (categories là array of strings từ backend)
+  const toeicCourses = courses.filter((c) => {
+    const categories = c.categories || [];
+    return categories.some(cat => {
+      const catName = typeof cat === 'string' ? cat : cat.name || '';
+      return catName.toUpperCase().includes("TOEIC");
+    });
+  });
 
-  const ieltsCourses = coursesWithRating.filter((c) =>
-    c.categories?.some(
-      (cat) => cat.description === "LEVEL" && cat.name.toUpperCase() === "IELTS"
-    )
-  );
+  const ieltsCourses = courses.filter((c) => {
+    const categories = c.categories || [];
+    return categories.some(cat => {
+      const catName = typeof cat === 'string' ? cat : cat.name || '';
+      return catName.toUpperCase().includes("IELTS");
+    });
+  });
 
-  const toeflCourses = coursesWithRating.filter((c) =>
-    c.categories?.some(
-      (cat) => cat.description === "LEVEL" && cat.name.toUpperCase() === "TOEFL"
-    )
-  );
+  const toeflCourses = courses.filter((c) => {
+    const categories = c.categories || [];
+    return categories.some(cat => {
+      const catName = typeof cat === 'string' ? cat : cat.name || '';
+      return catName.toUpperCase().includes("TOEFL");
+    });
+  });
 
-  const generalCourses = coursesWithRating.filter((c) =>
-    c.categories?.some(
-      (cat) => cat.description === "LEVEL" && cat.name.toUpperCase() === "GENERAL"
-    )
-  );
+  const generalCourses = courses.filter((c) => {
+    const categories = c.categories || [];
+    return categories.some(cat => {
+      const catName = typeof cat === 'string' ? cat : cat.name || '';
+      return catName.toUpperCase().includes("GENERAL");
+    });
+  });
 
   // Hàm hiển thị AI Recommendations
   const renderAIRecommendations = () => {
@@ -124,10 +153,10 @@ export default function HomePage() {
 
     return (
       <Box sx={{ mb: 6 }}>
-        <Box 
-          display="flex" 
-          alignItems="center" 
-          gap={2} 
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={2}
           mb={2}
           sx={{
             background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
@@ -136,15 +165,15 @@ export default function HomePage() {
             color: "white",
           }}
         >
-          <AutoAwesomeIcon 
-            sx={{ 
+          <AutoAwesomeIcon
+            sx={{
               fontSize: 32,
               animation: "pulse 2s infinite",
               "@keyframes pulse": {
                 "0%, 100%": { opacity: 1, transform: "scale(1)" },
                 "50%": { opacity: 0.7, transform: "scale(1.1)" },
               },
-            }} 
+            }}
           />
           <Box flex={1}>
             <Typography variant="h5" fontWeight="bold">
@@ -215,10 +244,9 @@ export default function HomePage() {
     );
   };
 
-  // Hàm hiển thị từng nhóm khóa học (lọc ≥ 4.5)
+  // Hàm hiển thị từng nhóm khóa học (top rating)
   const renderCourseSection = (title, courses, route, description, icon) => {
     const topCourses = courses
-      .filter((course) => course.rating >= 4.5)
       .sort((a, b) => b.rating - a.rating)
       .slice(0, 4);
 
@@ -265,6 +293,35 @@ export default function HomePage() {
       </Box>
     );
   };
+
+  if (loading) {
+    return (
+      <>
+        <Navbar />
+        <Container sx={{ mt: 6, mb: 6, display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh" }}>
+          <CircularProgress size={60} />
+        </Container>
+        <Footer />
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <Navbar />
+        <Container sx={{ mt: 6, mb: 6 }}>
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+          <Button variant="contained" onClick={fetchCourses}>
+            Thử lại
+          </Button>
+        </Container>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>
