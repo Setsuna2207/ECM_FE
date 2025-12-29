@@ -25,6 +25,7 @@ Backend: [https://github.com/Setsuna2207/ECM_BE]
 │   │   ├── admin/            # Admin Pages
 │   │   ├── auth/             # Authentication Pages
 │   │   └── user/             # User Pages
+│   ├── data/                 # Usable data for testing
 │   ├── services/             # API Service Modules
 │   ├── App.jsx               # Main App Component with Routes
 │   └── main.jsx              # Application Entry Point
