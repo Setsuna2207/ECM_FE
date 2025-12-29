@@ -56,6 +56,7 @@ const ManageReviews = () => {
           id: `${userId}-${courseId}`, // Create unique ID from composite keys
           courseId: courseId,
           userId: userId,
+          fullName: review.FullName || review.fullName || review.UserName || review.userName || `User #${userId}`,
           courseTitle: foundCourse ? foundCourse.title : "Không tìm thấy khóa học",
         };
       });
@@ -90,7 +91,7 @@ const ManageReviews = () => {
 
   const columns = [
     { field: "courseTitle", headerName: "Khóa học", flex: 1.2, headerAlign: "center" },
-    { field: "userId", headerName: "Người dùng", flex: 0.8, headerAlign: "center", align: "center" },
+    { field: "fullName", headerName: "Người dùng", flex: 0.8, headerAlign: "center", align: "center" },
     { field: "reviewScore", headerName: "Điểm đánh giá", flex: 0.6, headerAlign: "center", align: "center" },
     {
       field: "reviewContent",
