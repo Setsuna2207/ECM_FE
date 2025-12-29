@@ -1,16 +1,102 @@
-# React + Vite
+# ECM_FE - English Course Management Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend application built with **React 19** and **Vite**.
 
-Currently, two official plugins are available:
+Backend: [https://github.com/Setsuna2207/ECM_BE]
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## 🚀 Tech Stack
+- React 19
+- Vite
+- Material-UI
+- React Router
+- Axios
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## 📂 Project Structure
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```
+.
+├── src/
+│   ├── components/           # Reusable UI Components
+│   ├── pages/                # Page Components
+│   │   ├── admin/            # Admin Pages
+│   │   ├── auth/             # Authentication Pages
+│   │   └── user/             # User Pages
+│   ├── services/             # API Service Modules
+│   ├── App.jsx               # Main App Component with Routes
+│   └── main.jsx              # Application Entry Point
+├── public/                   # Static Assets
+├── .env                      # Environment Variables
+└── vite.config.js            # Vite Configuration
+```
+
+---
+
+## 📦 Setup
+
+### Prerequisites
+- Node.js (v18+)
+- Yarn or npm
+
+### Installation
+```bash
+git clone https://github.com/Setsuna2207/ECM_FE.git
+cd ECM_FE
+yarn install
+```
+
+### Configuration
+Create `.env`:
+```env
+VITE_API_BASE_URL=https://localhost:7264
+```
+
+### Run
+```bash
+yarn dev
+```
+Available at [http://localhost:5173](http://localhost:5173)
+
+### Build
+```bash
+yarn build
+```
+
+---
+
+## 🔑 Authentication
+
+Uses **JWT tokens** stored in localStorage. Axios interceptor handles token injection and 401 errors.
+
+---
+
+## 👥 User Roles
+
+**Admin**: Manage courses, lessons, quizzes, tests, users, reviews
+
+**User**: Browse courses, enroll, complete lessons/quizzes, take tests, write reviews, track progress
+
+---
+
+## 🌐 API Integration
+
+Services in `services/` directory:
+
+---
+
+## 🐛 Troubleshooting
+
+- **API Connection Failed**:    Verify backend running and `.env` configured
+- **Login Issues**:             Check console and localStorage token
+- **Media Not Loading**:        Verify backend URL and file paths
+- **Build Errors**:             Clear cache and reinstall dependencies
+
+---
+
+## 🔗 Links
+- Backend: [https://github.com/Setsuna2207/ECM_BE]
+- React: [https://react.dev/]
+- Vite: [https://vitejs.dev/]
