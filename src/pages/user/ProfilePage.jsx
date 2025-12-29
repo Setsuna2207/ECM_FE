@@ -11,6 +11,7 @@ import {
   Typography,
   Alert,
   IconButton,
+  CircularProgress,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
@@ -24,6 +25,7 @@ import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
+import { GetUser, UpdateUser, ChangePassword, UpdateAvatar } from "../../services/userService";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -31,74 +33,175 @@ export default function ProfilePage() {
   const [editing, setEditing] = useState(false);
   const [editingGoal, setEditingGoal] = useState(false);
   const [learningGoal, setLearningGoal] = useState("");
-  const [password, setPassword] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [aiFeedback, setAiFeedback] = useState(
     "AI sẽ đưa ra gợi ý khóa học dựa trên mục tiêu và năng lực của bạn..."
   );
   const [confirmMessage, setConfirmMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const savedUser = JSON.parse(localStorage.getItem("currentUser"));
-    if (!savedUser) {
-      navigate("/login");
-    } else {
-      setUser(savedUser);
-    }
+    fetchUserData();
   }, [navigate]);
 
-const handleAvatarChange = (event) => {
-  const file = event.target.files[0];
-  if (file) {
-    if (!file.type.startsWith('image/')) {
-      alert('Vui lòng chọn file ảnh!');
-      return;
-    }
+  const fetchUserData = async () => {
+    try {
+      setLoading(true);
+      const savedUser = JSON.parse(localStorage.getItem("currentUser"));
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Kích thước ảnh không được vượt quá 5MB!');
-      return;
-    }
+      if (!savedUser) {
+        navigate("/login");
+        return;
+      }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result;
-      const updatedUser = { ...user, avatar: base64String };
-      
-      console.log("ProfilePage - Updating avatar:", base64String.substring(0, 50) + "...");
-      
-      setUser(updatedUser);
-      localStorage.setItem("currentUser", JSON.stringify(updatedUser));
-      
+      // Fetch fresh user data from backend
+      const response = await GetUser(savedUser.userName);
+      const userData = response.data;
+
+      // Normalize property names
+      const normalizedUser = {
+        userId: userData.UserId || userData.userId,
+        userName: userData.UserName || userData.userName,
+        email: userData.Email || userData.email,
+        fullName: userData.FullName || userData.fullName || "",
+        avatar: userData.Avatar || userData.avatar || "",
+      };
+
+      setUser(normalizedUser);
+
+      // Update localStorage with fresh data
+      localStorage.setItem("currentUser", JSON.stringify(normalizedUser));
+
+      // Load learning goal from localStorage
+      const goal = localStorage.getItem("learningGoal") || "";
+      setLearningGoal(goal);
+
+    } catch (err) {
+      console.error("Error fetching user data:", err);
+      setErrorMessage("Không thể tải thông tin người dùng");
+
+      // Fallback to localStorage if API fails
+      const savedUser = JSON.parse(localStorage.getItem("currentUser"));
+      if (savedUser) {
+        setUser(savedUser);
+      } else {
+        navigate("/login");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAvatarChange = async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Vui lòng chọn file ảnh!');
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Kích thước ảnh không được vượt quá 5MB!');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64String = reader.result;
+
+        try {
+          setSaving(true);
+          setErrorMessage("");
+
+          // Call backend API to update avatar
+          await UpdateAvatar(user.userName, base64String);
+
+          // Update local state
+          const updatedUser = { ...user, avatar: base64String };
+          setUser(updatedUser);
+          localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+
+          // Dispatch event to notify other components
+          window.dispatchEvent(new Event('userUpdated'));
+
+          setConfirmMessage("Ảnh đại diện đã được cập nhật!");
+          setTimeout(() => setConfirmMessage(""), 4000);
+        } catch (err) {
+          console.error("Error updating avatar:", err);
+          setErrorMessage(err.response?.data?.message || "Không thể cập nhật ảnh đại diện");
+        } finally {
+          setSaving(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      setErrorMessage("");
+
+      // Update user info (fullName and avatar)
+      const updateData = {
+        FullName: user.fullName,
+        Avatar: user.avatar,
+      };
+
+      await UpdateUser(user.userName, updateData);
+
+      // Change password if provided
+      if (currentPassword && newPassword) {
+        const passwordData = {
+          UserName: user.userName,
+          CurrentPassword: currentPassword,
+          NewPassword: newPassword,
+        };
+
+        await ChangePassword(passwordData);
+        setCurrentPassword("");
+        setNewPassword("");
+      }
+
+      // Update localStorage
+      localStorage.setItem("currentUser", JSON.stringify(user));
+
       // Dispatch event to notify other components
       window.dispatchEvent(new Event('userUpdated'));
-      
-      setConfirmMessage("Ảnh đại diện đã được cập nhật!");
-      setTimeout(() => setConfirmMessage(""), 4000);
-    };
-    reader.readAsDataURL(file);
-  }
-};
 
-const handleSave = () => {
-  const updatedUser = { ...user, password };
-  
-  console.log("ProfilePage - Saving user:", updatedUser);
-  
-  localStorage.setItem("currentUser", JSON.stringify(updatedUser));
-  setUser(updatedUser);
-  setEditing(false);
-  
-  // Dispatch event to notify other components
-  window.dispatchEvent(new Event('userUpdated'));
-  
-  setConfirmMessage("Thông tin của bạn đã được cập nhật thành công!");
-  setTimeout(() => setConfirmMessage(""), 4000);
-};
+      setEditing(false);
+      setConfirmMessage("Thông tin của bạn đã được cập nhật thành công!");
+      setTimeout(() => setConfirmMessage(""), 4000);
+    } catch (err) {
+      console.error("Error saving user data:", err);
+      setErrorMessage(err.response?.data?.message || "Không thể cập nhật thông tin");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleSaveGoal = () => {
+    // Save learning goal to localStorage
+    localStorage.setItem("learningGoal", learningGoal);
+
     setEditingGoal(false);
     setAiFeedback("AI đang đưa ra gợi ý phù hợp với mục tiêu của bạn...");
   };
+
+  if (loading) {
+    return (
+      <>
+        <Navbar />
+        <Container sx={{ mt: 6, mb: 6, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+          <CircularProgress />
+        </Container>
+        <Footer />
+      </>
+    );
+  }
 
   if (!user) {
     return (
@@ -242,7 +345,7 @@ const handleSave = () => {
               {/* Add a decorative divider */}
               <Divider sx={{ mb: 2, borderColor: "#cbd5e1" }} />
 
-              {/* Grid 2 cột × 2 hàng */}
+              {/* Grid 2 columns */}
               <Grid container spacing={1.5}>
                 {/* Username + Email */}
                 <Grid item xs={12} sm={6}>
@@ -279,7 +382,7 @@ const handleSave = () => {
                   </Box>
                 </Grid>
 
-                {/* Họ và tên + Mật khẩu */}
+                {/* Email + Mật khẩu */}
                 <Grid item xs={12} sm={6}>
                   <Box display="flex" flexDirection="column" gap={2}>
                     <TextField
@@ -297,12 +400,13 @@ const handleSave = () => {
                     />
 
                     <TextField
-                      label="Mật khẩu mới"
+                      label="Mật khẩu hiện tại"
                       type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
                       fullWidth
                       disabled={!editing}
+                      placeholder={editing ? "Nhập để đổi mật khẩu" : ""}
                       sx={{
                         "& .MuiOutlinedInput-root": {
                           borderRadius: 2,
@@ -314,6 +418,33 @@ const handleSave = () => {
                   </Box>
                 </Grid>
               </Grid>
+
+              {/* New Password Field - Only show when editing */}
+              {editing && (
+                <Box mt={2}>
+                  <TextField
+                    label="Mật khẩu mới"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    fullWidth
+                    placeholder="Nhập mật khẩu mới (nếu muốn đổi)"
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: 2,
+                        backgroundColor: "white",
+                      },
+                    }}
+                  />
+                </Box>
+              )}
+
+              {/* Error Message */}
+              {errorMessage && (
+                <Alert severity="error" sx={{ mt: 2, borderRadius: 2 }}>
+                  {errorMessage}
+                </Alert>
+              )}
 
               {editing && (
                 <Box display="flex" gap={2} mt={3} justifyContent="flex-end">
@@ -337,7 +468,8 @@ const handleSave = () => {
                   </Button>
                   <Button
                     variant="contained"
-                    startIcon={<SaveIcon />}
+                    startIcon={saving ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+                    disabled={saving}
                     sx={{
                       background:
                         "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
@@ -350,10 +482,13 @@ const handleSave = () => {
                         background:
                           "linear-gradient(135deg, #764ba2 0%, #667eea 100%)",
                       },
+                      "&:disabled": {
+                        background: "#cbd5e1",
+                      },
                     }}
                     onClick={handleSave}
                   >
-                    Lưu thay đổi
+                    {saving ? "Đang lưu..." : "Lưu thay đổi"}
                   </Button>
                 </Box>
               )}
