@@ -1,6 +1,6 @@
 import api from './axios/axios.customize';
 
-const GetHistories = () => {
+const GetAllHistories = () => {
     const URL_API = "/History";
     return api.get(URL_API);
 };
@@ -26,12 +26,12 @@ const DeleteHistory = (courseId) => {
 };
 
 const DeleteAllHistories = () => {
-    const URL_API = `/History`;
+    const URL_API = "/History";
     return api.delete(URL_API);
 };
 
 export {
-    GetHistories,
+    GetAllHistories,
     CreateHistory,
     UpdateHistoryAccess,
     UpdateProgress,

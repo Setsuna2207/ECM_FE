@@ -265,7 +265,7 @@ export default function CourseCard({ course }) {
           fullWidth
           size="large"
           startIcon={<PlayCircleOutlineIcon />}
-          onClick={() => navigate(`/course/${course.courseId}`)}
+          onClick={() => navigate(`/course/${course.courseID}`)}
           sx={{
             borderRadius: 2,
             py: 1.5,

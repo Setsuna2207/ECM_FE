@@ -12,19 +12,49 @@ import MenuBookIcon from "@mui/icons-material/MenuBook";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import { useNavigate } from "react-router-dom";
 
-export default function MiniCourseCard({
-  course,
-  lessonCount = 0  // Passed from parent - no need to fetch
-}) {
+export default function MiniCourseCard({ course }) {
   const navigate = useNavigate();
 
-  // Get categories
-  const levelCategory = course.categories?.find(
-    (cat) => cat.description === "LEVEL"
-  );
-  const skillCategory = course.categories?.find(
-    (cat) => cat.description === "SKILL"
-  );
+  // Extract data with fallbacks for both PascalCase and camelCase
+  const lessonCount = course.totalLessons || course.TotalLessons || 0;
+
+  // Construct full thumbnail URL if it's a relative path
+  const getThumbnailUrl = (thumbnail) => {
+    if (!thumbnail) return "";
+    if (thumbnail.startsWith('http')) return thumbnail;
+
+    const baseUrl = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://localhost:7264';
+    return `${baseUrl}${thumbnail.startsWith('/') ? '' : '/'}${thumbnail}`;
+  };
+
+  const thumbnailUrl = getThumbnailUrl(course.thumbnailUrl || course.ThumbnailUrl || course.thumbnail);
+
+  // Get categories - handle both string array and object array formats
+  const categories = course.categories || [];
+
+  const levelCategory = categories.find(cat => {
+    const catName = typeof cat === 'string' ? cat : cat.name || '';
+    return catName.toUpperCase().includes('TOEIC') ||
+      catName.toUpperCase().includes('IELTS') ||
+      catName.toUpperCase().includes('TOEFL') ||
+      catName.toUpperCase().includes('GENERAL');
+  });
+
+  const skillCategory = categories.find(cat => {
+    const catName = typeof cat === 'string' ? cat : cat.name || '';
+    return catName.toUpperCase().includes('LISTENING') ||
+      catName.toUpperCase().includes('SPEAKING') ||
+      catName.toUpperCase().includes('READING') ||
+      catName.toUpperCase().includes('WRITING') ||
+      catName.toUpperCase().includes('GRAMMAR') ||
+      catName.toUpperCase().includes('VOCABULARY');
+  });
+
+  // Format category for display
+  const formatCategory = (cat) => {
+    if (!cat) return null;
+    return typeof cat === 'string' ? cat : cat.name || '';
+  };
 
   return (
     <Card
@@ -49,8 +79,12 @@ export default function MiniCourseCard({
         <CardMedia
           component="img"
           height="175"
-          image={course.thumbnail}
+          image={thumbnailUrl}
           alt={course.title}
+          onError={(e) => {
+            console.error("MiniCourseCard image failed to load:", thumbnailUrl);
+            e.target.style.display = 'none';
+          }}
           sx={{
             transition: "transform 0.3s ease",
             "&:hover": {
@@ -84,7 +118,7 @@ export default function MiniCourseCard({
         >
           {levelCategory && (
             <Chip
-              label={levelCategory.name}
+              label={formatCategory(levelCategory)}
               size="small"
               sx={{
                 backgroundColor: "rgba(103, 58, 183, 0.9)",
@@ -97,7 +131,7 @@ export default function MiniCourseCard({
           )}
           {skillCategory && (
             <Chip
-              label={skillCategory.name}
+              label={formatCategory(skillCategory)}
               size="small"
               sx={{
                 backgroundColor: "rgba(233, 30, 99, 0.9)",

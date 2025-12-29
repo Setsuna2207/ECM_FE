@@ -1,6 +1,6 @@
 import api from './axios/axios.customize';
 
-const GetAllFollowings = () => {
+const GetAllFollowing = () => {
     const URL_API = "/Following";
     return api.get(URL_API);
 };
@@ -16,7 +16,7 @@ const RemoveFollowing = (courseId) => {
 };
 
 export {
-    GetAllFollowings,
+    GetAllFollowing,
     ToggleFollowing,
     RemoveFollowing,
 };
