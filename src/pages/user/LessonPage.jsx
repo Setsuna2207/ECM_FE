@@ -5,6 +5,7 @@ import Footer from "../../components/Footer";
 import { GetLessonById, GetLessonByCourseId } from "../../services/lessonService";
 import { GetCourseById } from "../../services/courseService";
 import { GetQuizById, GetAllQuizzes } from "../../services/quizService";
+import { UpdateHistoryAccess } from "../../services/historyService";
 import {
     Container,
     Typography,
@@ -80,6 +81,13 @@ export default function LessonPage() {
             const quiz = quizzesData.find((q) => q.lessonID === parseInt(lessonId));
             setHasQuiz(!!quiz);
             setRelatedQuiz(quiz);
+
+            // Update history access time in backend
+            try {
+                await UpdateHistoryAccess(courseId);
+            } catch (err) {
+                console.error("Error updating history access:", err);
+            }
 
         } catch (err) {
             console.error("Error fetching lesson data:", err);

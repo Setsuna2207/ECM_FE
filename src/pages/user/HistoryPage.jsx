@@ -6,33 +6,61 @@ import {
   Stack,
   Pagination,
   LinearProgress,
+  CircularProgress,
+  Alert,
+  Button,
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import MiniCourseCard from "../../components/MiniCourseCard";
-import { mockCourses } from "../../data/mockCourse";
-import { mockQuizzes } from "../../data/mockQuiz";
+import { GetAllHistories } from "../../services/historyService";
 
 export default function HistoryPage() {
   const [historyCourses, setHistoryCourses] = useState([]);
-  const [progressData, setProgressData] = useState({});
   const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const coursesPerPage = 6;
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("historyCourses")) || [];
-    const progress = JSON.parse(localStorage.getItem("courseProgress")) || {};
-
-    // Lấy full thông tin khóa học từ mockCourses (giống Follow)
-    const merged = stored.map((c) => {
-      const full = mockCourses.find((m) => m.courseId === Number(c.courseId));
-      return full ? { ...full } : c;
-    });
-
-    setHistoryCourses(merged);
-    setProgressData(progress);
+    fetchHistoryCourses();
   }, []);
+
+  const fetchHistoryCourses = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await GetAllHistories();
+      const historyData = response.data || [];
+
+      // Normalize property names
+      const normalizedHistory = historyData.map(history => ({
+        historyId: history.HistoryID || history.historyID,
+        userId: history.UserID || history.userID,
+        courseId: history.CourseID || history.courseID,
+        progress: history.Progress || history.progress || 0,
+        lastAccessed: history.LastAccessed || history.lastAccessed,
+        courseTitle: history.CourseTitle || history.courseTitle || "Unknown Course",
+        title: history.CourseTitle || history.courseTitle || "Unknown Course",
+        thumbnailUrl: history.ThumbnailUrl || history.thumbnailUrl || "",
+        totalLessons: history.TotalLessons || history.totalLessons || 0,
+        completedLessons: history.CompletedLessons || history.completedLessons || 0,
+        description: "", // Not provided by backend
+        categories: [], // Not provided by backend
+        rating: 0, // Not provided by backend
+        totalReviews: 0, // Not provided by backend
+      }));
+
+      setHistoryCourses(normalizedHistory);
+    } catch (err) {
+      console.error("Error fetching history courses:", err);
+      setError("Không thể tải lịch sử học tập");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // --- Pagination ---
   const pageCount = Math.ceil(historyCourses.length / coursesPerPage) || 1;
@@ -47,6 +75,35 @@ export default function HistoryPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  if (loading) {
+    return (
+      <>
+        <Navbar />
+        <Container sx={{ mt: 6, mb: 6, display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh" }}>
+          <CircularProgress size={60} />
+        </Container>
+        <Footer />
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <Navbar />
+        <Container sx={{ mt: 6, mb: 6 }}>
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+          <Button variant="contained" onClick={fetchHistoryCourses}>
+            Thử lại
+          </Button>
+        </Container>
+        <Footer />
+      </>
+    );
+  }
+
   return (
     <>
       <Navbar />
@@ -59,39 +116,31 @@ export default function HistoryPage() {
         {paginatedCourses.length > 0 ? (
           <>
             <Grid container spacing={3} justifyContent="center">
-              {paginatedCourses.map((course, index) => {
-                const cid = Number(course.courseId);
-
-                // Lấy số quiz của khoá
-                const courseQuizzes = mockQuizzes.filter(
-                  (q) => q.courseId === cid
-                );
-                const totalQuizzes = courseQuizzes.length || 1;
-
-                // Lấy tiến độ từ localStorage
-                const courseProgress = progressData[cid] || {};
-                const completed = Object.values(courseProgress).filter(
-                  (item) => item && item.completed
-                ).length;
-
-                const percent = Math.min(
-                  100,
-                  Math.round((completed / totalQuizzes) * 100)
-                );
+              {paginatedCourses.map((course) => {
+                // Calculate progress percentage
+                const percent = Math.min(100, Math.round(course.progress));
 
                 return (
-                  <Grid item key={index} xs={12} sm={6} md={4}>
+                  <Grid item key={course.historyId} xs={12} sm={6} md={4}>
                     <Box sx={{ mb: 2 }}>
                       <MiniCourseCard course={course} showDescription />
 
                       {/* Progress bar */}
                       <Box sx={{ mt: 1.5 }}>
-                        <Typography
-                          variant="body2"
-                          sx={{ fontWeight: "bold", mb: 0.5 }}
-                        >
-                          Tiến độ: {percent}%
-                        </Typography>
+                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
+                          <Typography
+                            variant="body2"
+                            sx={{ fontWeight: "bold" }}
+                          >
+                            Tiến độ: {percent}%
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                          >
+                            {course.completedLessons}/{course.totalLessons} bài học
+                          </Typography>
+                        </Box>
 
                         <LinearProgress
                           variant="determinate"
@@ -112,7 +161,7 @@ export default function HistoryPage() {
               })}
             </Grid>
 
-            {/* Pagination giống Follow */}
+            {/* Pagination */}
             <Stack alignItems="center" mt={4}>
               <Pagination
                 count={pageCount}

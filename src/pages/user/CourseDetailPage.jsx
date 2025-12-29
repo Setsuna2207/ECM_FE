@@ -23,6 +23,8 @@ import { useEffect, useState, useMemo } from "react";
 import { GetCourseById } from "../../services/courseService";
 import { GetLessonByCourseId } from "../../services/lessonService";
 import { GetReviewByCourseId } from "../../services/reviewService";
+import { ToggleFollowing, GetAllFollowing } from "../../services/followingService";
+import { CreateHistory } from "../../services/historyService";
 
 export default function CourseDetailPage() {
   const { courseId } = useParams();
@@ -120,16 +122,28 @@ export default function CourseDetailPage() {
     navigate(`/course/${course.courseId}/lesson/${lessonId}`);
   };
 
-  // Kiểm tra đã theo dõi / đã tham gia
+  // Kiểm tra đã theo dõi từ backend
   useEffect(() => {
     if (!course) return;
 
-    const followed =
-      JSON.parse(localStorage.getItem("followedCourses")) || [];
-    const joined =
-      JSON.parse(localStorage.getItem("courseHistory")) || [];
+    const checkFollowStatus = async () => {
+      try {
+        const user = JSON.parse(localStorage.getItem("currentUser"));
+        if (!user) return;
 
-    setIsFollowed(followed.some((f) => f.courseId === course.courseId));
+        const response = await GetAllFollowing();
+        const followingData = response.data || [];
+
+        const isFollowing = followingData.some(
+          (f) => (f.CourseID || f.courseID) === course.courseId
+        );
+        setIsFollowed(isFollowing);
+      } catch (err) {
+        console.error("Error checking follow status:", err);
+      }
+    };
+
+    checkFollowStatus();
   }, [course]);
 
   // Calculate values using useMemo (must be before any conditional returns)
@@ -335,32 +349,27 @@ export default function CourseDetailPage() {
                       boxShadow: "0 12px 28px rgba(102, 126, 234, 0.5)",
                     },
                   }}
-                  onClick={() => {
+                  onClick={async () => {
                     const user = JSON.parse(localStorage.getItem("currentUser"));
                     if (!user) {
                       alert("Bạn cần đăng nhập để tham gia khóa học.");
                       return;
                     }
 
-                    const joinedCourses =
-                      JSON.parse(localStorage.getItem("historyCourses")) || [];
-
-                    const alreadyJoined = joinedCourses.some(
-                      (c) => c.courseId === course.courseId
-                    );
-
-                    if (!alreadyJoined) {
-                      joinedCourses.push({
-                        courseId: course.courseId,
-                        title: course.title,
-                        thumbnail: course.thumbnail,
-                      });
-                      localStorage.setItem("historyCourses", JSON.stringify(joinedCourses));
+                    try {
+                      // Create history entry in backend
+                      await CreateHistory(course.courseId);
                       alert(`Đã tham gia khóa học "${course.title}".`);
-                    }
 
-                    const firstLesson = lessons.sort((a, b) => a.orderIndex - b.orderIndex)[0];
-                    if (firstLesson) checkLoginAndNavigate(firstLesson.lessonId);
+                      // Navigate to first lesson
+                      const firstLesson = lessons.sort((a, b) => a.orderIndex - b.orderIndex)[0];
+                      if (firstLesson) checkLoginAndNavigate(firstLesson.lessonId);
+                    } catch (err) {
+                      console.error("Error joining course:", err);
+                      // If already joined, just navigate
+                      const firstLesson = lessons.sort((a, b) => a.orderIndex - b.orderIndex)[0];
+                      if (firstLesson) checkLoginAndNavigate(firstLesson.lessonId);
+                    }
                   }}
                 >
                   Tham gia khóa học
@@ -388,43 +397,28 @@ export default function CourseDetailPage() {
                       transform: "translateY(-2px)",
                     },
                   }}
-                  onClick={() => {
+                  onClick={async () => {
                     const user = JSON.parse(localStorage.getItem("currentUser"));
                     if (!user) {
                       alert("Bạn cần đăng nhập để theo dõi khóa học.");
                       return;
                     }
 
-                    const followed =
-                      JSON.parse(localStorage.getItem("followedCourses")) || [];
+                    try {
+                      const response = await ToggleFollowing(course.courseId);
+                      const status = response.data?.status;
 
-                    if (isFollowed) {
-                      const confirmUnfollow = window.confirm(
-                        "Bạn đang theo dõi khóa học này!\nCó muốn hủy theo dõi không?"
-                      );
-                      if (confirmUnfollow) {
-                        const updated = followed.filter(
-                          (f) => f.courseId !== course.courseId
-                        );
-                        localStorage.setItem(
-                          "followedCourses",
-                          JSON.stringify(updated)
-                        );
+                      if (status === "Added") {
+                        setIsFollowed(true);
+                        alert(`Đã theo dõi khóa học "${course.title}"`);
+                      } else if (status === "Removed") {
                         setIsFollowed(false);
                         alert(`Đã hủy theo dõi khóa học "${course.title}"`);
                       }
-                      return;
+                    } catch (err) {
+                      console.error("Error toggling follow:", err);
+                      alert("Có lỗi xảy ra. Vui lòng thử lại.");
                     }
-
-                    followed.push({
-                      courseId: course.courseId,
-                      title: course.title,
-                      thumbnail: course.thumbnail,
-                      categories: course.categories || [],
-                    });
-                    localStorage.setItem("followedCourses", JSON.stringify(followed));
-                    setIsFollowed(true);
-                    alert(`Đã theo dõi khóa học "${course.title}"`);
                   }}
                 >
                   {isFollowed ? "Đang theo dõi" : "Theo dõi"}

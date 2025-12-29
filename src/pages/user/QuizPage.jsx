@@ -23,6 +23,8 @@ import {
 import ArticleIcon from "@mui/icons-material/Article";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 import { GetQuizById } from "../../services/quizService";
+import { UpdateProgress } from "../../services/historyService";
+import { CreateQuizResult, GetAllQuizResults } from "../../services/quizResultService";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 
@@ -35,6 +37,9 @@ export default function QuizPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [openResultDialog, setOpenResultDialog] = useState(false);
+  const [previousResult, setPreviousResult] = useState(null);
+  const [showRetakeDialog, setShowRetakeDialog] = useState(false);
+  const [viewMode, setViewMode] = useState('new'); // 'new', 'review', 'retake'
   const navigate = useNavigate();
 
   const questionRefs = useRef({});
@@ -68,6 +73,34 @@ export default function QuizPage() {
         setError("Bài quiz này chưa có câu hỏi");
       }
 
+      // Check if user has completed this quiz before
+      try {
+        const user = JSON.parse(localStorage.getItem("currentUser"));
+        if (user) {
+          const resultsRes = await GetAllQuizResults();
+          const allResults = resultsRes.data || [];
+
+          // Find the most recent result for this quiz by this user
+          const userQuizResults = allResults.filter(r =>
+            (r.QuizID || r.quizID) === parseInt(quizId) &&
+            (r.UserID || r.userID) === user.userId
+          );
+
+          if (userQuizResults.length > 0) {
+            // Get the most recent result
+            const latestResult = userQuizResults.sort((a, b) =>
+              new Date(b.SubmittedAt || b.submittedAt) - new Date(a.SubmittedAt || a.submittedAt)
+            )[0];
+
+            setPreviousResult(latestResult);
+            setShowRetakeDialog(true);
+          }
+        }
+      } catch (err) {
+        console.error("Error checking previous results:", err);
+        // Continue even if we can't check previous results
+      }
+
     } catch (err) {
       console.error("Error fetching quiz:", err);
       setError("Không thể tải dữ liệu quiz");
@@ -80,6 +113,33 @@ export default function QuizPage() {
     setAnswers((prev) => ({ ...prev, [questionId]: choice }));
   };
 
+  const handleViewPreviousResult = () => {
+    setShowRetakeDialog(false);
+    setViewMode('review');
+
+    // Parse previous answers
+    const previousAnswers = JSON.parse(previousResult.UserAnswers || previousResult.userAnswers || '{}');
+    setAnswers(previousAnswers);
+
+    // Set previous score
+    const resultScore = previousResult.Score || previousResult.score || 0;
+    const totalQuestions = previousResult.TotalQuestions || previousResult.totalQuestions || questions.length;
+    const percentage = Math.round((resultScore / totalQuestions) * 100);
+    setScore({ total: resultScore, max: totalQuestions, percentage });
+  };
+
+  const handleRetakeQuiz = () => {
+    setShowRetakeDialog(false);
+    setViewMode('retake');
+    setAnswers({});
+    setScore(null);
+  };
+
+  const handleStartNewQuiz = () => {
+    setShowRetakeDialog(false);
+    setViewMode('new');
+  };
+
   const scrollToQuestion = (questionId) => {
     questionRefs.current[questionId]?.scrollIntoView({
       behavior: "smooth",
@@ -87,7 +147,7 @@ export default function QuizPage() {
     });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (window.confirm("Bạn có chắc muốn nộp bài?")) {
       let total = 0;
       questions.forEach((q) => {
@@ -99,7 +159,27 @@ export default function QuizPage() {
       setScore({ total: resultScore, max: questions.length, percentage });
       setOpenResultDialog(true);
 
-      // Save progress to localStorage
+      // Save quiz result to backend
+      try {
+        const quizResultData = {
+          QuizID: parseInt(quizId),
+          UserAnswers: JSON.stringify(answers),
+          Score: resultScore,
+          TotalQuestions: questions.length,
+          SubmittedAt: new Date().toISOString(),
+        };
+
+        await CreateQuizResult(quizResultData);
+        console.log("Quiz result saved successfully");
+
+        // Update progress after saving quiz result
+        await UpdateProgress(courseId);
+        console.log("Progress updated successfully");
+      } catch (err) {
+        console.error("Error saving quiz result or updating progress:", err);
+      }
+
+      // Also save to localStorage for backward compatibility
       const progressData = JSON.parse(localStorage.getItem("courseProgress")) || {};
       const cid = String(courseId);
       const lid = String(lessonId);
