@@ -18,10 +18,11 @@ import {
   DialogContent,
   DialogActions,
   Divider,
+  Alert,
 } from "@mui/material";
 import ArticleIcon from "@mui/icons-material/Article";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
-import { mockQuizzes } from "../../data/mockQuiz";
+import { GetQuizById } from "../../services/quizService";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 
@@ -32,42 +33,48 @@ export default function QuizPage() {
   const [answers, setAnswers] = useState({});
   const [score, setScore] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [openResultDialog, setOpenResultDialog] = useState(false);
   const navigate = useNavigate();
 
   const questionRefs = useRef({});
 
   useEffect(() => {
-    const selectedQuiz = mockQuizzes.find(
-      (q) =>
-        q.quizId === parseInt(quizId) &&
-        q.lessonId === parseInt(lessonId) &&
-        q.courseId === parseInt(courseId)
-    );
+    fetchQuizData();
+  }, [quizId]);
 
-    if (!selectedQuiz) {
+  const fetchQuizData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const quizRes = await GetQuizById(quizId);
+      const quizData = quizRes.data;
+
+      setQuiz(quizData);
+
+      // Questions are now included in the quiz response
+      const questionsData = quizData.Questions || quizData.questions;
+      if (questionsData && questionsData.length > 0) {
+        // Normalize property names to camelCase for consistency
+        const normalizedQuestions = questionsData.map(q => ({
+          questionId: q.QuestionId || q.questionId,
+          question: q.Question || q.question,
+          options: q.Options || q.options,
+          correctAnswer: q.CorrectAnswer !== undefined ? q.CorrectAnswer : q.correctAnswer
+        }));
+        setQuestions(normalizedQuestions);
+      } else {
+        setError("Bài quiz này chưa có câu hỏi");
+      }
+
+    } catch (err) {
+      console.error("Error fetching quiz:", err);
+      setError("Không thể tải dữ liệu quiz");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setQuiz(selectedQuiz);
-
-    // Load question file
-    const quizModules = import.meta.glob("../data/quiz/*.js");
-    const filePath = selectedQuiz.questionFileUrl;
-
-    if (quizModules[filePath]) {
-      quizModules[filePath]()
-        .then((module) => {
-          setQuestions(module.default?.questions || []);
-        })
-        .catch((err) => console.error("Không thể load file câu hỏi:", err))
-        .finally(() => setLoading(false));
-    } else {
-      console.error("Không tìm thấy file quiz:", filePath);
-      setLoading(false);
-    }
-  }, [quizId, lessonId, courseId]);
+  };
 
   const handleAnswer = (questionId, choice) => {
     setAnswers((prev) => ({ ...prev, [questionId]: choice }));
@@ -115,18 +122,24 @@ export default function QuizPage() {
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
-        <CircularProgress />
-      </Box>
+      <>
+        <Navbar />
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh" }}>
+          <CircularProgress size={60} />
+        </Box>
+        <Footer />
+      </>
     );
   }
 
-  if (!quiz) {
+  if (error || !quiz) {
     return (
       <>
         <Navbar />
-        <Box textAlign="center" mt={10}>
-          <Typography variant="h5">Không tìm thấy bài quiz!</Typography>
+        <Box textAlign="center" mt={10} px={3}>
+          <Alert severity="error" sx={{ mb: 3, maxWidth: 600, mx: "auto" }}>
+            {error || "Không tìm thấy bài quiz!"}
+          </Alert>
           <Button
             variant="contained"
             sx={{ mt: 2 }}
@@ -159,7 +172,7 @@ export default function QuizPage() {
             }}
           >
             <Typography variant="h4" fontWeight="700" mb={1}>
-              {quiz.title}
+              {quiz.Description || quiz.description || "Quiz"}
             </Typography>
             <Typography variant="body1" sx={{ opacity: 0.95 }}>
               Khóa học {courseId} - Bài học {lessonId}
@@ -371,7 +384,7 @@ export default function QuizPage() {
             </Typography>
 
             {/* Audio Player */}
-            {quiz.mediaUrl && (
+            {(quiz.MediaUrl || quiz.mediaUrl) && (
               <Box sx={{ mb: 3, p: 2, backgroundColor: "#fff3e0", borderRadius: 3, border: "2px solid #ff9800" }}>
                 <Box display="flex" alignItems="center" gap={1} mb={1.5}>
                   <VolumeUpIcon sx={{ color: "#e65100" }} />
@@ -380,10 +393,12 @@ export default function QuizPage() {
                   </Typography>
                 </Box>
                 <audio
+                  key={quiz.MediaUrl || quiz.mediaUrl}
                   controls
+                  preload="metadata"
                   style={{ width: "100%", borderRadius: 8 }}
+                  src={`https://localhost:7264${quiz.MediaUrl || quiz.mediaUrl}`}
                 >
-                  <source src={quiz.mediaUrl} type="audio/mpeg" />
                   Your browser does not support the audio element.
                 </audio>
               </Box>
