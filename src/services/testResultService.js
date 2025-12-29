@@ -5,6 +5,11 @@ const GetAllTestResults = () => {
     return api.get(URL_API);
 };
 
+const GetTestResultsByUserId = (userId) => {
+    const URL_API = `/TestResult/user/${userId}`;
+    return api.get(URL_API);
+};
+
 const GetTestResultById = (resultId) => {
     const URL_API = `/TestResult/${resultId}`;
     return api.get(URL_API);
@@ -27,6 +32,7 @@ const DeleteTestResult = (resultId) => {
 
 export {
     GetAllTestResults,
+    GetTestResultsByUserId,
     GetTestResultById,
     CreateTestResult,
     UpdateTestResult,

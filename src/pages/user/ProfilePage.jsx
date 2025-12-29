@@ -593,7 +593,7 @@ export default function ProfilePage() {
                     boxShadow: "0 6px 16px rgba(67, 233, 123, 0.4)",
                   },
                 }}
-                onClick={() => navigate("/test-results")}
+                onClick={() => navigate("/results")}
               >
                 Kết quả kiểm tra
               </Button>
@@ -614,7 +614,7 @@ export default function ProfilePage() {
             <Box display="flex" gap={2} flexDirection={{ xs: "column", sm: "row" }}>
               <TextField
                 fullWidth
-                placeholder="Nhập mục tiêu của bạn (VD: TOEIC 600)"
+                placeholder="Nhập mục tiêu của bạn Level + Skill + Score (VD: TOEIC READING 600)"
                 value={learningGoal}
                 onChange={(e) => setLearningGoal(e.target.value)}
                 disabled={!editingGoal}

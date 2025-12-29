@@ -15,6 +15,7 @@ import HistoryPage from "./pages/user/HistoryPage";
 import FollowingPage from "./pages/user/FollowingPage";
 import TestPage from "./pages/user/TestPage";
 import TestDetailPage from "./pages/user/TestDetailPage";
+import TestResultPage from "./pages/user/TestResultPage"
 
 // Khu vực quản trị
 import Dashboard from "./pages/admin/layout/Dashboard";
@@ -46,6 +47,7 @@ export default function AppRouter() {
         <Route path="/following" element={<FollowingPage />} />
         <Route path="/tests" element={<TestPage/>} />
         <Route path="/test/:testId" element={<TestDetailPage/>} />
+        <Route path="/results" element={<TestResultPage/>} />
 
 
         {/* Trang quản trị */}

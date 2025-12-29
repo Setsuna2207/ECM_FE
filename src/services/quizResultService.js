@@ -5,6 +5,11 @@ const GetAllQuizResults = () => {
     return api.get(URL_API);
 };
 
+const GetQuizResultsByUserId = (userId) => {
+    const URL_API = `/QuizResult/user/${userId}`;
+    return api.get(URL_API);
+};
+
 const GetQuizResultById = (resultId) => {
     const URL_API = `/QuizResult/${resultId}`;
     return api.get(URL_API);
@@ -27,6 +32,7 @@ const DeleteQuizResult = (resultId) => {
 
 export {
     GetAllQuizResults,
+    GetQuizResultsByUserId,
     GetQuizResultById,
     CreateQuizResult,
     UpdateQuizResult,
