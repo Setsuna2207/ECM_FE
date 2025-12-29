@@ -44,14 +44,42 @@ export default function TestResultPage() {
             setError("");
 
             const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-            if (!currentUser) {
+            const token = localStorage.getItem("access_token");
+
+            console.log("=== FETCHING TEST RESULTS ===");
+            console.log("Current user:", currentUser);
+            console.log("Current user keys:", currentUser ? Object.keys(currentUser) : "null");
+            console.log("Current user stringified:", JSON.stringify(currentUser));
+            console.log("Token exists:", !!token);
+            console.log("Token preview:", token ? token.substring(0, 50) + "..." : "NO TOKEN");
+
+            if (!currentUser || !token) {
+                console.error("Missing user or token, redirecting to login");
                 navigate("/login");
                 return;
             }
 
+            // Handle both userID and userId (backend uses userID)
+            const userId = currentUser.userID || currentUser.userId || currentUser.UserId || currentUser.userid;
+            console.log("User ID:", userId);
+            console.log("Checking properties: userID=", currentUser.userID, "userId=", currentUser.userId, "UserId=", currentUser.UserId);
+
+            if (!userId) {
+                console.error("No userId found in currentUser object!");
+                console.error("Available keys:", Object.keys(currentUser));
+                console.error("Full currentUser object:", currentUser);
+                setError("Không tìm thấy thông tin người dùng");
+                setLoading(false);
+                return;
+            }
+
+            console.log("Calling GetTestResultsByUserId with userId:", userId);
+
             // Get test results for current user
-            const response = await GetTestResultsByUserId(currentUser.userId);
+            const response = await GetTestResultsByUserId(userId);
             const results = response.data;
+
+            console.log("Test results received successfully:", results);
 
             // Fetch placement test details for each result
             const enrichedResults = await Promise.all(
@@ -108,7 +136,16 @@ export default function TestResultPage() {
             setTestResults(enrichedResults);
         } catch (err) {
             console.error("Error fetching test results:", err);
-            setError("Không thể tải kết quả kiểm tra");
+            console.error("Error response:", err.response);
+
+            // Check if it's an authentication error
+            if (err.response?.status === 401) {
+                console.error("Authentication error - token may have expired");
+                setError("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+                // The axios interceptor will handle the redirect
+            } else {
+                setError("Không thể tải kết quả kiểm tra");
+            }
         } finally {
             setLoading(false);
         }

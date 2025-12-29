@@ -34,14 +34,23 @@ instance.interceptors.response.use(function (response) {
     // Any status codes that falls outside the range of 2xx cause this function to trigger
     // Do something with response error
     console.error("Response error:", error.response?.status, error.response?.data);
+    console.error("Request URL:", error.config?.url);
+    console.error("Request headers:", error.config?.headers);
 
     // Handle 401 Unauthorized
     if (error.response?.status === 401) {
+        console.error("401 Unauthorized - Token may be invalid or expired");
+        console.error("Current token:", localStorage.getItem('access_token')?.substring(0, 50) + '...');
+
         localStorage.removeItem('access_token');
         localStorage.removeItem('currentUser');
-        if (!window.location.pathname.includes('/login')) {
-            window.location.href = '/login';
-        }
+
+        // Add a small delay to see console logs before redirect
+        setTimeout(() => {
+            if (!window.location.pathname.includes('/login')) {
+                window.location.href = '/login';
+            }
+        }, 100);
     }
 
     return Promise.reject(error);

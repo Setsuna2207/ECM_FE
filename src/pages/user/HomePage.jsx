@@ -195,7 +195,7 @@ export default function HomePage() {
           />
         </Box>
 
-        <Grid container spacing={3}>
+        <Grid container spacing={3} justifyContent={ "center" }>
           {aiRecommendedCourses.map((course) => (
             <Grid item key={course.courseId} xs={12} sm={6} md={4}>
               <CourseCard course={course} />
@@ -233,7 +233,7 @@ export default function HomePage() {
           Khám phá những khóa học mới được cập nhật gần đây
         </Typography>
 
-        <Grid container spacing={3}>
+        <Grid container spacing={3} justifyContent={ "center" }>
           {newCourses.map((course) => (
             <Grid item key={course.courseId} xs={12} sm={6} md={4}>
               <CourseCard course={course} />
@@ -254,7 +254,7 @@ export default function HomePage() {
 
     return (
       <Box sx={{ mb: 6 }}>
-        <Box display="flex" alignItems="center" gap={2} mb={2}>
+        <Box display="flex" alignItems="center" gap={2} mb={2} >
           {icon && <Box sx={{ fontSize: 32 }}>{icon}</Box>}
           <Typography variant="h5" fontWeight="bold" color="#0a0749ff">
             {title}
@@ -283,7 +283,7 @@ export default function HomePage() {
           {description}
         </Typography>
 
-        <Grid container spacing={3}>
+        <Grid container spacing={3} justifyContent={ "center" }>
           {topCourses.map((course) => (
             <Grid item key={course.courseId} xs={12} sm={6} md={4}>
               <CourseCard course={course} />
@@ -364,7 +364,7 @@ export default function HomePage() {
         {renderNewCourses()}
 
         {/* Top Rated Courses Header */}
-        <Box display="flex" alignItems="center" gap={2} mb={4} mt={6}>
+        <Box display="flex" alignItems="center" gap={2} mb={4} mt={6} >
           <TrendingUpIcon sx={{ fontSize: 32, color: "#4038d2ff" }} />
           <Typography variant="h4" fontWeight="bold" color="#0a0749ff">
             Khóa học được đánh giá cao

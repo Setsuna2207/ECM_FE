@@ -25,6 +25,7 @@ import ArticleIcon from "@mui/icons-material/Article";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import { GetPlacementTestById } from "../../services/placementTestService";
+import { CreateTestResult } from "../../services/testResultService";
 
 export default function TestDetailPage() {
   const { testId } = useParams();
@@ -35,6 +36,7 @@ export default function TestDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [timeRemaining, setTimeRemaining] = useState(null);
+  const [startTime, setStartTime] = useState(null);
   const [hasStarted, setHasStarted] = useState(false);
   const [listenCount, setListenCount] = useState(0);
   const [isForcedSubmit, setIsForcedSubmit] = useState(false);
@@ -142,7 +144,10 @@ export default function TestDetailPage() {
   }, [score, isSubmitting, navigate]);
 
   const startTest = () => {
-    if (!hasStarted) setHasStarted(true);
+    if (!hasStarted) {
+      setHasStarted(true);
+      setStartTime(Date.now());
+    }
   };
 
   const formatTime = (seconds) => {
@@ -161,7 +166,7 @@ export default function TestDetailPage() {
     startTest();
   };
 
-  const handleSubmit = (forceSubmit = false) => {
+  const handleSubmit = async (forceSubmit = false) => {
     if (forceSubmit) {
       setIsForcedSubmit(true);
       navigate("/tests");
@@ -174,73 +179,172 @@ export default function TestDetailPage() {
 
     let totalScore = 0;
     let maxScore = 0;
+    let correctCount = 0;
+    let incorrectCount = 0;
+    let skippedCount = 0;
+    const sectionScoresMap = {};
 
     allQuestions.forEach((q) => {
-      maxScore += q.points || 2;
+      const questionPoints = q.points || 2;
+      maxScore += questionPoints;
+
+      // Initialize section score if not exists
+      if (!sectionScoresMap[q.sectionTitle]) {
+        sectionScoresMap[q.sectionTitle] = { earned: 0, max: 0 };
+      }
+      sectionScoresMap[q.sectionTitle].max += questionPoints;
+
+      // Check if question was answered
+      const isAnswered = answers[q.questionId] !== undefined && answers[q.questionId] !== "";
+
+      if (!isAnswered) {
+        skippedCount++;
+        return;
+      }
 
       if (q.type === "multiple-choice") {
         if (answers[q.questionId] === q.correctAnswer) {
-          totalScore += q.points || 2;
+          totalScore += questionPoints;
+          sectionScoresMap[q.sectionTitle].earned += questionPoints;
+          correctCount++;
+        } else {
+          incorrectCount++;
         }
       }
       else if (q.type === "sentence-completion") {
-        // For fill-in-the-blank questions
         const userAnswer = (answers[q.questionId] || "").toLowerCase().trim();
         const correctAnswer = (q.sampleAnswer || q.correctAnswer || "").toLowerCase().trim();
 
-        // Remove extra spaces and compare
         const normalizedUser = userAnswer.replace(/\s+/g, " ");
         const normalizedCorrect = correctAnswer.replace(/\s+/g, " ");
 
-        // Check if answers match (allow some flexibility)
         if (normalizedUser === normalizedCorrect) {
-          totalScore += q.points || 2;
+          totalScore += questionPoints;
+          sectionScoresMap[q.sectionTitle].earned += questionPoints;
+          correctCount++;
         } else {
-          // Partial credit if user got some words right
           const userWords = normalizedUser.split(/[,\s]+/).filter(w => w);
           const correctWords = normalizedCorrect.split(/[,\s]+/).filter(w => w);
 
-          let correctCount = 0;
+          let correctWordCount = 0;
           userWords.forEach(word => {
-            if (correctWords.includes(word)) correctCount++;
+            if (correctWords.includes(word)) correctWordCount++;
           });
 
-          // Give partial credit based on correct words
-          if (correctCount > 0 && correctWords.length > 0) {
-            totalScore += (q.points || 2) * (correctCount / correctWords.length);
+          if (correctWordCount > 0 && correctWords.length > 0) {
+            const partialScore = questionPoints * (correctWordCount / correctWords.length);
+            totalScore += partialScore;
+            sectionScoresMap[q.sectionTitle].earned += partialScore;
+            if (correctWordCount === correctWords.length) {
+              correctCount++;
+            } else {
+              incorrectCount++;
+            }
+          } else {
+            incorrectCount++;
           }
         }
       }
       else if (q.type === "error-correction") {
-        // For error correction, check if answer is provided
         const userAnswer = (answers[q.questionId] || "").toLowerCase().trim();
         const correctAnswer = (q.correctAnswer || "").toLowerCase().trim();
 
         if (userAnswer && correctAnswer) {
-          // Simple comparison (can be made more sophisticated)
           if (userAnswer === correctAnswer) {
-            totalScore += q.points || 2;
+            totalScore += questionPoints;
+            sectionScoresMap[q.sectionTitle].earned += questionPoints;
+            correctCount++;
           } else {
-            // Partial credit if answer is reasonably close
             const similarity = calculateSimilarity(userAnswer, correctAnswer);
             if (similarity > 0.7) {
-              totalScore += (q.points || 2) * similarity;
+              const partialScore = questionPoints * similarity;
+              totalScore += partialScore;
+              sectionScoresMap[q.sectionTitle].earned += partialScore;
+              incorrectCount++;
+            } else {
+              incorrectCount++;
             }
           }
         }
       }
       else if (q.type === "essay" || q.type === "short-response") {
         if (answers[q.questionId] && answers[q.questionId].trim().length > 0) {
-          totalScore += (q.points || 5) * 0.7; // 70% credit for completion
+          const partialScore = questionPoints * 0.7;
+          totalScore += partialScore;
+          sectionScoresMap[q.sectionTitle].earned += partialScore;
+          correctCount++;
+        } else {
+          skippedCount++;
         }
       }
     });
 
     const percentage = Math.round((totalScore / maxScore) * 100);
+
+    // Calculate time spent in seconds
+    const timeSpentSeconds = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
+
+    // Determine level based on percentage
+    let levelDetected = "Beginner";
+    if (percentage >= 80) levelDetected = "Advanced";
+    else if (percentage >= 60) levelDetected = "Intermediate";
+
+    // Calculate section scores as percentages
+    const sectionScoresFormatted = {};
+    Object.keys(sectionScoresMap).forEach(sectionTitle => {
+      const section = sectionScoresMap[sectionTitle];
+      sectionScoresFormatted[sectionTitle] = section.max > 0
+        ? Math.round((section.earned / section.max) * 100)
+        : 0;
+    });
+
     setScore({ total: totalScore, max: maxScore, percentage });
     setIsSubmitting(false);
     setOpenResultDialog(true);
 
+    // Save test result to backend
+    try {
+      // Clean the answers object
+      const cleanAnswers = {};
+      Object.keys(answers).forEach(key => {
+        const numKey = parseInt(key);
+        if (!isNaN(numKey)) {
+          cleanAnswers[numKey] = answers[key];
+        }
+      });
+
+      const testResultData = {
+        TestID: parseInt(testId),
+        UserAnswers: JSON.stringify(cleanAnswers),
+        CorrectAnswers: correctCount,
+        IncorrectAnswers: incorrectCount,
+        SkippedAnswers: skippedCount,
+        OverallScore: parseFloat(totalScore.toFixed(2)),
+        SectionScores: JSON.stringify(sectionScoresFormatted),
+        LevelDetected: levelDetected,
+        TimeSpent: timeSpentSeconds,
+        // Don't send UserID - backend controller will set it from authenticated user
+      };
+
+      console.log("Sending test result data:", testResultData);
+      console.log("Test ID:", testId);
+      console.log("Correct:", correctCount, "Incorrect:", incorrectCount, "Skipped:", skippedCount);
+      console.log("Section Scores:", sectionScoresFormatted);
+
+      const response = await CreateTestResult(testResultData);
+      console.log("Test result saved successfully:", response.data);
+    } catch (err) {
+      console.error("Error saving test result:", err);
+      if (err.response) {
+        console.error("Response status:", err.response.status);
+        console.error("Response data:", err.response.data);
+        console.error("Response headers:", err.response.headers);
+      }
+      // Don't block the user from seeing results if save fails
+      alert("Không thể lưu kết quả kiểm tra. Vui lòng thử lại sau.");
+    }
+
+    // Also save to localStorage for backward compatibility
     const testResults = JSON.parse(localStorage.getItem("testResults")) || [];
     testResults.push({
       testId: test.testId,
@@ -248,9 +352,14 @@ export default function TestDetailPage() {
       score: totalScore,
       maxScore: maxScore,
       percentage: percentage,
+      correctAnswers: correctCount,
+      incorrectAnswers: incorrectCount,
+      skippedAnswers: skippedCount,
+      levelDetected: levelDetected,
       date: new Date().toISOString(),
     });
     localStorage.setItem("testResults", JSON.stringify(testResults));
+
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 

@@ -42,67 +42,88 @@ export default function LoginPage() {
     return () => clearInterval(timer);
   }, []);
 
-const handleLogin = async (e) => {
-  e.preventDefault();
-  setError("");
-  setLoading(true);
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
-  try {
-    const isEmail = loginInput.includes("@");
+    try {
+      const isEmail = loginInput.includes("@");
 
-    const loginResponse = await Login({
-      userName: !isEmail ? loginInput : undefined,
-      email: isEmail ? loginInput : undefined,
-      password: password,
-    });
+      const loginResponse = await Login({
+        userName: !isEmail ? loginInput : undefined,
+        email: isEmail ? loginInput : undefined,
+        password: password,
+      });
 
-    if (loginResponse.status === 200) {
-      // Get user data directly from login response
-      let userData = loginResponse.data;
-      
-      // Handle different response structures
-      if (Array.isArray(userData)) userData = userData[0];
-      if (userData.data) userData = userData.data;
+      if (loginResponse.status === 200) {
+        // Get user data directly from login response
+        let userData = loginResponse.data;
 
-      console.log("Complete user data from login:", userData);
-      console.log("Avatar:", userData?.avatar);
-      console.log("Roles:", userData?.roles);
+        // Handle different response structures
+        if (Array.isArray(userData)) userData = userData[0];
+        if (userData.data) userData = userData.data;
 
-      // Store token if present
-      if (userData.token || userData.accessToken) {
-        const token = userData.token || userData.accessToken;
-        localStorage.setItem("access_token", token);
+        console.log("Complete user data from login:", userData);
+        console.log("Avatar:", userData?.avatar);
+        console.log("Roles:", userData?.roles);
+
+        // Store token if present (handle both PascalCase and camelCase)
+        if (userData.Token || userData.token || userData.accessToken) {
+          const token = userData.Token || userData.token || userData.accessToken;
+          localStorage.setItem("access_token", token);
+          console.log("Token saved to localStorage:", token ? "YES" : "NO");
+          console.log("Token preview:", token?.substring(0, 50) + "...");
+        } else {
+          console.error("⚠️ NO TOKEN FOUND IN LOGIN RESPONSE!");
+          console.error("User data keys:", Object.keys(userData));
+        }
+
+        // Store complete user data (remove token from user object if present)
+        const userDataToStore = { ...userData };
+        delete userDataToStore.Token;
+        delete userDataToStore.token;
+        delete userDataToStore.accessToken;
+
+        // Normalize to camelCase for frontend consistency
+        const normalizedUser = {
+          userID: userDataToStore.UserID || userDataToStore.userID || userDataToStore.userId,
+          userName: userDataToStore.UserName || userDataToStore.userName,
+          email: userDataToStore.Email || userDataToStore.email,
+          fullName: userDataToStore.FullName || userDataToStore.fullName || "",
+          avatar: userDataToStore.Avatar || userDataToStore.avatar || "",
+          roles: userDataToStore.Roles || userDataToStore.roles || "",
+        };
+
+        console.log("User data to store:", normalizedUser);
+        console.log("User data keys:", Object.keys(normalizedUser));
+        console.log("userID in data:", normalizedUser.userID);
+
+        localStorage.setItem("currentUser", JSON.stringify(normalizedUser));
+
+        // Verify
+        const saved = JSON.parse(localStorage.getItem("currentUser"));
+        console.log("Saved to localStorage:", saved);
+        console.log("Saved userID:", saved?.userID);
+        console.log("Avatar saved:", saved?.avatar);
+
+        // Dispatch event
+        window.dispatchEvent(new Event('userUpdated'));
+
+        // Redirect based on role
+        if (userData.roles === "Admin" || userData.role === "Admin" || userData.access === "admin") {
+          navigate("/admin");
+        } else {
+          navigate("/");
+        }
       }
-
-      // Store complete user data (remove token from user object if present)
-      const userDataToStore = { ...userData };
-      delete userDataToStore.token;
-      delete userDataToStore.accessToken;
-      
-      localStorage.setItem("currentUser", JSON.stringify(userDataToStore));
-
-      // Verify
-      const saved = JSON.parse(localStorage.getItem("currentUser"));
-      console.log("Saved to localStorage:", saved);
-      console.log("Avatar saved:", saved?.avatar);
-
-      // Dispatch event
-      window.dispatchEvent(new Event('userUpdated'));
-
-      // Redirect based on role
-      if (userData.roles === "Admin" || userData.role === "Admin" || userData.access === "admin") {
-        navigate("/admin");
-      } else {
-        navigate("/");
-      }
+    } catch (err) {
+      console.error("❌ Login error:", err);
+      setError(err.response?.data?.message || "Sai tên đăng nhập / email hoặc mật khẩu!");
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    console.error("❌ Login error:", err);
-    setError(err.response?.data?.message || "Sai tên đăng nhập / email hoặc mật khẩu!");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <Box

@@ -61,9 +61,9 @@ export default function ProfilePage() {
       const response = await GetUser(savedUser.userName);
       const userData = response.data;
 
-      // Normalize property names
+      // Normalize property names to camelCase for frontend consistency
       const normalizedUser = {
-        userId: userData.UserId || userData.userId,
+        userID: userData.UserID || userData.UserId || userData.userId || userData.userID,
         userName: userData.UserName || userData.userName,
         email: userData.Email || userData.email,
         fullName: userData.FullName || userData.fullName || "",
@@ -74,6 +74,9 @@ export default function ProfilePage() {
 
       // Update localStorage with fresh data
       localStorage.setItem("currentUser", JSON.stringify(normalizedUser));
+
+      console.log("ProfilePage - Saved user to localStorage:", normalizedUser);
+      console.log("ProfilePage - userID:", normalizedUser.userID);
 
       // Load learning goal from localStorage
       const goal = localStorage.getItem("learningGoal") || "";
