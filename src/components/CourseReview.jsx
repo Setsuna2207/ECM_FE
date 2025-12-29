@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -7,7 +7,6 @@ import {
   Button,
   TextField,
   Paper,
-  Avatar,
   CircularProgress,
   Alert,
 } from "@mui/material";
@@ -20,9 +19,11 @@ import {
   UpdateReview,
   DeleteReview,
 } from "../services/reviewService";
+import { GetAllUsers } from "../services/userService";
 
 export default function CourseReview({ courseId }) {
   const [reviews, setReviews] = useState([]);
+  const [users, setUsers] = useState([]);
   const [averageRating, setAverageRating] = useState(0);
   const [newRating, setNewRating] = useState(0);
   const [newContent, setNewContent] = useState("");
@@ -30,35 +31,63 @@ export default function CourseReview({ courseId }) {
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  //  GIẢ LẬP USER LOGIN 
-  const [currentUserId] = useState(1);
-  const [currentUserRole] = useState("admin");
+  // Get current user from localStorage
+  const currentUser = JSON.parse(localStorage.getItem("currentUser")) || {};
+  const currentUserId = currentUser.userID || currentUser.id;
+  const currentUserRole = currentUser.roles || currentUser.role || "user";
 
   const [isEditing, setIsEditing] = useState(false);
   const [editingReview, setEditingReview] = useState(null);
 
   useEffect(() => {
-    fetchReviews();
+    fetchData();
   }, [courseId]);
 
-  const fetchReviews = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await GetReviewByCourseId(courseId);
-      setReviews(response.data || []);
+
+      const [reviewsRes, usersRes] = await Promise.all([
+        GetReviewByCourseId(courseId),
+        GetAllUsers(),
+      ]);
+
+      const reviewsData = reviewsRes.data || [];
+      const usersData = usersRes.data || [];
+
+      setUsers(usersData);
+
+      // Sort reviews: current user's review first, then others
+      const sortedReviews = reviewsData.sort((a, b) => {
+        const aUserId = a.userID || a.userId;
+        const bUserId = b.userID || b.userId;
+
+        if (aUserId === currentUserId) return -1;
+        if (bUserId === currentUserId) return 1;
+        return 0;
+      });
+
+      setReviews(sortedReviews);
     } catch (err) {
       setError("Lỗi khi tải đánh giá");
-      console.error("Error fetching reviews:", err);
     } finally {
       setLoading(false);
     }
   };
 
+  const getUserFullName = (userId) => {
+    const user = users.find((u) => u.id === userId || u.userID === userId);
+    if (user && user.fullName) {
+      return user.fullName;
+    }
+    return user?.userName || `Người dùng #${userId}`;
+  };
+
   useEffect(() => {
     if (reviews.length > 0) {
       const avg = (
-        reviews.reduce((sum, r) => sum + r.ratingScore, 0) / reviews.length
+        reviews.reduce((sum, r) => sum + (r.reviewScore || r.ratingScore || 0), 0) / reviews.length
       ).toFixed(1);
       setAverageRating(parseFloat(avg));
     } else {
@@ -74,16 +103,17 @@ export default function CourseReview({ courseId }) {
       setError(null);
 
       if (isEditing) {
-        await UpdateReview(editingReview.reviewId, {
-          ratingScore: newRating,
-          ratingContent: newContent,
+        await UpdateReview(editingReview.userID || editingReview.userId, editingReview.courseID || editingReview.courseId, {
+          reviewScore: newRating,
+          reviewContent: newContent,
         });
         const updated = reviews.map((r) =>
-          r.reviewId === editingReview.reviewId
+          (r.userID || r.userId) === (editingReview.userID || editingReview.userId) &&
+            (r.courseID || r.courseId) === (editingReview.courseID || editingReview.courseId)
             ? {
               ...r,
-              ratingScore: newRating,
-              ratingContent: newContent,
+              reviewScore: newRating,
+              reviewContent: newContent,
               createdAt: new Date().toISOString(),
             }
             : r
@@ -93,39 +123,43 @@ export default function CourseReview({ courseId }) {
         setEditingReview(null);
       } else {
         const response = await CreateReview({
-          userId: currentUserId,
-          courseId: parseInt(courseId, 10),
-          ratingScore: newRating,
-          ratingContent: newContent,
+          userID: currentUserId,
+          courseID: parseInt(courseId, 10),
+          reviewScore: newRating,
+          reviewContent: newContent,
         });
-        setReviews([response.data, ...reviews]);
+        // Add new review and re-sort to put it at the top
+        const newReviews = [response.data, ...reviews];
+        setReviews(newReviews);
       }
 
       setNewContent("");
       setNewRating(0);
     } catch (err) {
       setError("Lỗi khi lưu đánh giá");
-      console.error("Error submitting review:", err);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleDelete = async (reviewId) => {
+  const handleDelete = async (review) => {
     if (window.confirm("Bạn có chắc muốn xóa đánh giá này không?")) {
       try {
-        await DeleteReview(reviewId);
-        setReviews(reviews.filter((r) => r.reviewId !== reviewId));
+        const userId = review.userID || review.userId;
+        const courseIdVal = review.courseID || review.courseId;
+        await DeleteReview(userId, courseIdVal);
+        setReviews(reviews.filter((r) =>
+          (r.userID || r.userId) !== userId || (r.courseID || r.courseId) !== courseIdVal
+        ));
       } catch (err) {
         setError("Lỗi khi xóa đánh giá");
-        console.error("Error deleting review:", err);
       }
     }
   };
 
   const handleEdit = (review) => {
-    setNewRating(review.ratingScore);
-    setNewContent(review.ratingContent);
+    setNewRating(review.reviewScore || review.ratingScore || 0);
+    setNewContent(review.reviewContent || review.ratingContent || "");
     setIsEditing(true);
     setEditingReview(review);
   };
@@ -180,7 +214,7 @@ export default function CourseReview({ courseId }) {
 
             <Rating
               value={newRating}
-              onChange={(e, value) => setNewRating(value)}
+              onChange={(_, value) => setNewRating(value)}
               precision={1}
               sx={{ mb: 2 }}
             />
@@ -212,8 +246,10 @@ export default function CourseReview({ courseId }) {
           {/* Danh sách đánh giá */}
           {reviews.length > 0 ? (
             reviews.map((r, idx) => {
-              const isOwner = r.userId === currentUserId;
-              const isAdmin = currentUserRole === "admin";
+              const reviewUserId = r.userID || r.userId;
+              const isOwner = reviewUserId === currentUserId;
+              const isAdmin = currentUserRole === "admin" || currentUserRole === "Admin";
+              const fullName = getUserFullName(reviewUserId);
 
               return (
                 <Paper
@@ -229,32 +265,21 @@ export default function CourseReview({ courseId }) {
                 >
                   {/* Dòng đầu tiên */}
                   <Box display="flex" justifyContent="space-between">
-                    <Box display="flex" alignItems="center" gap={2}>
-                      {/* AVATAR */}
-                      <Avatar
-                        src={
-                          r.avatar ||
-                          "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
-                        }
-                        sx={{ width: 50, height: 50 }}
+                    <Box>
+                      <Typography fontWeight="bold">
+                        {fullName}
+                      </Typography>
+
+                      <Rating
+                        value={r.reviewScore || r.ratingScore || 0}
+                        readOnly
+                        precision={0.5}
+                        size="small"
                       />
 
-                      <Box>
-                        <Typography fontWeight="bold">
-                          Người dùng #{r.userId}
-                        </Typography>
-
-                        <Rating
-                          value={r.ratingScore}
-                          readOnly
-                          precision={0.5}
-                          size="small"
-                        />
-
-                        <Typography variant="body2" color="text.secondary">
-                          {new Date(r.createdAt).toLocaleDateString("vi-VN")}
-                        </Typography>
-                      </Box>
+                      <Typography variant="body2" color="text.secondary">
+                        {new Date(r.createdAt).toLocaleDateString("vi-VN")}
+                      </Typography>
                     </Box>
 
                     {/* Nút hành động */}
@@ -266,7 +291,7 @@ export default function CourseReview({ courseId }) {
                           </IconButton>
 
                           <IconButton
-                            onClick={() => handleDelete(r.reviewId)}
+                            onClick={() => handleDelete(r)}
                             color="error"
                           >
                             <DeleteIcon />
@@ -276,7 +301,7 @@ export default function CourseReview({ courseId }) {
 
                       {!isOwner && isAdmin && (
                         <IconButton
-                          onClick={() => handleDelete(r.reviewId)}
+                          onClick={() => handleDelete(r)}
                           color="error"
                         >
                           <DeleteIcon />
@@ -287,7 +312,7 @@ export default function CourseReview({ courseId }) {
 
                   {/* Nội dung */}
                   <Typography sx={{ mt: 1.5, lineHeight: 1.6 }}>
-                    {r.ratingContent}
+                    {r.reviewContent || r.ratingContent}
                   </Typography>
                 </Paper>
               );
