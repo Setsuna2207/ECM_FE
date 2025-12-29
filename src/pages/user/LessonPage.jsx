@@ -1,10 +1,10 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { mockLessons } from "../../data/mockLesson";
-import { mockCourses } from "../../data/mockCourse";
-import { mockQuizzes } from "../../data/mockQuiz";
 import { useEffect, useState } from "react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
+import { GetLessonById, GetLessonByCourseId } from "../../services/lessonService";
+import { GetCourseById } from "../../services/courseService";
+import { GetQuizById, GetAllQuizzes } from "../../services/quizService";
 import {
     Container,
     Typography,
@@ -41,10 +41,53 @@ export default function LessonPage() {
     const [previewLoading, setPreviewLoading] = useState(true);
     const [previewError, setPreviewError] = useState(false);
     const [showBlur, setShowBlur] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [course, setCourse] = useState(null);
+    const [lesson, setLesson] = useState(null);
+    const [lessonsInCourse, setLessonsInCourse] = useState([]);
+    const [hasQuiz, setHasQuiz] = useState(false);
+    const [relatedQuiz, setRelatedQuiz] = useState(null);
 
     useEffect(() => {
         window.scrollTo({ top: 0, behavior: "smooth" });
-    }, [lessonId]);
+        fetchData();
+    }, [lessonId, courseId]);
+
+    const fetchData = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+
+            // Fetch course, lesson, lessons in course, and quizzes in parallel
+            const [courseRes, lessonRes, lessonsRes, quizzesRes] = await Promise.all([
+                GetCourseById(courseId),
+                GetLessonById(lessonId),
+                GetLessonByCourseId(courseId),
+                GetAllQuizzes(),
+            ]);
+
+            const courseData = courseRes.data;
+            const lessonData = lessonRes.data;
+            const lessonsData = lessonsRes.data || [];
+            const quizzesData = quizzesRes.data || [];
+
+            setCourse(courseData);
+            setLesson(lessonData);
+            setLessonsInCourse(lessonsData);
+
+            // Check if lesson has quiz
+            const quiz = quizzesData.find((q) => q.lessonID === parseInt(lessonId));
+            setHasQuiz(!!quiz);
+            setRelatedQuiz(quiz);
+
+        } catch (err) {
+            console.error("Error fetching lesson data:", err);
+            setError("Không thể tải dữ liệu bài giảng");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Reset preview state when dialog opens
     useEffect(() => {
@@ -55,36 +98,15 @@ export default function LessonPage() {
         }
     }, [previewOpen]);
 
-    const course = mockCourses.find((c) => c.courseId === parseInt(courseId, 10));
-    const lesson = mockLessons.find(
-        (l) => l.lessonId === parseInt(lessonId, 10) && l.courseId === parseInt(courseId, 10)
-    );
-
-    if (!course || !lesson) {
-        return (
-            <>
-                <Navbar />
-                <Container sx={{ mt: 6, mb: 6 }}>
-                    <Typography variant="h5" textAlign="center">
-                        Không tìm thấy bài giảng hoặc khóa học.
-                    </Typography>
-                </Container>
-                <Footer />
-            </>
-        );
-    }
-
-    const lessonsInCourse = mockLessons.filter((l) => l.courseId === course.courseId);
-    const prevLesson = lessonsInCourse.find((l) => l.orderIndex === lesson.orderIndex - 1);
-    const nextLesson = lessonsInCourse.find((l) => l.orderIndex === lesson.orderIndex + 1);
-
-    // Check if lesson has quiz
-    const hasQuiz = mockQuizzes.some((q) => q.lessonId === lesson.lessonId);
-    const relatedQuiz = mockQuizzes.find((q) => q.lessonId === lesson.lessonId);
-
-    // Check progress (from localStorage)
-    const progressData = JSON.parse(localStorage.getItem("courseProgress")) || {};
-    const isCompleted = progressData[String(courseId)]?.[String(lessonId)]?.completed;
+    // Cleanup scroll listener
+    useEffect(() => {
+        return () => {
+            const dialogContent = document.querySelector('[role="dialog"] .MuiDialogContent-root');
+            if (dialogContent) {
+                dialogContent.removeEventListener('scroll', handlePreviewScroll);
+            }
+        };
+    }, [showBlur]);
 
     const handleIframeLoad = () => {
         setPreviewLoading(false);
@@ -110,15 +132,41 @@ export default function LessonPage() {
         }
     };
 
-    // Cleanup scroll listener
-    useEffect(() => {
-        return () => {
-            const dialogContent = document.querySelector('[role="dialog"] .MuiDialogContent-root');
-            if (dialogContent) {
-                dialogContent.removeEventListener('scroll', handlePreviewScroll);
-            }
-        };
-    }, [showBlur]);
+    // Check progress (from localStorage)
+    const progressData = JSON.parse(localStorage.getItem("courseProgress")) || {};
+    const isCompleted = progressData[String(courseId)]?.[String(lessonId)]?.completed;
+
+    const prevLesson = lessonsInCourse.find((l) => l.orderIndex === lesson?.orderIndex - 1);
+    const nextLesson = lessonsInCourse.find((l) => l.orderIndex === lesson?.orderIndex + 1);
+
+    if (loading) {
+        return (
+            <>
+                <Navbar />
+                <Container sx={{ mt: 6, mb: 6, display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh" }}>
+                    <CircularProgress size={60} />
+                </Container>
+                <Footer />
+            </>
+        );
+    }
+
+    if (error || !course || !lesson) {
+        return (
+            <>
+                <Navbar />
+                <Container sx={{ mt: 6, mb: 6 }}>
+                    <Alert severity="error" sx={{ mb: 2 }}>
+                        {error || "Không tìm thấy bài giảng hoặc khóa học."}
+                    </Alert>
+                    <Button variant="contained" onClick={() => navigate("/courses")}>
+                        Quay lại danh sách khóa học
+                    </Button>
+                </Container>
+                <Footer />
+            </>
+        );
+    }
 
     return (
         <>
@@ -131,7 +179,7 @@ export default function LessonPage() {
                         <Button
                             size="small"
                             startIcon={<ArrowBackIcon />}
-                            onClick={() => navigate(`/course/${course.courseId}`)}
+                            onClick={() => navigate(`/course/${course.courseID || courseId}`)}
                             sx={{ textTransform: "none", color: "#666" }}
                         >
                             {course.title}
@@ -152,7 +200,7 @@ export default function LessonPage() {
                         <PlayCircleOutlineIcon sx={{ fontSize: 50 }} />
                         <Box flex={1}>
                             <Typography variant="h6" sx={{ opacity: 0.9, mb: 0.5 }}>
-                                BÀI HỌC {lesson.orderIndex}
+                                BÀI GIẢNG {lesson.orderIndex}
                             </Typography>
                             <Typography variant="h4" fontWeight="700">
                                 {lesson.title}
@@ -166,26 +214,6 @@ export default function LessonPage() {
                                 sx={{ backgroundColor: "#4caf50", color: "white", px: 2, py: 3, fontSize: 16 }}
                             />
                         )}
-                    </Box>
-
-                    {/* Categories */}
-                    <Box display="flex" gap={1.5} flexWrap="wrap">
-                        {course.categories?.map((cat) => (
-                            <Chip
-                                key={cat.name}
-                                label={cat.name}
-                                onClick={() => navigate(`/courses/${cat.name.toLowerCase()}`)}
-                                sx={{
-                                    backgroundColor: "rgba(255, 255, 255, 0.2)",
-                                    color: "white",
-                                    fontWeight: 600,
-                                    fontSize: 15,
-                                    px: 2,
-                                    py: 2.5,
-                                    "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.3)" }
-                                }}
-                            />
-                        ))}
                     </Box>
                 </Paper>
 
@@ -227,9 +255,9 @@ export default function LessonPage() {
 
                     <Divider sx={{ mb: 1 }} />
 
-                    {lesson.documentUrls && lesson.documentUrls.length > 0 ? (
+                    {lesson.documentUrl && lesson.documentUrl.length > 0 ? (
                         <Box display="flex" flexDirection="column" gap={1}>
-                            {lesson.documentUrls.map((url, index) => {
+                            {lesson.documentUrl.map((url, index) => {
                                 // Detect if it's a Google Drive URL
                                 const isGoogleDrive = url.includes("docs.google.com") || url.includes("drive.google.com");
 
@@ -433,7 +461,7 @@ export default function LessonPage() {
                         variant="contained"
                         size="large"
                         disabled={!hasQuiz}
-                        onClick={() => relatedQuiz && navigate(`/course/${courseId}/lesson/${lessonId}/quiz/${relatedQuiz.quizId}`)}
+                        onClick={() => relatedQuiz && navigate(`/course/${courseId}/lesson/${lessonId}/quiz/${relatedQuiz.quizID}`)}
                         sx={{
                             py: 2,
                             borderRadius: 4,
@@ -483,7 +511,7 @@ export default function LessonPage() {
                             variant="outlined"
                             size="large"
                             startIcon={<ArrowBackIcon />}
-                            onClick={() => navigate(`/course/${course.courseId}`)}
+                            onClick={() => navigate(`/course/${course.courseID || courseId}`)}
                             sx={{
                                 mb: 2,
                                 py: 1.5,
@@ -509,7 +537,7 @@ export default function LessonPage() {
                                 variant="outlined"
                                 size="large"
                                 startIcon={<ArrowBackIcon />}
-                                onClick={() => prevLesson && navigate(`/course/${courseId}/lesson/${prevLesson.lessonId}`)}
+                                onClick={() => prevLesson && navigate(`/course/${courseId}/lesson/${prevLesson.lessonID}`)}
                                 disabled={!prevLesson}
                                 sx={{
                                     py: 1.5,
@@ -527,7 +555,7 @@ export default function LessonPage() {
                                 variant="contained"
                                 size="large"
                                 endIcon={<ArrowForwardIcon />}
-                                onClick={() => nextLesson && navigate(`/course/${courseId}/lesson/${nextLesson.lessonId}`)}
+                                onClick={() => nextLesson && navigate(`/course/${courseId}/lesson/${nextLesson.lessonID}`)}
                                 disabled={!nextLesson}
                                 sx={{
                                     py: 1.5,
@@ -571,7 +599,6 @@ export default function LessonPage() {
                     </Box>
                     {selectedFile?.ext === "pdf" && (
                         <Chip
-                            label="Hiển thị 2 trang đầu"
                             size="small"
                             color="info"
                             sx={{ fontWeight: 600 }}
