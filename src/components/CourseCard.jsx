@@ -13,13 +13,13 @@ import MenuBookIcon from "@mui/icons-material/MenuBook";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import { useNavigate } from "react-router-dom";
 
-export default function CourseCard({
-  course,
-  lessonCount = 0,      // Passed from parent - no need to fetch
-  averageRating = 0,    // Passed from parent - no need to calculate
-  reviewCount = 0       // Passed from parent - no need to count
-}) {
+export default function CourseCard({ course }) {
   const navigate = useNavigate();
+
+  // Extract data with fallbacks for both PascalCase and camelCase
+  const lessonCount = course.totalLessons || course.TotalLessons || 0;
+  const averageRating = course.rating || course.AverageRating || course.averageRating || 0;
+  const reviewCount = course.totalReviews || course.TotalReviews || course.totalReviews || 0;
 
   // Construct full thumbnail URL if it's a relative path
   const getThumbnailUrl = (thumbnail) => {
@@ -30,7 +30,7 @@ export default function CourseCard({
     return `${baseUrl}${thumbnail.startsWith('/') ? '' : '/'}${thumbnail}`;
   };
 
-  const thumbnailUrl = getThumbnailUrl(course.thumbnail);
+  const thumbnailUrl = getThumbnailUrl(course.thumbnailUrl || course.ThumbnailUrl || course.thumbnail);
 
   // Render stars
   const renderStars = (rating) => {
@@ -56,13 +56,33 @@ export default function CourseCard({
     return stars;
   };
 
-  // Get categories
-  const levelCategory = course.categories?.find(
-    (cat) => cat.description === "LEVEL"
-  );
-  const skillCategory = course.categories?.find(
-    (cat) => cat.description === "SKILL"
-  );
+  // Get categories - handle both string array and object array formats
+  const categories = course.categories || [];
+
+  // For string array format from backend
+  const levelCategory = categories.find(cat => {
+    const catName = typeof cat === 'string' ? cat : cat.name || '';
+    return catName.toUpperCase().includes('TOEIC') ||
+      catName.toUpperCase().includes('IELTS') ||
+      catName.toUpperCase().includes('TOEFL') ||
+      catName.toUpperCase().includes('GENERAL');
+  });
+
+  const skillCategory = categories.find(cat => {
+    const catName = typeof cat === 'string' ? cat : cat.name || '';
+    return catName.toUpperCase().includes('LISTENING') ||
+      catName.toUpperCase().includes('SPEAKING') ||
+      catName.toUpperCase().includes('READING') ||
+      catName.toUpperCase().includes('WRITING') ||
+      catName.toUpperCase().includes('GRAMMAR') ||
+      catName.toUpperCase().includes('VOCABULARY');
+  });
+
+  // Format category for display
+  const formatCategory = (cat) => {
+    if (!cat) return null;
+    return typeof cat === 'string' ? cat : cat.name || '';
+  };
 
   return (
     <Card
@@ -126,7 +146,7 @@ export default function CourseCard({
         >
           {levelCategory && (
             <Chip
-              label={levelCategory.name}
+              label={formatCategory(levelCategory)}
               size="small"
               sx={{
                 backgroundColor: "rgba(103, 58, 183, 0.9)",
@@ -139,7 +159,7 @@ export default function CourseCard({
           )}
           {skillCategory && (
             <Chip
-              label={skillCategory.name}
+              label={formatCategory(skillCategory)}
               size="small"
               sx={{
                 backgroundColor: "rgba(233, 30, 99, 0.9)",
