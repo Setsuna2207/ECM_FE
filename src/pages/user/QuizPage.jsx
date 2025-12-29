@@ -77,22 +77,21 @@ export default function QuizPage() {
       try {
         const user = JSON.parse(localStorage.getItem("currentUser"));
         if (user) {
-          const resultsRes = await GetAllQuizResults();
-          const allResults = resultsRes.data || [];
+          // Check localStorage for completed quizzes
+          const progressData = JSON.parse(localStorage.getItem("courseProgress")) || {};
+          const cid = String(courseId);
+          const lid = String(lessonId);
 
-          // Find the most recent result for this quiz by this user
-          const userQuizResults = allResults.filter(r =>
-            (r.QuizID || r.quizID) === parseInt(quizId) &&
-            (r.UserID || r.userID) === user.userId
-          );
+          const lessonProgress = progressData[cid]?.[lid];
 
-          if (userQuizResults.length > 0) {
-            // Get the most recent result
-            const latestResult = userQuizResults.sort((a, b) =>
-              new Date(b.SubmittedAt || b.submittedAt) - new Date(a.SubmittedAt || a.submittedAt)
-            )[0];
-
-            setPreviousResult(latestResult);
+          if (lessonProgress && lessonProgress.completed) {
+            // User has completed this quiz before
+            setPreviousResult({
+              Score: lessonProgress.score || 0,
+              TotalQuestions: lessonProgress.total || questions.length,
+              UserAnswers: JSON.stringify(lessonProgress.answers || {}),
+              SubmittedAt: lessonProgress.date || new Date().toISOString(),
+            });
             setShowRetakeDialog(true);
           }
         }
@@ -118,7 +117,19 @@ export default function QuizPage() {
     setViewMode('review');
 
     // Parse previous answers
-    const previousAnswers = JSON.parse(previousResult.UserAnswers || previousResult.userAnswers || '{}');
+    let previousAnswers = {};
+    try {
+      const answersStr = previousResult.UserAnswers || previousResult.userAnswers;
+      if (typeof answersStr === 'string') {
+        previousAnswers = JSON.parse(answersStr);
+      } else {
+        previousAnswers = answersStr || {};
+      }
+    } catch (e) {
+      console.error("Error parsing previous answers:", e);
+      previousAnswers = {};
+    }
+
     setAnswers(previousAnswers);
 
     // Set previous score
@@ -159,7 +170,7 @@ export default function QuizPage() {
       setScore({ total: resultScore, max: questions.length, percentage });
       setOpenResultDialog(true);
 
-      // Save quiz result to backend
+      // Save quiz result to backend (this will create a new entry, replacing the old one conceptually)
       try {
         const quizResultData = {
           QuizID: parseInt(quizId),
@@ -179,20 +190,28 @@ export default function QuizPage() {
         console.error("Error saving quiz result or updating progress:", err);
       }
 
-      // Also save to localStorage for backward compatibility
+      // Save to localStorage - this REPLACES the previous result
       const progressData = JSON.parse(localStorage.getItem("courseProgress")) || {};
       const cid = String(courseId);
       const lid = String(lessonId);
 
       if (!progressData[cid]) progressData[cid] = {};
+
+      // Overwrite previous result with new result
       progressData[cid][lid] = {
         completed: true,
         score: resultScore,
         total: questions.length,
+        answers: answers, // Save answers for review mode
         date: new Date().toISOString(),
+        retakeCount: (progressData[cid][lid]?.retakeCount || 0) + 1, // Track number of retakes
       };
 
       localStorage.setItem("courseProgress", JSON.stringify(progressData));
+
+      // Reset view mode to normal after submission
+      setViewMode('new');
+
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
@@ -236,6 +255,61 @@ export default function QuizPage() {
   return (
     <>
       <Navbar />
+
+      {/* Retake Dialog */}
+      <Dialog
+        open={showRetakeDialog}
+        onClose={() => setShowRetakeDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: 700, fontSize: 22 }}>
+          Bạn đã hoàn thành quiz này rồi
+        </DialogTitle>
+        <DialogContent>
+          <Box py={2}>
+            <Typography variant="body1" mb={2}>
+              Bạn đã hoàn thành bài quiz này trước đó với kết quả:
+            </Typography>
+            <Box
+              sx={{
+                p: 3,
+                backgroundColor: "#f0f9ff",
+                borderRadius: 2,
+                border: "2px solid #0ea5e9",
+                textAlign: "center",
+                mb: 2,
+              }}
+            >
+              <Typography variant="h3" fontWeight="bold" color="primary" mb={1}>
+                {previousResult?.Score || previousResult?.score || 0}/{previousResult?.TotalQuestions || previousResult?.totalQuestions || questions.length}
+              </Typography>
+              <Typography variant="h6" color="text.secondary">
+                {Math.round(((previousResult?.Score || previousResult?.score || 0) / (previousResult?.TotalQuestions || previousResult?.totalQuestions || questions.length)) * 100)}%
+              </Typography>
+            </Box>
+            <Typography variant="body2" color="text.secondary">
+              Bạn có muốn làm lại không?
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, gap: 1 }}>
+          <Button
+            variant="outlined"
+            onClick={handleViewPreviousResult}
+            sx={{ flex: 1 }}
+          >
+            Xem kết quả
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleRetakeQuiz}
+            sx={{ flex: 1 }}
+          >
+            Có, làm lại
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Box sx={{ display: { xs: "block", md: "flex" }, gap: 3, maxWidth: 1400, mx: "auto", mt: 4, mb: 8, px: 3 }}>
         {/* LEFT SIDE - Questions */}
@@ -338,45 +412,53 @@ export default function QuizPage() {
                     {/* Multiple Choice Options */}
                     <RadioGroup
                       value={userAnswer ?? ""}
-                      onChange={(e) => handleAnswer(q.questionId, parseInt(e.target.value))}
+                      onChange={(e) => viewMode !== 'review' && handleAnswer(q.questionId, parseInt(e.target.value))}
                     >
-                      {q.options.map((opt, i) => (
-                        <Paper
-                          key={i}
-                          elevation={0}
-                          sx={{
-                            mb: 1.5,
-                            p: 1.5,
-                            border: "1px solid #e0e0e0",
-                            borderRadius: 2,
-                            backgroundColor:
-                              userAnswer === i
-                                ? "#e3f2fd"
-                                : "transparent",
-                            transition: "all 0.2s ease",
-                            "&:hover": {
-                              backgroundColor: "#f5f5f5",
-                              borderColor: "#2196f3"
-                            }
-                          }}
-                        >
-                          <FormControlLabel
-                            value={i}
-                            control={<Radio />}
-                            label={
-                              <Typography variant="body1">
-                                {opt}
-                              </Typography>
-                            }
-                            disabled={score !== null}
-                            sx={{ width: "100%", m: 0 }}
-                          />
-                        </Paper>
-                      ))}
+                      {q.options.map((opt, i) => {
+                        const isCorrect = i === correct;
+                        const isUserAnswer = userAnswer === i;
+                        const showResult = viewMode === 'review' || score !== null;
+
+                        return (
+                          <Paper
+                            key={i}
+                            elevation={0}
+                            sx={{
+                              mb: 1.5,
+                              p: 1.5,
+                              border: showResult && isCorrect ? "2px solid #4caf50" : showResult && isUserAnswer && !isCorrect ? "2px solid #f44336" : "1px solid #e0e0e0",
+                              borderRadius: 2,
+                              backgroundColor:
+                                showResult && isCorrect ? "#e8f5e9" :
+                                  showResult && isUserAnswer && !isCorrect ? "#ffebee" :
+                                    userAnswer === i ? "#e3f2fd" : "transparent",
+                              transition: "all 0.2s ease",
+                              "&:hover": {
+                                backgroundColor: viewMode === 'review' ? undefined : "#f5f5f5",
+                                borderColor: viewMode === 'review' ? undefined : "#2196f3"
+                              }
+                            }}
+                          >
+                            <FormControlLabel
+                              value={i}
+                              control={<Radio />}
+                              label={
+                                <Typography variant="body1">
+                                  {opt}
+                                  {showResult && isCorrect && " ✓"}
+                                  {showResult && isUserAnswer && !isCorrect && " ✗"}
+                                </Typography>
+                              }
+                              disabled={viewMode === 'review' || score !== null}
+                              sx={{ width: "100%", m: 0 }}
+                            />
+                          </Paper>
+                        );
+                      })}
                     </RadioGroup>
 
                     {/* Answer Feedback */}
-                    {score !== null && (
+                    {(score !== null || viewMode === 'review') && (
                       <Paper
                         elevation={0}
                         sx={{
@@ -406,7 +488,40 @@ export default function QuizPage() {
 
           {/* Action Buttons */}
           <Box sx={{ display: "flex", justifyContent: "center", gap: 2, mt: 4 }}>
-            {score === null ? (
+            {viewMode === 'review' ? (
+              <>
+                <Button
+                  variant="outlined"
+                  size="large"
+                  onClick={() => navigate(`/course/${courseId}/lesson/${lessonId}`)}
+                  sx={{
+                    borderRadius: 2,
+                    py: 1.5,
+                    px: 4,
+                    fontSize: 16,
+                    fontWeight: 700,
+                  }}
+                >
+                  Quay lại bài học
+                </Button>
+                <Button
+                  variant="contained"
+                  size="large"
+                  onClick={handleRetakeQuiz}
+                  sx={{
+                    borderRadius: 2,
+                    py: 1.5,
+                    px: 4,
+                    fontSize: 16,
+                    fontWeight: 700,
+                    backgroundColor: "#4038d2ff",
+                    "&:hover": { backgroundColor: "#73169aff" },
+                  }}
+                >
+                  Làm lại quiz
+                </Button>
+              </>
+            ) : score === null ? (
               <Button
                 variant="contained"
                 color="primary"

@@ -134,12 +134,6 @@ export default function HistoryPage() {
                           >
                             Tiến độ: {percent}%
                           </Typography>
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                          >
-                            {course.completedLessons}/{course.totalLessons} bài học
-                          </Typography>
                         </Box>
 
                         <LinearProgress
