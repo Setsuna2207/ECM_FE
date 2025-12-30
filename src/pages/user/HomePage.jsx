@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import CourseCard from "../../components/CourseCard";
 import { GetAllCourses } from "../../services/courseService";
+import { GetActiveLearningPath } from "../../services/learningPathService";
 import Footer from "../../components/Footer";
 import Navbar from "../../components/Navbar";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
@@ -60,19 +61,66 @@ export default function HomePage() {
   const [currentUser, setCurrentUser] = useState(null);
   const [learningGoal, setLearningGoal] = useState("");
   const [courses, setCourses] = useState([]);
+  const [aiRecommendedCourses, setAiRecommendedCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Lấy thông tin user và mục tiêu học tập
+    // Lấy thông tin user
     const user = JSON.parse(localStorage.getItem("currentUser"));
-    const goal = localStorage.getItem("learningGoal") || "";
     setCurrentUser(user);
-    setLearningGoal(goal);
 
-    // Fetch courses from backend
+    // Fetch courses and learning path from backend
     fetchCourses();
+    if (user) {
+      fetchLearningPath();
+    }
   }, []);
+
+  const fetchLearningPath = async () => {
+    try {
+      const response = await GetActiveLearningPath();
+      const learningPathData = response.data;
+
+      console.log("HomePage - Learning Path Data:", learningPathData);
+
+      if (learningPathData && learningPathData.learningPath) {
+        const lp = learningPathData.learningPath;
+        setLearningGoal(lp.goalContent || "");
+
+        console.log("HomePage - Learning Path ID:", lp.learningPathID);
+        console.log("HomePage - Initial Result ID:", lp.initialResultID);
+        console.log("HomePage - Recommended Courses:", lp.recommendedCourses);
+
+        // IMPORTANT: Only show recommendations if user has completed initial test
+        // This prevents showing old recommendations when goal is changed
+        if (lp.initialResultID && lp.recommendedCourses) {
+          let recommendedCourses = lp.recommendedCourses;
+          if (typeof recommendedCourses === 'string') {
+            try {
+              recommendedCourses = JSON.parse(recommendedCourses);
+            } catch (e) {
+              console.error("Error parsing recommended courses:", e);
+              recommendedCourses = [];
+            }
+          }
+          console.log("HomePage - Parsed Recommended Courses:", recommendedCourses);
+          setAiRecommendedCourses(Array.isArray(recommendedCourses) ? recommendedCourses : []);
+        } else {
+          // No test completed yet, clear recommendations
+          console.log("HomePage - No test result yet, clearing recommendations");
+          setAiRecommendedCourses([]);
+        }
+      } else {
+        console.log("HomePage - No active learning path found");
+        setAiRecommendedCourses([]);
+      }
+    } catch (err) {
+      console.error("Error fetching learning path:", err);
+      // If no learning path, user can still browse courses
+      setAiRecommendedCourses([]);
+    }
+  };
 
   const fetchCourses = async () => {
     try {
@@ -104,10 +152,31 @@ export default function HomePage() {
     }
   };
 
-  // AI Recommendations
-  const aiRecommendedCourses = currentUser
-    ? getAIRecommendations(learningGoal, courses)
-    : [];
+  // Get full course details for AI recommended courses
+  const getAiRecommendedCoursesWithDetails = () => {
+    if (!aiRecommendedCourses || aiRecommendedCourses.length === 0) {
+      // Fallback to old keyword matching if no AI recommendations
+      return getAIRecommendations(learningGoal, courses);
+    }
+
+    // Map AI recommended course IDs to full course objects
+    return aiRecommendedCourses
+      .map(aiCourse => {
+        const fullCourse = courses.find(c => c.courseId === aiCourse.courseID);
+        if (fullCourse) {
+          return {
+            ...fullCourse,
+            aiReason: aiCourse.reason,
+            aiPriority: aiCourse.priority
+          };
+        }
+        return null;
+      })
+      .filter(c => c !== null)
+      .sort((a, b) => a.aiPriority - b.aiPriority);
+  };
+
+  const displayedAiCourses = getAiRecommendedCoursesWithDetails();
 
   // New Courses - Sort by createdAt (newest first), max 6
   const newCourses = [...courses]
@@ -149,56 +218,171 @@ export default function HomePage() {
 
   // Hàm hiển thị AI Recommendations
   const renderAIRecommendations = () => {
-    if (!currentUser || aiRecommendedCourses.length === 0) return null;
+    if (!currentUser || displayedAiCourses.length === 0) return null;
 
     return (
       <Box sx={{ mb: 6 }}>
         <Box
-          display="flex"
-          alignItems="center"
-          gap={2}
-          mb={2}
           sx={{
             background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-            borderRadius: 3,
-            p: 2,
+            borderRadius: 4,
+            p: 4,
+            mb: 3,
             color: "white",
+            position: "relative",
+            overflow: "hidden",
+            boxShadow: "0 8px 32px rgba(102, 126, 234, 0.3)",
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: -50,
+              right: -50,
+              width: 200,
+              height: 200,
+              background: "rgba(255,255,255,0.1)",
+              borderRadius: "50%",
+            },
+            "&::after": {
+              content: '""',
+              position: "absolute",
+              bottom: -30,
+              left: -30,
+              width: 150,
+              height: 150,
+              background: "rgba(255,255,255,0.05)",
+              borderRadius: "50%",
+            },
           }}
         >
-          <AutoAwesomeIcon
-            sx={{
-              fontSize: 32,
-              animation: "pulse 2s infinite",
-              "@keyframes pulse": {
-                "0%, 100%": { opacity: 1, transform: "scale(1)" },
-                "50%": { opacity: 0.7, transform: "scale(1.1)" },
-              },
-            }}
-          />
-          <Box flex={1}>
-            <Typography variant="h5" fontWeight="bold">
-              Gợi ý dành riêng cho bạn
-            </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
-              Dựa trên mục tiêu: "{learningGoal || "Chưa thiết lập"}"
-            </Typography>
+          <Box display="flex" alignItems="center" gap={2} mb={2} position="relative" zIndex={1}>
+            <Box
+              sx={{
+                background: "rgba(255,255,255,0.2)",
+                borderRadius: 3,
+                p: 1.5,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                backdropFilter: "blur(10px)",
+              }}
+            >
+              <AutoAwesomeIcon
+                sx={{
+                  fontSize: 32,
+                  animation: "pulse 2s infinite",
+                  "@keyframes pulse": {
+                    "0%, 100%": { opacity: 1, transform: "scale(1)" },
+                    "50%": { opacity: 0.7, transform: "scale(1.1)" },
+                  },
+                }}
+              />
+            </Box>
+            <Box flex={1}>
+              <Typography variant="h4" fontWeight="bold" sx={{ mb: 0.5 }}>
+                Gợi ý dành riêng cho bạn
+              </Typography>
+              <Typography variant="body1" sx={{ opacity: 0.95 }}>
+                Dựa trên mục tiêu: <strong>"{learningGoal || "Chưa thiết lập"}"</strong>
+              </Typography>
+            </Box>
+            <Chip
+              icon={<AutoAwesomeIcon sx={{ color: "white !important" }} />}
+              label="AI Powered"
+              sx={{
+                backgroundColor: "rgba(255,255,255,0.25)",
+                color: "white",
+                fontWeight: "bold",
+                fontSize: "0.875rem",
+                px: 2,
+                py: 2.5,
+                backdropFilter: "blur(10px)",
+                border: "1px solid rgba(255,255,255,0.3)",
+              }}
+            />
           </Box>
-          <Chip
-            label="AI Powered"
-            size="small"
-            sx={{
-              backgroundColor: "rgba(255,255,255,0.2)",
-              color: "white",
-              fontWeight: "bold",
-              backdropFilter: "blur(10px)",
-            }}
-          />
+          <Typography variant="body2" sx={{ opacity: 0.9, position: "relative", zIndex: 1 }}>
+            💡 Các khóa học được AI đề xuất dựa trên kết quả kiểm tra và mục tiêu của bạn
+          </Typography>
         </Box>
 
-        <Grid container spacing={3} justifyContent={ "center" }>
-          {aiRecommendedCourses.map((course) => (
+        <Grid container spacing={3} justifyContent={"center"}>
+          {displayedAiCourses.map((course, index) => (
             <Grid item key={course.courseId} xs={12} sm={6} md={4}>
-              <CourseCard course={course} />
+              <Box
+                sx={{
+                  position: "relative",
+                  height: "100%",
+                  animation: "fadeInUp 0.5s ease-out",
+                  animationDelay: `${index * 0.1}s`,
+                  animationFillMode: "both",
+                  "@keyframes fadeInUp": {
+                    from: {
+                      opacity: 0,
+                      transform: "translateY(20px)",
+                    },
+                    to: {
+                      opacity: 1,
+                      transform: "translateY(0)",
+                    },
+                  },
+                }}
+              >
+                {/* Priority Badge */}
+                {course.aiPriority && course.aiPriority <= 3 && (
+                  <Chip
+                    label={`Ưu tiên #${course.aiPriority}`}
+                    size="small"
+                    sx={{
+                      position: "absolute",
+                      top: 10,
+                      right: 10,
+                      zIndex: 2,
+                      background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                      color: "white",
+                      fontWeight: "bold",
+                      boxShadow: "0 2px 8px rgba(245, 158, 11, 0.4)",
+                    }}
+                  />
+                )}
+
+                <CourseCard course={course} />
+
+                {/* AI Reason Card */}
+                {course.aiReason && (
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      mt: 1.5,
+                      p: 2,
+                      background: "linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)",
+                      border: "2px solid #bae6fd",
+                      borderRadius: 2,
+                      position: "relative",
+                    }}
+                  >
+                    <Box display="flex" alignItems="start" gap={1}>
+                      <AutoAwesomeIcon
+                        sx={{
+                          fontSize: 20,
+                          color: "#0284c7",
+                          mt: 0.2,
+                          flexShrink: 0,
+                        }}
+                      />
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: "#0c4a6e",
+                          lineHeight: 1.6,
+                          fontWeight: 500,
+                        }}
+                      >
+                        {course.aiReason}
+                      </Typography>
+                    </Box>
+                  </Paper>
+                )}
+              </Box>
             </Grid>
           ))}
         </Grid>
@@ -233,7 +417,7 @@ export default function HomePage() {
           Khám phá những khóa học mới được cập nhật gần đây
         </Typography>
 
-        <Grid container spacing={3} justifyContent={ "center" }>
+        <Grid container spacing={3} justifyContent={"center"}>
           {newCourses.map((course) => (
             <Grid item key={course.courseId} xs={12} sm={6} md={4}>
               <CourseCard course={course} />
@@ -283,7 +467,7 @@ export default function HomePage() {
           {description}
         </Typography>
 
-        <Grid container spacing={3} justifyContent={ "center" }>
+        <Grid container spacing={3} justifyContent={"center"}>
           {topCourses.map((course) => (
             <Grid item key={course.courseId} xs={12} sm={6} md={4}>
               <CourseCard course={course} />

@@ -26,6 +26,8 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import { GetPlacementTestById } from "../../services/placementTestService";
 import { CreateTestResult } from "../../services/testResultService";
+import { RecommendCoursesBasedOnResult } from "../../services/aiRecommendationService";
+import { GetActiveLearningPath } from "../../services/learningPathService";
 
 export default function TestDetailPage() {
   const { testId } = useParams();
@@ -42,6 +44,8 @@ export default function TestDetailPage() {
   const [isForcedSubmit, setIsForcedSubmit] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [openResultDialog, setOpenResultDialog] = useState(false);
+  const [aiRecommendations, setAiRecommendations] = useState(null);
+  const [showAiDialog, setShowAiDialog] = useState(false);
   const navigate = useNavigate();
 
   const questionRefs = useRef({});
@@ -333,6 +337,42 @@ export default function TestDetailPage() {
 
       const response = await CreateTestResult(testResultData);
       console.log("Test result saved successfully:", response.data);
+
+      const resultData = response.data;
+      const resultID = resultData.ResultID || resultData.resultID || resultData.resultId;
+
+      // Call AI to recommend courses based on test result
+      try {
+        console.log("Calling AI to recommend courses...");
+
+        // Get active learning path from API (should get the NEWEST non-archived path)
+        const learningPathResponse = await GetActiveLearningPath();
+        const learningPathData = learningPathResponse.data;
+
+        console.log("Active Learning Path Data:", learningPathData);
+
+        if (learningPathData && learningPathData.learningPath && resultID) {
+          const lp = learningPathData.learningPath;
+          const learningPathID = lp.learningPathID;
+
+          console.log("Using Learning Path ID:", learningPathID);
+          console.log("Goal Content:", lp.goalContent);
+          console.log("Learning Path Status:", lp.status);
+
+          const aiResponse = await RecommendCoursesBasedOnResult(
+            learningPathID,
+            resultID
+          );
+
+          console.log("AI Course Recommendations:", aiResponse.data);
+          setAiRecommendations(aiResponse.data);
+        } else {
+          console.log("No active learning path found or result ID missing. Skipping AI recommendations.");
+        }
+      } catch (aiErr) {
+        console.error("Error getting AI recommendations:", aiErr);
+        // Don't block user if AI fails
+      }
     } catch (err) {
       console.error("Error saving test result:", err);
       if (err.response) {
