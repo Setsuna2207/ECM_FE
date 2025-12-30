@@ -33,7 +33,6 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import { GetUser, UpdateUser, ChangePassword, UpdateAvatar } from "../../services/userService";
 import { CreateUserGoal, UpdateUserGoal, GetAllUserGoals } from "../../services/userGoalService";
-import { AnalyzeGoalAndRecommendTest } from "../../services/aiRecommendationService";
 import { GetActiveLearningPath } from "../../services/learningPathService";
 
 export default function ProfilePage() {
@@ -46,15 +45,12 @@ export default function ProfilePage() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [aiFeedback, setAiFeedback] = useState(
-    "AI sẽ đưa ra gợi ý khóa học dựa trên mục tiêu và năng lực của bạn..."
+    "Thiết lập mục tiêu học tập của bạn để bắt đầu..."
   );
-  const [aiRecommendation, setAiRecommendation] = useState(null);
-  const [showRecommendationDialog, setShowRecommendationDialog] = useState(false);
   const [confirmMessage, setConfirmMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [analyzingGoal, setAnalyzingGoal] = useState(false);
 
   useEffect(() => {
     fetchUserData();
@@ -203,55 +199,39 @@ export default function ProfilePage() {
     try {
       setSaving(true);
       setErrorMessage("");
-      setAiFeedback("AI đang phân tích mục tiêu của bạn...");
 
       // Create or update UserGoal in backend
       let goalResponse;
       if (userGoalId) {
         // Update existing goal
-        goalResponse = await UpdateUserGoal(userGoalId, { content: learningGoal });
+        console.log("[SaveGoal] Updating existing goal:", userGoalId);
+        console.log("[SaveGoal] Sending data:", { Content: learningGoal });
+        goalResponse = await UpdateUserGoal(userGoalId, { Content: learningGoal });
       } else {
         // Create new goal
-        goalResponse = await CreateUserGoal({ content: learningGoal });
+        console.log("[SaveGoal] Creating new goal");
+        console.log("[SaveGoal] Sending data:", { Content: learningGoal });
+        goalResponse = await CreateUserGoal({ Content: learningGoal });
       }
 
       const goalData = goalResponse.data;
       const newGoalId = goalData.userGoalID || goalData.UserGoalID;
       setUserGoalId(newGoalId);
 
-      // Call AI to analyze goal and recommend test
-      // This will create a NEW learning path and clear old recommendations
-      setAnalyzingGoal(true);
-      const aiResponse = await AnalyzeGoalAndRecommendTest();
-      const aiData = aiResponse.data;
+      console.log("[SaveGoal] Goal saved with ID:", newGoalId);
 
-      console.log("AI Analysis Result:", aiData);
-
-      // Set AI recommendation
-      setAiRecommendation(aiData);
-      setAiFeedback(aiData.message);
-
-      // Show recommendation dialog
-      setShowRecommendationDialog(true);
       setEditingGoal(false);
-      setConfirmMessage("Mục tiêu mới đã được lưu! Lộ trình học tập cũ đã được làm mới.");
-      setTimeout(() => setConfirmMessage(""), 4000);
+      setConfirmMessage("✅ Mục tiêu đã được lưu thành công!");
+      setTimeout(() => setConfirmMessage(""), 5000);
     } catch (err) {
-      console.error("Error saving goal or analyzing:", err);
-      setErrorMessage(err.response?.data?.message || "Không thể lưu mục tiêu hoặc phân tích AI");
-      setAiFeedback("Có lỗi xảy ra khi phân tích mục tiêu. Vui lòng thử lại.");
+      console.error("[SaveGoal] Error:", err);
+      setErrorMessage(err.response?.data?.message || "Không thể lưu mục tiêu");
     } finally {
       setSaving(false);
-      setAnalyzingGoal(false);
     }
   };
 
-  const handleGoToTest = () => {
-    if (aiRecommendation && aiRecommendation.recommendedTestID) {
-      setShowRecommendationDialog(false);
-      navigate(`/test/${aiRecommendation.recommendedTestID}`);
-    }
-  };
+
 
   const loadUserGoal = async () => {
     try {
@@ -807,283 +787,7 @@ export default function ProfilePage() {
         </Paper>
       </Container>
 
-      {/* AI Recommendation Dialog - Improved UI */}
-      <Dialog
-        open={showRecommendationDialog}
-        onClose={() => setShowRecommendationDialog(false)}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 4,
-            overflow: "hidden",
-          }
-        }}
-      >
-        <DialogTitle
-          sx={{
-            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-            color: "white",
-            p: 3,
-            position: "relative",
-            overflow: "hidden",
-            "&::before": {
-              content: '""',
-              position: "absolute",
-              top: -30,
-              right: -30,
-              width: 120,
-              height: 120,
-              background: "rgba(255,255,255,0.1)",
-              borderRadius: "50%",
-            },
-          }}
-        >
-          <Box display="flex" alignItems="center" gap={2} position="relative" zIndex={1}>
-            <Box
-              sx={{
-                background: "rgba(255,255,255,0.2)",
-                borderRadius: 2,
-                p: 1,
-                display: "flex",
-                backdropFilter: "blur(10px)",
-              }}
-            >
-              <AutoAwesomeIcon sx={{ fontSize: 32 }} />
-            </Box>
-            <Box>
-              <Typography variant="h5" fontWeight="bold">
-                AI Recommendation
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
-                Phân tích mục tiêu và đề xuất lộ trình học tập
-              </Typography>
-            </Box>
-          </Box>
-        </DialogTitle>
 
-        <DialogContent sx={{ p: 3, mt: 2 }}>
-          {aiRecommendation && (
-            <Box>
-              <Alert
-                severity="success"
-                icon={<AutoAwesomeIcon />}
-                sx={{
-                  mb: 3,
-                  borderRadius: 2,
-                  "& .MuiAlert-message": {
-                    fontSize: "1rem",
-                  }
-                }}
-              >
-                {aiRecommendation.message}
-              </Alert>
-
-              <Grid container spacing={2.5}>
-                <Grid item xs={12}>
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: 3,
-                      background: "linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)",
-                      border: "2px solid #bae6fd",
-                      borderRadius: 3,
-                    }}
-                  >
-                    <Typography variant="caption" color="text.secondary" fontWeight="600">
-                      MỤC TIÊU CỦA BẠN
-                    </Typography>
-                    <Typography variant="h5" fontWeight="bold" color="primary" sx={{ mt: 1 }}>
-                      {aiRecommendation.parsedGoal}
-                    </Typography>
-                  </Paper>
-                </Grid>
-
-                <Grid item xs={12} sm={4}>
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: 2.5,
-                      backgroundColor: "#fef3c7",
-                      border: "2px solid #fde68a",
-                      borderRadius: 2,
-                      height: "100%",
-                    }}
-                  >
-                    <Typography variant="caption" color="#92400e" fontWeight="600">
-                      DANH MỤC
-                    </Typography>
-                    <Chip
-                      label={aiRecommendation.category}
-                      sx={{
-                        mt: 1,
-                        background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-                        color: "white",
-                        fontWeight: "bold",
-                        fontSize: "0.875rem",
-                      }}
-                    />
-                  </Paper>
-                </Grid>
-
-                <Grid item xs={12} sm={4}>
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: 2.5,
-                      backgroundColor: "#ddd6fe",
-                      border: "2px solid #c4b5fd",
-                      borderRadius: 2,
-                      height: "100%",
-                    }}
-                  >
-                    <Typography variant="caption" color="#5b21b6" fontWeight="600">
-                      KỸ NĂNG
-                    </Typography>
-                    <Chip
-                      label={aiRecommendation.skill}
-                      sx={{
-                        mt: 1,
-                        background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
-                        color: "white",
-                        fontWeight: "bold",
-                        fontSize: "0.875rem",
-                      }}
-                    />
-                  </Paper>
-                </Grid>
-
-                <Grid item xs={12} sm={4}>
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: 2.5,
-                      backgroundColor: "#d1fae5",
-                      border: "2px solid #a7f3d0",
-                      borderRadius: 2,
-                      height: "100%",
-                    }}
-                  >
-                    <Typography variant="caption" color="#065f46" fontWeight="600">
-                      TRÌNH ĐỘ
-                    </Typography>
-                    <Chip
-                      label={aiRecommendation.level}
-                      sx={{
-                        mt: 1,
-                        background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                        color: "white",
-                        fontWeight: "bold",
-                        fontSize: "0.875rem",
-                      }}
-                    />
-                  </Paper>
-                </Grid>
-
-                {aiRecommendation.targetScore && (
-                  <Grid item xs={12}>
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: 3,
-                        background: "linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)",
-                        border: "2px solid #fbbf24",
-                        borderRadius: 3,
-                        textAlign: "center",
-                      }}
-                    >
-                      <Typography variant="caption" color="#92400e" fontWeight="600">
-                        ĐIỂM MỤC TIÊU
-                      </Typography>
-                      <Typography variant="h2" fontWeight="bold" sx={{
-                        mt: 1,
-                        background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-                        WebkitBackgroundClip: "text",
-                        WebkitTextFillColor: "transparent",
-                      }}>
-                        {aiRecommendation.targetScore}
-                      </Typography>
-                    </Paper>
-                  </Grid>
-                )}
-
-                <Grid item xs={12}>
-                  <Divider sx={{ my: 1 }} />
-                  <Box display="flex" alignItems="center" gap={1} mb={2} mt={2}>
-                    <QuizIcon sx={{ color: "#667eea", fontSize: 28 }} />
-                    <Typography variant="h6" fontWeight="bold">
-                      Bài kiểm tra được đề xuất
-                    </Typography>
-                  </Box>
-                  <Paper
-                    elevation={3}
-                    sx={{
-                      p: 3,
-                      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                      color: "white",
-                      borderRadius: 3,
-                      position: "relative",
-                      overflow: "hidden",
-                      "&::before": {
-                        content: '""',
-                        position: "absolute",
-                        top: -20,
-                        right: -20,
-                        width: 100,
-                        height: 100,
-                        background: "rgba(255,255,255,0.1)",
-                        borderRadius: "50%",
-                      },
-                    }}
-                  >
-                    <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ position: "relative", zIndex: 1 }}>
-                      📝 {aiRecommendation.recommendedTestTitle}
-                    </Typography>
-                    <Typography variant="body1" sx={{ opacity: 0.95, lineHeight: 1.7, position: "relative", zIndex: 1 }}>
-                      Làm bài kiểm tra này để đánh giá trình độ hiện tại của bạn.
-                      Sau đó, AI sẽ đề xuất các khóa học phù hợp để giúp bạn đạt mục tiêu.
-                    </Typography>
-                  </Paper>
-                </Grid>
-              </Grid>
-            </Box>
-          )}
-        </DialogContent>
-
-        <DialogActions sx={{ p: 3, gap: 1 }}>
-          <Button
-            onClick={() => setShowRecommendationDialog(false)}
-            sx={{
-              textTransform: "none",
-              px: 3,
-              py: 1,
-              borderRadius: 2,
-            }}
-          >
-            Để sau
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleGoToTest}
-            startIcon={<QuizIcon />}
-            sx={{
-              textTransform: "none",
-              fontWeight: "bold",
-              px: 3,
-              py: 1,
-              borderRadius: 2,
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-              boxShadow: "0 4px 12px rgba(102, 126, 234, 0.4)",
-              "&:hover": {
-                background: "linear-gradient(135deg, #764ba2 0%, #667eea 100%)",
-                boxShadow: "0 6px 16px rgba(102, 126, 234, 0.5)",
-              },
-            }}
-          >
-            Làm bài kiểm tra ngay
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       <Footer />
     </>
