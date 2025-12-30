@@ -272,7 +272,7 @@ export default function TestResultPage() {
                 {/* Test Results Grid */}
                 {paginatedResults.length > 0 ? (
                     <>
-                        <Grid container spacing={3}>
+                        <Grid container spacing={3} justifyContent={"center"}>
                             {paginatedResults.map((result) => (
                                 <Grid item xs={12} md={6} key={result.resultId}>
                                     <TestResultCard result={result} />
