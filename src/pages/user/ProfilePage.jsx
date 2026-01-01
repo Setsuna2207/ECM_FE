@@ -605,9 +605,9 @@ export default function ProfilePage() {
             Hồ sơ học tập
           </Typography>
 
-          {/* Lịch sử + Theo dõi + Kết quả kiểm tra */}
+          {/* Lịch sử + Theo dõi + Kết quả kiểm tra + Gợi ý test */}
           <Grid container spacing={2} mb={3} justifyContent={"center"}>
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={3}>
               <Button
                 fullWidth
                 variant="contained"
@@ -632,7 +632,7 @@ export default function ProfilePage() {
               </Button>
             </Grid>
 
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={3}>
               <Button
                 fullWidth
                 variant="contained"
@@ -657,7 +657,7 @@ export default function ProfilePage() {
               </Button>
             </Grid>
 
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={3}>
               <Button
                 fullWidth
                 variant="contained"
@@ -679,6 +679,31 @@ export default function ProfilePage() {
                 onClick={() => navigate("/results")}
               >
                 Kết quả kiểm tra
+              </Button>
+            </Grid>
+
+            <Grid item xs={12} sm={3}>
+              <Button
+                fullWidth
+                variant="contained"
+                startIcon={<QuizIcon />}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: "bold",
+                  background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                  borderRadius: 2.5,
+                  py: 1.5,
+                  boxShadow: "0 4px 12px rgba(245, 158, 11, 0.3)",
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    background: "linear-gradient(135deg, #d97706 0%, #f59e0b 100%)",
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 6px 16px rgba(245, 158, 11, 0.4)",
+                  },
+                }}
+                onClick={() => navigate("/test-rcm")}
+              >
+                Gợi ý bài test
               </Button>
             </Grid>
           </Grid>

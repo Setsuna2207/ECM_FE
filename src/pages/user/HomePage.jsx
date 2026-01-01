@@ -9,6 +9,7 @@ import Navbar from "../../components/Navbar";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import FiberNewIcon from "@mui/icons-material/FiberNew";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import QuizIcon from "@mui/icons-material/Quiz";
 
 // Hàm giả lập AI recommendation dựa trên mục tiêu học tập của user
 const getAIRecommendations = (userGoal, courses) => {
@@ -538,6 +539,27 @@ export default function HomePage() {
                 Hãy tiếp tục hành trình học tập của bạn ngày hôm nay
               </Typography>
             </Box>
+            <Button
+              variant="contained"
+              startIcon={<QuizIcon />}
+              onClick={() => navigate("/test-rcm")}
+              sx={{
+                background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                textTransform: "none",
+                fontWeight: "bold",
+                borderRadius: 2.5,
+                px: 3,
+                py: 1.5,
+                boxShadow: "0 4px 12px rgba(245, 158, 11, 0.3)",
+                "&:hover": {
+                  background: "linear-gradient(135deg, #d97706 0%, #f59e0b 100%)",
+                  transform: "translateY(-2px)",
+                  boxShadow: "0 6px 16px rgba(245, 158, 11, 0.4)",
+                },
+              }}
+            >
+              Gợi ý bài test
+            </Button>
           </Box>
         )}
 

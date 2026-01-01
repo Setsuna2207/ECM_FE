@@ -50,7 +50,7 @@ export default function AppRouter() {
         <Route path="/tests" element={<TestPage />} />
         <Route path="/test/:testId" element={<TestDetailPage />} />
         <Route path="/results" element={<TestResultPage />} />
-        <Route path="/test-recommendation" element={<TestRcmPage />} />
+        <Route path="/test-rcm" element={<TestRcmPage />} />
 
 
         {/* Trang quản trị */}
