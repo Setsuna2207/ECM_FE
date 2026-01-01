@@ -141,6 +141,14 @@ export default function Navbar() {
   });
 
   const handleLogout = () => handleInteraction(() => {
+    const user = JSON.parse(localStorage.getItem("currentUser"));
+    const userId = user?.userID || user?.userId;
+
+    // Clear user-specific AI recommendations cache
+    if (userId) {
+      localStorage.removeItem(`aiRecommendations_${userId}`);
+    }
+
     localStorage.removeItem("currentUser");
     setCurrentUser(null);
     navigate("/");

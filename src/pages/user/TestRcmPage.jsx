@@ -151,19 +151,32 @@ const TestRcmPage = () => {
                     {!loading && !error && !suggestion && (
                         <Box py={4} textAlign="center">
                             <Alert severity="info" sx={{ mb: 3 }}>
-                                Không có gợi ý phù hợp. Vui lòng thiết lập mục tiêu học tập trong trang cá nhân.
+                                Bạn cần thiết lập mục tiêu học tập trước khi nhận gợi ý bài test từ AI.
                             </Alert>
-                            <Button
-                                variant="contained"
-                                onClick={() => navigate("/profile")}
-                                sx={{
-                                    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                                    textTransform: "none",
-                                    fontWeight: "bold",
-                                }}
-                            >
-                                Thiết lập mục tiêu
-                            </Button>
+                            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                                Hãy vào trang cá nhân để thiết lập mục tiêu học tập của bạn<br />
+                                (ví dụ: "IELTS READING 5.5", "TOEIC LISTENING 600", v.v.)
+                            </Typography>
+                            <Box display="flex" gap={2} justifyContent="center">
+                                <Button
+                                    variant="contained"
+                                    onClick={() => navigate("/profile")}
+                                    sx={{
+                                        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                                        textTransform: "none",
+                                        fontWeight: "bold",
+                                    }}
+                                >
+                                    Thiết lập mục tiêu
+                                </Button>
+                                <Button
+                                    variant="outlined"
+                                    onClick={() => navigate("/tests")}
+                                    sx={{ textTransform: "none" }}
+                                >
+                                    Xem tất cả bài test
+                                </Button>
+                            </Box>
                         </Box>
                     )}
 

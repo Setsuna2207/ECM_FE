@@ -12,11 +12,6 @@ import {
   Alert,
   IconButton,
   CircularProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Chip,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
@@ -33,7 +28,6 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import { GetUser, UpdateUser, ChangePassword, UpdateAvatar } from "../../services/userService";
 import { CreateUserGoal, UpdateUserGoal, GetAllUserGoals } from "../../services/userGoalService";
-import { GetActiveLearningPath } from "../../services/learningPathService";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -44,9 +38,6 @@ export default function ProfilePage() {
   const [userGoalId, setUserGoalId] = useState(null);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [aiFeedback, setAiFeedback] = useState(
-    "Thiết lập mục tiêu học tập của bạn để bắt đầu..."
-  );
   const [confirmMessage, setConfirmMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -55,6 +46,23 @@ export default function ProfilePage() {
   useEffect(() => {
     fetchUserData();
   }, [navigate]);
+
+  const loadUserGoals = async () => {
+    try {
+      const response = await GetAllUserGoals();
+      const goals = response.data;
+
+      if (goals && goals.length > 0) {
+        // Get the most recent goal
+        const latestGoal = goals[goals.length - 1];
+        setLearningGoal(latestGoal.Content || latestGoal.content || "");
+        setUserGoalId(latestGoal.UserGoalID || latestGoal.userGoalID);
+      }
+    } catch (err) {
+      console.error("Error loading user goals:", err);
+      // If API fails, user can still set a new goal
+    }
+  };
 
   const fetchUserData = async () => {
     try {
@@ -88,9 +96,8 @@ export default function ProfilePage() {
       console.log("ProfilePage - Saved user to localStorage:", normalizedUser);
       console.log("ProfilePage - userID:", normalizedUser.userID);
 
-      // Load learning goal from localStorage
-      const goal = localStorage.getItem("learningGoal") || "";
-      setLearningGoal(goal);
+      // Load user goals from backend
+      await loadUserGoals();
 
     } catch (err) {
       console.error("Error fetching user data:", err);
@@ -231,48 +238,6 @@ export default function ProfilePage() {
       setSaving(false);
     }
   };
-
-
-
-  const loadUserGoal = async () => {
-    try {
-      // First, try to get active learning path (includes goal and AI feedback)
-      const learningPathResponse = await GetActiveLearningPath();
-      const learningPathData = learningPathResponse.data;
-
-      if (learningPathData && learningPathData.learningPath) {
-        const lp = learningPathData.learningPath;
-        setLearningGoal(lp.goalContent || "");
-        setUserGoalId(lp.userGoalID);
-
-        // Set AI feedback if available
-        if (learningPathData.aiFeedback) {
-          const feedback = learningPathData.aiFeedback;
-          setAiFeedback(feedback.feedbackText || feedback.FeedbackText || "AI sẽ đưa ra gợi ý khóa học dựa trên mục tiêu và năng lực của bạn...");
-        }
-      } else {
-        // No active learning path, try to get user goals
-        const response = await GetAllUserGoals();
-        const goals = response.data;
-
-        if (goals && goals.length > 0) {
-          // Get the most recent goal
-          const latestGoal = goals[goals.length - 1];
-          setLearningGoal(latestGoal.Content || latestGoal.content || "");
-          setUserGoalId(latestGoal.UserGoalID || latestGoal.userGoalID);
-        }
-      }
-    } catch (err) {
-      console.error("Error loading user goals:", err);
-      // If API fails, user can still set a new goal
-    }
-  };
-
-  useEffect(() => {
-    if (user) {
-      loadUserGoal();
-    }
-  }, [user]);
 
   if (loading) {
     return (
@@ -761,7 +726,7 @@ export default function ProfilePage() {
 
           <Divider sx={{ my: 3 }} />
 
-          {/* Feedback AI */}
+          {/* AI Recommendations Info */}
           <Box>
             <Box display="flex" alignItems="center" gap={1} mb={2}>
               <AutoAwesomeIcon
@@ -796,7 +761,7 @@ export default function ProfilePage() {
                   fontStyle: "italic",
                 }}
               >
-                {aiFeedback}
+                💡 Sau khi thiết lập mục tiêu, hãy làm bài kiểm tra đầu vào để AI phân tích trình độ và đề xuất khóa học phù hợp
               </Typography>
               <Typography
                 variant="caption"
@@ -806,7 +771,7 @@ export default function ProfilePage() {
                   color: "#64748b",
                 }}
               >
-                💡 Các khóa học được đề xuất sẽ hiển thị ở đầu trang chủ
+                Xem gợi ý khóa học từ AI tại trang chủ sau khi hoàn thành bài kiểm tra
               </Typography>
             </Paper>
           </Box>

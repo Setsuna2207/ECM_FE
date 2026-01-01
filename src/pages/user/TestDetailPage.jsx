@@ -27,6 +27,7 @@ import Footer from "../../components/Footer";
 import { GetPlacementTestById } from "../../services/placementTestService";
 import { CreateTestResult } from "../../services/testResultService";
 import { GetActiveLearningPath } from "../../services/learningPathService";
+import { recommendCourse } from "../../services/aiService";
 
 export default function TestDetailPage() {
   const { testId } = useParams();
@@ -334,6 +335,28 @@ export default function TestDetailPage() {
 
       const response = await CreateTestResult(testResultData);
       console.log("Test result saved successfully:", response.data);
+
+      // Trigger AI course recommendation after saving test result
+      try {
+        console.log("=== TRIGGERING AI COURSE RECOMMENDATION ===");
+        const aiResponse = await recommendCourse();
+        console.log("AI Response Status:", aiResponse.status);
+        console.log("AI Response Data:", JSON.stringify(aiResponse.data, null, 2));
+
+        if (aiResponse.data && aiResponse.data.recommendations) {
+          console.log("Number of recommendations:", aiResponse.data.recommendations.length);
+          aiResponse.data.recommendations.forEach((rec, idx) => {
+            console.log(`Recommendation ${idx + 1}:`, {
+              courseId: rec.courseId || rec.courseID,
+              reason: rec.reason
+            });
+          });
+        }
+      } catch (aiErr) {
+        console.error("Error triggering AI course recommendation:", aiErr);
+        console.error("AI Error Response:", aiErr.response?.data);
+        // Don't block user flow if AI recommendation fails
+      }
     } catch (err) {
       console.error("Error saving test result:", err);
       if (err.response) {
@@ -975,13 +998,32 @@ export default function TestDetailPage() {
               sx={{ fontSize: 16, py: 1, px: 2 }}
             />
           </Box>
+
+          <Alert severity="info" sx={{ mt: 3, borderRadius: 2 }}>
+            <Typography variant="body2" fontWeight="600" mb={0.5}>
+              🎯 AI đang phân tích kết quả của bạn
+            </Typography>
+            <Typography variant="body2">
+              Các khóa học phù hợp với trình độ của bạn sẽ được hiển thị ở trang chủ
+            </Typography>
+          </Alert>
         </DialogContent>
         <DialogActions sx={{ justifyContent: "center", mb: 2 }}>
-          <Button variant="contained" onClick={() => navigate("/tests")} sx={{ mx: 1 }}>
-            Về danh sách bài kiểm tra
+          <Button
+            variant="contained"
+            onClick={() => navigate("/")}
+            sx={{
+              mx: 1,
+              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+              "&:hover": {
+                background: "linear-gradient(135deg, #764ba2 0%, #667eea 100%)",
+              }
+            }}
+          >
+            Xem khóa học được đề xuất
           </Button>
-          <Button variant="outlined" onClick={() => setOpenResultDialog(false)} sx={{ mx: 1 }}>
-            Đóng
+          <Button variant="outlined" onClick={() => navigate("/tests")} sx={{ mx: 1 }}>
+            Về danh sách bài kiểm tra
           </Button>
         </DialogActions>
       </Dialog>

@@ -1,9 +1,10 @@
-import { Grid, Container, Typography, Button, Box, Chip, Avatar, CircularProgress, Alert } from "@mui/material";
+import { Grid, Container, Typography, Button, Box, Chip, Avatar, CircularProgress, Alert, Paper } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import CourseCard from "../../components/CourseCard";
-import { GetAllCourses } from "../../services/courseService";
-import { GetActiveLearningPath } from "../../services/learningPathService";
+import RcmCourseCard from "../../components/RcmCourseCard";
+import { GetAllCourses, GetCourseById } from "../../services/courseService";
+import { recommendCourse } from "../../services/aiService";
 import Footer from "../../components/Footer";
 import Navbar from "../../components/Navbar";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
@@ -11,115 +12,110 @@ import FiberNewIcon from "@mui/icons-material/FiberNew";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import QuizIcon from "@mui/icons-material/Quiz";
 
-// Hàm giả lập AI recommendation dựa trên mục tiêu học tập của user
-const getAIRecommendations = (userGoal, courses) => {
-  if (!userGoal || userGoal.trim() === "") return [];
-
-  const goalLower = userGoal.toLowerCase();
-
-  // Phân tích mục tiêu để tìm keywords
-  const keywords = {
-    toeic: goalLower.includes("toeic"),
-    ielts: goalLower.includes("ielts"),
-    toefl: goalLower.includes("toefl"),
-    grammar: goalLower.includes("grammar") || goalLower.includes("ngữ pháp"),
-    vocabulary: goalLower.includes("vocabulary") || goalLower.includes("từ vựng"),
-    listening: goalLower.includes("listening") || goalLower.includes("nghe"),
-    speaking: goalLower.includes("speaking") || goalLower.includes("nói"),
-    reading: goalLower.includes("reading") || goalLower.includes("đọc"),
-    writing: goalLower.includes("writing") || goalLower.includes("viết"),
-  };
-
-  // Lọc courses phù hợp với keywords
-  const recommended = courses.filter((course) => {
-    const categories = course.Categories || course.categories || [];
-
-    return categories.some((cat) => {
-      const catName = typeof cat === 'string' ? cat.toLowerCase() : cat.name?.toLowerCase() || '';
-
-      if (keywords.toeic && catName.includes("toeic")) return true;
-      if (keywords.ielts && catName.includes("ielts")) return true;
-      if (keywords.toefl && catName.includes("toefl")) return true;
-      if (keywords.grammar && catName.includes("grammar")) return true;
-      if (keywords.vocabulary && catName.includes("vocabulary")) return true;
-      if (keywords.listening && catName.includes("listening")) return true;
-      if (keywords.speaking && catName.includes("speaking")) return true;
-      if (keywords.reading && catName.includes("reading")) return true;
-      if (keywords.writing && catName.includes("writing")) return true;
-
-      return false;
-    });
-  });
-
-  // Sắp xếp theo rating và trả về tối đa 6 courses
-  return recommended
-    .sort((a, b) => (b.AverageRating || b.averageRating || 0) - (a.AverageRating || a.averageRating || 0))
-    .slice(0, 6);
-};
-
 export default function HomePage() {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
-  const [learningGoal, setLearningGoal] = useState("");
   const [courses, setCourses] = useState([]);
   const [aiRecommendedCourses, setAiRecommendedCourses] = useState([]);
+  const [displayedAiCourses, setDisplayedAiCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Lấy thông tin user
+    // Get user info
     const user = JSON.parse(localStorage.getItem("currentUser"));
     setCurrentUser(user);
 
-    // Fetch courses and learning path from backend
-    fetchCourses();
-    if (user) {
-      fetchLearningPath();
-    }
+    // Fetch courses first, then AI recommendations
+    const loadData = async () => {
+      await fetchCourses();
+      if (user) {
+        fetchAIRecommendations();
+      }
+    };
+
+    loadData();
   }, []);
 
-  const fetchLearningPath = async () => {
+  const fetchAIRecommendations = async () => {
     try {
-      const response = await GetActiveLearningPath();
-      const learningPathData = response.data;
+      console.log("=== FETCHING AI RECOMMENDATIONS ===");
 
-      console.log("HomePage - Learning Path Data:", learningPathData);
+      // Get user-specific cache key
+      const user = JSON.parse(localStorage.getItem("currentUser"));
+      const userId = user?.userID || user?.userId;
+      const cacheKey = `aiRecommendations_${userId}`;
 
-      if (learningPathData && learningPathData.learningPath) {
-        const lp = learningPathData.learningPath;
-        setLearningGoal(lp.goalContent || "");
+      // Try to get cached recommendations first
+      const cachedRecs = localStorage.getItem(cacheKey);
+      if (cachedRecs) {
+        try {
+          const parsed = JSON.parse(cachedRecs);
+          console.log("Found cached recommendations for user:", userId, parsed.length);
+          setAiRecommendedCourses(parsed);
+        } catch (e) {
+          console.error("Error parsing cached recommendations:", e);
+        }
+      }
 
-        console.log("HomePage - Learning Path ID:", lp.learningPathID);
-        console.log("HomePage - Initial Result ID:", lp.initialResultID);
-        console.log("HomePage - Recommended Courses:", lp.recommendedCourses);
+      const response = await recommendCourse();
+      console.log("AI Response full:", response);
+      console.log("AI Response data:", response.data);
+      console.log("AI Response data type:", typeof response.data);
 
-        // IMPORTANT: Only show recommendations if user has completed initial test
-        // This prevents showing old recommendations when goal is changed
-        if (lp.initialResultID && lp.recommendedCourses) {
-          let recommendedCourses = lp.recommendedCourses;
-          if (typeof recommendedCourses === 'string') {
-            try {
-              recommendedCourses = JSON.parse(recommendedCourses);
-            } catch (e) {
-              console.error("Error parsing recommended courses:", e);
-              recommendedCourses = [];
-            }
-          }
-          console.log("HomePage - Parsed Recommended Courses:", recommendedCourses);
-          setAiRecommendedCourses(Array.isArray(recommendedCourses) ? recommendedCourses : []);
-        } else {
-          // No test completed yet, clear recommendations
-          console.log("HomePage - No test result yet, clearing recommendations");
+      if (response.data) {
+        console.log("AI Response data keys:", Object.keys(response.data));
+        console.log("AI Response data stringified:", JSON.stringify(response.data, null, 2));
+      }
+
+      if (response.data && response.data.recommendations) {
+        console.log("Recommendations found:", response.data.recommendations.length);
+        console.log("Recommendations:", response.data.recommendations);
+        setAiRecommendedCourses(response.data.recommendations);
+
+        // Cache recommendations in localStorage with user-specific key
+        localStorage.setItem(cacheKey, JSON.stringify(response.data.recommendations));
+      } else if (response.data && Array.isArray(response.data)) {
+        console.log("Response is array:", response.data.length);
+        setAiRecommendedCourses(response.data);
+        localStorage.setItem(cacheKey, JSON.stringify(response.data));
+      } else {
+        console.log("No recommendations in response");
+        // Keep cached recommendations if API returns empty
+        if (!cachedRecs) {
           setAiRecommendedCourses([]);
         }
-      } else {
-        console.log("HomePage - No active learning path found");
-        setAiRecommendedCourses([]);
       }
     } catch (err) {
-      console.error("Error fetching learning path:", err);
-      // If no learning path, user can still browse courses
-      setAiRecommendedCourses([]);
+      console.error("Error fetching AI recommendations:", err);
+      console.error("Error response:", err.response?.data);
+      console.error("Error status:", err.response?.status);
+
+      // Get user-specific cache key
+      const user = JSON.parse(localStorage.getItem("currentUser"));
+      const userId = user?.userID || user?.userId;
+      const cacheKey = `aiRecommendations_${userId}`;
+
+      // Check if it's because user hasn't taken test or set goal
+      if (err.response?.status === 404 || err.response?.status === 400) {
+        console.log("User needs to set goal and take test first");
+        localStorage.removeItem(cacheKey);
+        setAiRecommendedCourses([]);
+      } else {
+        // Try to use cached recommendations on error
+        const cachedRecs = localStorage.getItem(cacheKey);
+        if (cachedRecs) {
+          try {
+            const parsed = JSON.parse(cachedRecs);
+            console.log("Using cached recommendations due to error:", parsed.length);
+            setAiRecommendedCourses(parsed);
+          } catch (e) {
+            setAiRecommendedCourses([]);
+          }
+        } else {
+          setAiRecommendedCourses([]);
+        }
+      }
     }
   };
 
@@ -153,31 +149,58 @@ export default function HomePage() {
     }
   };
 
-  // Get full course details for AI recommended courses
-  const getAiRecommendedCoursesWithDetails = () => {
-    if (!aiRecommendedCourses || aiRecommendedCourses.length === 0) {
-      // Fallback to old keyword matching if no AI recommendations
-      return getAIRecommendations(learningGoal, courses);
-    }
+  // Map AI recommendations to full course details whenever courses or recommendations change
+  // Fetch full course details for each AI recommendation
+  useEffect(() => {
+    const fetchRecommendedCourses = async () => {
+      if (aiRecommendedCourses.length > 0) {
+        console.log("=== FETCHING RECOMMENDED COURSES ===");
+        console.log("AI recommendations:", aiRecommendedCourses.length);
 
-    // Map AI recommended course IDs to full course objects
-    return aiRecommendedCourses
-      .map(aiCourse => {
-        const fullCourse = courses.find(c => c.courseId === aiCourse.courseID);
-        if (fullCourse) {
-          return {
-            ...fullCourse,
-            aiReason: aiCourse.reason,
-            aiPriority: aiCourse.priority
-          };
-        }
-        return null;
-      })
-      .filter(c => c !== null)
-      .sort((a, b) => a.aiPriority - b.aiPriority);
-  };
+        const coursePromises = aiRecommendedCourses.map(async (aiCourse, index) => {
+          const courseId = aiCourse.courseID || aiCourse.courseId || aiCourse.CourseID || aiCourse.courseid;
+          console.log(`Fetching course ${index + 1}: courseId=${courseId}`);
 
-  const displayedAiCourses = getAiRecommendedCoursesWithDetails();
+          try {
+            const response = await GetCourseById(courseId);
+            const courseData = response.data;
+
+            // Normalize property names
+            const normalizedCourse = {
+              courseId: courseData.CourseID || courseData.courseId,
+              title: courseData.Title || courseData.title,
+              description: courseData.Description || courseData.description,
+              thumbnailUrl: courseData.ThumbnailUrl || courseData.thumbnailUrl,
+              createdAt: courseData.CreatedAt || courseData.createdAt,
+              totalLessons: courseData.TotalLessons || courseData.totalLessons || 0,
+              totalReviews: courseData.TotalReviews || courseData.totalReviews || 0,
+              rating: courseData.AverageRating || courseData.averageRating || 0,
+              categories: courseData.Categories || courseData.categories || [],
+              aiReason: aiCourse.reason || aiCourse.Reason,
+              aiPriority: index + 1
+            };
+
+            console.log(`✓ Fetched course: ${normalizedCourse.title}`);
+            return normalizedCourse;
+          } catch (err) {
+            console.error(`✗ Error fetching course ${courseId}:`, err);
+            return null;
+          }
+        });
+
+        const fetchedCourses = await Promise.all(coursePromises);
+        const validCourses = fetchedCourses.filter(c => c !== null);
+
+        console.log("Successfully fetched courses:", validCourses.length);
+        setDisplayedAiCourses(validCourses);
+      } else {
+        console.log("No AI recommendations to fetch");
+        setDisplayedAiCourses([]);
+      }
+    };
+
+    fetchRecommendedCourses();
+  }, [aiRecommendedCourses]);
 
   // New Courses - Sort by createdAt (newest first), max 6
   const newCourses = [...courses]
@@ -219,7 +242,92 @@ export default function HomePage() {
 
   // Hàm hiển thị AI Recommendations
   const renderAIRecommendations = () => {
-    if (!currentUser || displayedAiCourses.length === 0) return null;
+    if (!currentUser) return null;
+
+    // Show message if user hasn't taken test yet
+    if (displayedAiCourses.length === 0) {
+      return (
+        <Box sx={{ mb: 6 }}>
+          <Paper
+            sx={{
+              p: 4,
+              borderRadius: 4,
+              background: "linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)",
+              border: "2px solid #bae6fd",
+              textAlign: "center",
+            }}
+          >
+            <AutoAwesomeIcon
+              sx={{
+                fontSize: 60,
+                color: "#0284c7",
+                mb: 2,
+                animation: "pulse 2s infinite",
+                "@keyframes pulse": {
+                  "0%, 100%": { opacity: 1 },
+                  "50%": { opacity: 0.5 },
+                },
+              }}
+            />
+            <Typography variant="h5" fontWeight="bold" color="#0c4a6e" mb={2}>
+              Chưa có gợi ý khóa học từ AI
+            </Typography>
+            <Typography variant="body1" color="#0369a1" mb={1}>
+              Để nhận được gợi ý khóa học phù hợp, bạn cần:
+            </Typography>
+            <Box sx={{ textAlign: "left", maxWidth: 500, mx: "auto", mb: 3 }}>
+              <Typography variant="body2" color="#0369a1" sx={{ mb: 1 }}>
+                1️⃣ Thiết lập mục tiêu học tập trong trang cá nhân
+              </Typography>
+              <Typography variant="body2" color="#0369a1" sx={{ mb: 1 }}>
+                2️⃣ Làm bài kiểm tra đầu vào để AI đánh giá trình độ
+              </Typography>
+              <Typography variant="body2" color="#0369a1">
+                3️⃣ AI sẽ tự động đề xuất khóa học phù hợp với bạn
+              </Typography>
+            </Box>
+            <Box display="flex" gap={2} justifyContent="center">
+              <Button
+                variant="contained"
+                size="large"
+                onClick={() => navigate("/profile")}
+                sx={{
+                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                  textTransform: "none",
+                  fontWeight: "bold",
+                  px: 3,
+                  py: 1.5,
+                  borderRadius: 2.5,
+                  boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)",
+                  "&:hover": {
+                    background: "linear-gradient(135deg, #764ba2 0%, #667eea 100%)",
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 6px 16px rgba(102, 126, 234, 0.4)",
+                  },
+                }}
+              >
+                Thiết lập mục tiêu
+              </Button>
+              <Button
+                variant="outlined"
+                size="large"
+                startIcon={<QuizIcon />}
+                onClick={() => navigate("/tests")}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: "bold",
+                  px: 3,
+                  py: 1.5,
+                  borderRadius: 2.5,
+                }}
+              >
+                Làm bài kiểm tra
+              </Button>
+            </Box>
+          </Paper>
+        </Box>
+      );
+    }
 
     return (
       <Box sx={{ mb: 6 }}>
@@ -283,23 +391,25 @@ export default function HomePage() {
                 Gợi ý dành riêng cho bạn
               </Typography>
               <Typography variant="body1" sx={{ opacity: 0.95 }}>
-                Dựa trên mục tiêu: <strong>"{learningGoal || "Chưa thiết lập"}"</strong>
+                Dựa trên kết quả kiểm tra và mục tiêu học tập của bạn
               </Typography>
             </Box>
-            <Chip
-              icon={<AutoAwesomeIcon sx={{ color: "white !important" }} />}
-              label="AI Powered"
-              sx={{
-                backgroundColor: "rgba(255,255,255,0.25)",
-                color: "white",
-                fontWeight: "bold",
-                fontSize: "0.875rem",
-                px: 2,
-                py: 2.5,
-                backdropFilter: "blur(10px)",
-                border: "1px solid rgba(255,255,255,0.3)",
-              }}
-            />
+            <Box display="flex" gap={1}>
+              <Chip
+                icon={<AutoAwesomeIcon sx={{ color: "white !important" }} />}
+                label="AI Powered"
+                sx={{
+                  backgroundColor: "rgba(255,255,255,0.25)",
+                  color: "white",
+                  fontWeight: "bold",
+                  fontSize: "0.875rem",
+                  px: 2,
+                  py: 2.5,
+                  backdropFilter: "blur(10px)",
+                  border: "1px solid rgba(255,255,255,0.3)",
+                }}
+              />
+            </Box>
           </Box>
           <Typography variant="body2" sx={{ opacity: 0.9, position: "relative", zIndex: 1 }}>
             💡 Các khóa học được AI đề xuất dựa trên kết quả kiểm tra và mục tiêu của bạn
@@ -311,8 +421,6 @@ export default function HomePage() {
             <Grid item key={course.courseId} xs={12} sm={6} md={4}>
               <Box
                 sx={{
-                  position: "relative",
-                  height: "100%",
                   animation: "fadeInUp 0.5s ease-out",
                   animationDelay: `${index * 0.1}s`,
                   animationFillMode: "both",
@@ -328,61 +436,7 @@ export default function HomePage() {
                   },
                 }}
               >
-                {/* Priority Badge */}
-                {course.aiPriority && course.aiPriority <= 3 && (
-                  <Chip
-                    label={`Ưu tiên #${course.aiPriority}`}
-                    size="small"
-                    sx={{
-                      position: "absolute",
-                      top: 10,
-                      right: 10,
-                      zIndex: 2,
-                      background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-                      color: "white",
-                      fontWeight: "bold",
-                      boxShadow: "0 2px 8px rgba(245, 158, 11, 0.4)",
-                    }}
-                  />
-                )}
-
-                <CourseCard course={course} />
-
-                {/* AI Reason Card */}
-                {course.aiReason && (
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      mt: 1.5,
-                      p: 2,
-                      background: "linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)",
-                      border: "2px solid #bae6fd",
-                      borderRadius: 2,
-                      position: "relative",
-                    }}
-                  >
-                    <Box display="flex" alignItems="start" gap={1}>
-                      <AutoAwesomeIcon
-                        sx={{
-                          fontSize: 20,
-                          color: "#0284c7",
-                          mt: 0.2,
-                          flexShrink: 0,
-                        }}
-                      />
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color: "#0c4a6e",
-                          lineHeight: 1.6,
-                          fontWeight: 500,
-                        }}
-                      >
-                        {course.aiReason}
-                      </Typography>
-                    </Box>
-                  </Paper>
-                )}
+                <RcmCourseCard course={course} />
               </Box>
             </Grid>
           ))}
