@@ -43,29 +43,31 @@ export default function Navbar() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
-useEffect(() => {
-  const loadUser = () => {
-    const savedUser = JSON.parse(localStorage.getItem("currentUser"));
-    console.log("Navbar - Loading user:", savedUser);
-    console.log("Navbar - Avatar:", savedUser?.avatar);
-    setCurrentUser(savedUser);
-  };
+  useEffect(() => {
+    const loadUser = () => {
+      const savedUser = JSON.parse(localStorage.getItem("currentUser"));
+      console.log("Navbar - Loading user:", savedUser);
+      console.log("Navbar - Avatar:", savedUser?.avatar);
+      console.log("Navbar - Roles:", savedUser?.roles);
+      console.log("Navbar - Access:", savedUser?.access);
+      setCurrentUser(savedUser);
+    };
 
-  loadUser();
-
-  const handleUserUpdate = () => {
-    console.log("🔍 Navbar - User updated event received");
     loadUser();
-  };
 
-  window.addEventListener('storage', handleUserUpdate);
-  window.addEventListener('userUpdated', handleUserUpdate);
+    const handleUserUpdate = () => {
+      console.log("🔍 Navbar - User updated event received");
+      loadUser();
+    };
 
-  return () => {
-    window.removeEventListener('storage', handleUserUpdate);
-    window.removeEventListener('userUpdated', handleUserUpdate);
-  };
-}, []);
+    window.addEventListener('storage', handleUserUpdate);
+    window.addEventListener('userUpdated', handleUserUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleUserUpdate);
+      window.removeEventListener('userUpdated', handleUserUpdate);
+    };
+  }, []);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -475,114 +477,84 @@ useEffect(() => {
             </>
           ) : (
             <>
-              {currentUser.access === "admin" || currentUser.roles === "Admin" ? (
-                <>
-                  <Tooltip title="Làm bài test" arrow>
-                    <Button
-                      variant="contained"
-                      startIcon={<Quiz />}
-                      onClick={() => handleInteraction(() => navigate("/tests"))}
-                      sx={{
-                        background: "linear-gradient(135deg, #4038d2ff 0%, #73169aff 100%)",
-                        color: "#fff",
-                        borderRadius: 3,
-                        textTransform: "none",
-                        fontWeight: 700,
-                        px: 2.5,
-                        py: 0.5,
-                        boxShadow: "0 4px 12px rgba(64, 56, 210, 0.3)",
-                        transition: "all 0.3s",
-                        "&:hover": {
-                          background: "linear-gradient(135deg, #73169aff 0%, #4038d2ff 100%)",
-                          transform: "translateY(-2px)",
-                          boxShadow: "0 6px 16px rgba(64, 56, 210, 0.4)",
-                        },
-                      }}
-                    >
-                      Test
-                    </Button>
-                  </Tooltip>
+              <Tooltip title="Làm bài test" arrow>
+                <Button
+                  variant="contained"
+                  startIcon={<Quiz />}
+                  onClick={() => handleInteraction(() => navigate("/tests"))}
+                  sx={{
+                    background: "linear-gradient(135deg, #4038d2ff 0%, #73169aff 100%)",
+                    color: "#fff",
+                    borderRadius: 3,
+                    textTransform: "none",
+                    fontWeight: 700,
+                    px: 2.5,
+                    py: 0.5,
+                    boxShadow: "0 4px 12px rgba(64, 56, 210, 0.3)",
+                    transition: "all 0.3s",
+                    "&:hover": {
+                      background: "linear-gradient(135deg, #73169aff 0%, #4038d2ff 100%)",
+                      transform: "translateY(-2px)",
+                      boxShadow: "0 6px 16px rgba(64, 56, 210, 0.4)",
+                    },
+                  }}
+                >
+                  Test
+                </Button>
+              </Tooltip>
 
-                  <Tooltip title="Quản trị hệ thống" arrow>
-                    <Button
-                      variant="contained"
-                      startIcon={<Dashboard />}
-                      onClick={() => handleInteraction(() => navigate("/admin"))}
-                      sx={{
-                        background: "linear-gradient(135deg, #4038d2ff 0%, #73169aff 100%)",
-                        color: "#fff",
-                        borderRadius: 3,
-                        textTransform: "none",
-                        fontWeight: 700,
-                        px: 2.5,
-                        py: 0.5,
-                        boxShadow: "0 4px 12px rgba(64, 56, 210, 0.3)",
-                        transition: "all 0.3s",
-                        "&:hover": {
-                          background: "linear-gradient(135deg, #73169aff 0%, #4038d2ff 100%)",
-                          transform: "translateY(-2px)",
-                          boxShadow: "0 6px 16px rgba(64, 56, 210, 0.4)",
-                        },
-                      }}
-                    >
-                      Admin
-                    </Button>
-                  </Tooltip>
-                </>
+              {currentUser.roles === "Admin" || currentUser.access === "admin" ? (
+                <Tooltip title="Quản trị hệ thống" arrow>
+                  <Button
+                    variant="contained"
+                    startIcon={<Dashboard />}
+                    onClick={() => handleInteraction(() => navigate("/admin"))}
+                    sx={{
+                      background: "linear-gradient(135deg, #4038d2ff 0%, #73169aff 100%)",
+                      color: "#fff",
+                      borderRadius: 3,
+                      textTransform: "none",
+                      fontWeight: 700,
+                      px: 2.5,
+                      py: 0.5,
+                      boxShadow: "0 4px 12px rgba(64, 56, 210, 0.3)",
+                      transition: "all 0.3s",
+                      "&:hover": {
+                        background: "linear-gradient(135deg, #73169aff 0%, #4038d2ff 100%)",
+                        transform: "translateY(-2px)",
+                        boxShadow: "0 6px 16px rgba(64, 56, 210, 0.4)",
+                      },
+                    }}
+                  >
+                    Admin
+                  </Button>
+                </Tooltip>
               ) : (
-                <>
-                  <Tooltip title="Làm bài test" arrow>
-                    <Button
-                      variant="contained"
-                      startIcon={<Quiz />}
-                      onClick={() => handleInteraction(() => navigate("/tests"))}
-                      sx={{
-                        background: "linear-gradient(135deg, #4038d2ff 0%, #73169aff 100%)",
-                        color: "#fff",
-                        borderRadius: 3,
-                        textTransform: "none",
-                        fontWeight: 700,
-                        px: 2.5,
-                        py: 0.5,
-                        boxShadow: "0 4px 12px rgba(64, 56, 210, 0.3)",
-                        transition: "all 0.3s",
-                        "&:hover": {
-                          background: "linear-gradient(135deg, #73169aff 0%, #4038d2ff 100%)",
-                          transform: "translateY(-2px)",
-                          boxShadow: "0 6px 16px rgba(64, 56, 210, 0.4)",
-                        },
-                      }}
-                    >
-                      Test
-                    </Button>
-                  </Tooltip>
-
-                  <Tooltip title="Hồ sơ cá nhân" arrow>
-                    <Button
-                      variant="contained"
-                      startIcon={<Person />}
-                      onClick={() => handleInteraction(() => navigate("/profile"))}
-                      sx={{
-                        background: "linear-gradient(135deg, #4038d2ff 0%, #73169aff 100%)",
-                        color: "#fff",
-                        borderRadius: 3,
-                        textTransform: "none",
-                        fontWeight: 700,
-                        px: 2.5,
-                        py: 0.5,
-                        boxShadow: "0 4px 12px rgba(64, 56, 210, 0.3)",
-                        transition: "all 0.3s",
-                        "&:hover": {
-                          background: "linear-gradient(135deg, #73169aff 0%, #4038d2ff 100%)",
-                          transform: "translateY(-2px)",
-                          boxShadow: "0 6px 16px rgba(64, 56, 210, 0.4)",
-                        },
-                      }}
-                    >
-                      Hồ sơ
-                    </Button>
-                  </Tooltip>
-                </>
+                <Tooltip title="Hồ sơ cá nhân" arrow>
+                  <Button
+                    variant="contained"
+                    startIcon={<Person />}
+                    onClick={() => handleInteraction(() => navigate("/profile"))}
+                    sx={{
+                      background: "linear-gradient(135deg, #4038d2ff 0%, #73169aff 100%)",
+                      color: "#fff",
+                      borderRadius: 3,
+                      textTransform: "none",
+                      fontWeight: 700,
+                      px: 2.5,
+                      py: 0.5,
+                      boxShadow: "0 4px 12px rgba(64, 56, 210, 0.3)",
+                      transition: "all 0.3s",
+                      "&:hover": {
+                        background: "linear-gradient(135deg, #73169aff 0%, #4038d2ff 100%)",
+                        transform: "translateY(-2px)",
+                        boxShadow: "0 6px 16px rgba(64, 56, 210, 0.4)",
+                      },
+                    }}
+                  >
+                    Hồ sơ
+                  </Button>
+                </Tooltip>
               )}
 
               <Tooltip title="Đăng xuất" arrow>

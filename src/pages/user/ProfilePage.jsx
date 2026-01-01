@@ -77,6 +77,7 @@ export default function ProfilePage() {
         email: userData.Email || userData.email,
         fullName: userData.FullName || userData.fullName || "",
         avatar: userData.Avatar || userData.avatar || "",
+        roles: userData.Roles || userData.roles || savedUser.roles || "",
       };
 
       setUser(normalizedUser);
