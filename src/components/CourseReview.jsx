@@ -20,6 +20,7 @@ import {
   UpdateReview,
   DeleteReview,
 } from "../services/reviewService";
+import { GetHistoryByCourse } from "../services/historyService";
 
 export default function CourseReview({ courseId }) {
   const [reviews, setReviews] = useState([]);
@@ -29,6 +30,8 @@ export default function CourseReview({ courseId }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [courseProgress, setCourseProgress] = useState(null);
+  const [canReview, setCanReview] = useState(false);
 
   // Get current user from localStorage
   const currentUser = JSON.parse(localStorage.getItem("currentUser")) || {};
@@ -47,6 +50,18 @@ export default function CourseReview({ courseId }) {
       setLoading(true);
       setError(null);
 
+      // Fetch user's course progress
+      try {
+        const historyRes = await GetHistoryByCourse(courseId);
+        const progress = historyRes.data?.progress || historyRes.data?.Progress || 0;
+        setCourseProgress(progress);
+        setCanReview(progress >= 100);
+      } catch (err) {
+        // User hasn't started the course yet
+        setCourseProgress(0);
+        setCanReview(false);
+      }
+
       const reviewsRes = await GetReviewByCourseId(courseId);
       const reviewsData = reviewsRes.data || [];
 
@@ -63,6 +78,15 @@ export default function CourseReview({ courseId }) {
       });
 
       setReviews(sortedReviews);
+
+      // Check if current user already has a review
+      const userReview = sortedReviews.find(r => (r.userID || r.userId) === currentUserId);
+      if (userReview) {
+        setIsEditing(true);
+        setEditingReview(userReview);
+        setNewRating(userReview.reviewScore || userReview.ratingScore || 0);
+        setNewContent(userReview.reviewContent || userReview.ratingContent || "");
+      }
     } catch (err) {
       console.error("Error fetching data:", err);
       setError("Lỗi khi tải đánh giá");
@@ -91,7 +115,10 @@ export default function CourseReview({ courseId }) {
   }, [reviews]);
 
   const handleSubmit = async () => {
-    if (!newContent.trim() || newRating === 0) return;
+    if (!newContent.trim() || newRating === 0) {
+      setError("Vui lòng nhập đầy đủ điểm đánh giá và nội dung");
+      return;
+    }
 
     try {
       setSubmitting(true);
@@ -99,8 +126,8 @@ export default function CourseReview({ courseId }) {
 
       if (isEditing) {
         await UpdateReview(editingReview.userID || editingReview.userId, editingReview.courseID || editingReview.courseId, {
-          reviewScore: newRating,
-          reviewContent: newContent,
+          ReviewScore: newRating,
+          ReviewContent: newContent,
         });
         const updated = reviews.map((r) =>
           (r.userID || r.userId) === (editingReview.userID || editingReview.userId) &&
@@ -114,25 +141,40 @@ export default function CourseReview({ courseId }) {
             : r
         );
         setReviews(updated);
-        setIsEditing(false);
-        setEditingReview(null);
       } else {
         const response = await CreateReview({
-          userID: currentUserId,
-          courseID: parseInt(courseId, 10),
-          reviewScore: newRating,
-          reviewContent: newContent,
+          CourseID: parseInt(courseId, 10),
+          ReviewScore: newRating,
+          ReviewContent: newContent,
         });
         // Add new review and re-sort to put it at the top
         const newReviews = [response.data, ...reviews];
         setReviews(newReviews);
+        setIsEditing(true);
+        setEditingReview(response.data);
       }
-
-      setNewContent("");
-      setNewRating(0);
     } catch (err) {
       console.error("Error submitting review:", err);
-      setError("Lỗi khi lưu đánh giá");
+      console.error("Error response:", err.response);
+
+      // Handle different error response formats
+      let errorMsg = "Lỗi khi lưu đánh giá";
+
+      if (err.response?.data) {
+        if (typeof err.response.data === 'string') {
+          errorMsg = err.response.data;
+        } else if (err.response.data.message) {
+          errorMsg = err.response.data.message;
+        } else if (err.response.data.errors) {
+          // Handle validation errors
+          const errors = Object.values(err.response.data.errors).flat();
+          errorMsg = errors.join(', ');
+        } else if (err.response.data.title) {
+          errorMsg = err.response.data.title;
+        }
+      }
+
+      setError(errorMsg);
     } finally {
       setSubmitting(false);
     }
@@ -147,6 +189,14 @@ export default function CourseReview({ courseId }) {
         setReviews(reviews.filter((r) =>
           (r.userID || r.userId) !== userId || (r.courseID || r.courseId) !== courseIdVal
         ));
+
+        // If user deleted their own review, reset the form
+        if (userId === currentUserId) {
+          setIsEditing(false);
+          setEditingReview(null);
+          setNewRating(0);
+          setNewContent("");
+        }
       } catch (err) {
         console.error("Error deleting review:", err);
         setError("Lỗi khi xóa đánh giá");
@@ -195,6 +245,14 @@ export default function CourseReview({ courseId }) {
         </Box>
       ) : (
         <>
+          {/* Warning if user hasn't completed the course */}
+          {!canReview && !isEditing && (
+            <Alert severity="warning" sx={{ mb: 3 }}>
+              Bạn cần hoàn thành khóa học (tiến độ 100%) trước khi có thể đánh giá.
+              Tiến độ hiện tại: {courseProgress?.toFixed(0) || 0}%
+            </Alert>
+          )}
+
           {/* Form thêm/chỉnh sửa */}
           <Paper
             elevation={2}
@@ -214,21 +272,23 @@ export default function CourseReview({ courseId }) {
               onChange={(_, value) => setNewRating(value)}
               precision={1}
               sx={{ mb: 2 }}
+              disabled={!canReview && !isEditing}
             />
             <TextField
               fullWidth
               multiline
               rows={3}
-              placeholder="Chia sẻ cảm nhận của bạn..."
+              placeholder={canReview || isEditing ? "Chia sẻ cảm nhận của bạn..." : "Hoàn thành khóa học để đánh giá"}
               value={newContent}
               onChange={(e) => setNewContent(e.target.value)}
               sx={{ mb: 2 }}
+              disabled={!canReview && !isEditing}
             />
             <Button
               variant="contained"
               endIcon={<SendIcon />}
               onClick={handleSubmit}
-              disabled={submitting}
+              disabled={submitting || (!canReview && !isEditing)}
               sx={{
                 backgroundColor: "#6C63FF",
                 "&:hover": { backgroundColor: "#574bff" },

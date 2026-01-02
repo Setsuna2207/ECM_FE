@@ -5,6 +5,11 @@ const GetAllHistories = () => {
     return api.get(URL_API);
 };
 
+const GetHistoryByCourse = (courseId) => {
+    const URL_API = `/History/${courseId}`;
+    return api.get(URL_API);
+};
+
 const CreateHistory = (courseId) => {
     const URL_API = `/History/${courseId}`;
     return api.post(URL_API);
@@ -32,6 +37,7 @@ const DeleteAllHistories = () => {
 
 export {
     GetAllHistories,
+    GetHistoryByCourse,
     CreateHistory,
     UpdateHistoryAccess,
     UpdateProgress,

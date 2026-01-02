@@ -20,12 +20,12 @@ const CreateReview = (data) => {
     return api.post(URL_API, data);
 };
 
-const UpdateReview = (courseId, data) => {
+const UpdateReview = (userId, courseId, data) => {
     const URL_API = `/Review/${courseId}`;
     return api.put(URL_API, data);
 };
 
-const DeleteReview = (courseId) => {
+const DeleteReview = (userId, courseId) => {
     const URL_API = `/Review/${courseId}`;
     return api.delete(URL_API);
 };
