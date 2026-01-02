@@ -9,11 +9,17 @@ import {
   IconButton,
   Alert,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import bgImage from "../../assets/bg1.jpg";
 import logo from "../../assets/ECM.png";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ErrorIcon from "@mui/icons-material/Error";
 import { Register } from "../../services/userService";
 
 export default function RegisterPage() {
@@ -29,6 +35,9 @@ export default function RegisterPage() {
   const [currentTime, setCurrentTime] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogType, setDialogType] = useState("success");
+  const [dialogMessage, setDialogMessage] = useState("");
   const navigate = useNavigate();
 
   //  Hàm định dạng thời gian
@@ -76,12 +85,26 @@ export default function RegisterPage() {
 
       if (response.status === 200 || response.status === 201) {
         setError("");
-        alert("Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.");
-        navigate("/login");
+
+        // Show success dialog
+        setDialogType("success");
+        setDialogMessage("Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.");
+        setDialogOpen(true);
+
+        // Redirect after 2 seconds
+        setTimeout(() => {
+          navigate("/login");
+        }, 2000);
       }
     } catch (err) {
       console.error("Register error:", err);
-      setError(err.response?.data?.message || "Đã xảy ra lỗi khi đăng ký. Vui lòng thử lại!");
+      const errorMsg = err.response?.data?.message || "Đã xảy ra lỗi khi đăng ký. Vui lòng thử lại!";
+      setError(errorMsg);
+
+      // Show error dialog
+      setDialogType("error");
+      setDialogMessage(errorMsg);
+      setDialogOpen(true);
     } finally {
       setLoading(false);
     }
@@ -268,6 +291,46 @@ export default function RegisterPage() {
           </Box>
         </Box>
       </Box>
+
+      {/* Success/Error Dialog */}
+      <Dialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle sx={{ textAlign: "center", pt: 3 }}>
+          {dialogType === "success" ? (
+            <CheckCircleIcon sx={{ fontSize: 60, color: "#4caf50" }} />
+          ) : (
+            <ErrorIcon sx={{ fontSize: 60, color: "#f44336" }} />
+          )}
+        </DialogTitle>
+        <DialogContent sx={{ textAlign: "center", pb: 2 }}>
+          <Typography variant="h6" fontWeight="bold">
+            {dialogType === "success" ? "Thành công!" : "Lỗi!"}
+          </Typography>
+          <Typography variant="body1" color="text.secondary" mt={1}>
+            {dialogMessage}
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: "center", pb: 3 }}>
+          <Button
+            onClick={() => setDialogOpen(false)}
+            variant="contained"
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              px: 4,
+              background: dialogType === "success"
+                ? "linear-gradient(135deg, #4caf50 0%, #45a049 100%)"
+                : "linear-gradient(135deg, #f44336 0%, #e53935 100%)",
+            }}
+          >
+            Đóng
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

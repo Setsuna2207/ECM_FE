@@ -9,11 +9,17 @@ import {
   InputAdornment,
   IconButton,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import bgImage from "../../assets/bg.jpg";
 import logo from "../../assets/ECM.png";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ErrorIcon from "@mui/icons-material/Error";
 import { Login, GetUser } from "../../services/userService";
 import ForgotPassword from "./ForgotPassword";
 
@@ -25,6 +31,9 @@ export default function LoginPage() {
   const [currentTime, setCurrentTime] = useState("");
   const [loading, setLoading] = useState(false);
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogType, setDialogType] = useState("success"); // "success" or "error"
+  const [dialogMessage, setDialogMessage] = useState("");
   const navigate = useNavigate();
 
   const formatTime = () => {
@@ -110,16 +119,29 @@ export default function LoginPage() {
         // Dispatch event
         window.dispatchEvent(new Event('userUpdated'));
 
-        // Redirect based on role
-        if (userData.roles === "Admin" || userData.role === "Admin" || userData.access === "admin") {
-          navigate("/admin");
-        } else {
-          navigate("/");
-        }
+        // Show success dialog
+        setDialogType("success");
+        setDialogMessage("Đăng nhập thành công!");
+        setDialogOpen(true);
+
+        // Redirect after 1.5 seconds
+        setTimeout(() => {
+          if (userData.roles === "Admin" || userData.role === "Admin" || userData.access === "admin") {
+            navigate("/admin");
+          } else {
+            navigate("/");
+          }
+        }, 1500);
       }
     } catch (err) {
       console.error("❌ Login error:", err);
-      setError(err.response?.data?.message || "Sai tên đăng nhập / email hoặc mật khẩu!");
+      const errorMsg = err.response?.data?.message || "Sai tên đăng nhập / email hoặc mật khẩu!";
+      setError(errorMsg);
+
+      // Show error dialog
+      setDialogType("error");
+      setDialogMessage(errorMsg);
+      setDialogOpen(true);
     } finally {
       setLoading(false);
     }
@@ -230,9 +252,10 @@ export default function LoginPage() {
               }}
             >
               <Link
-                component="button"
+                component="span"
                 variant="body2"
                 underline="hover"
+                sx={{ cursor: "pointer" }}
                 onClick={(e) => {
                   e.preventDefault();
                   setForgotPasswordOpen(true);
@@ -241,9 +264,10 @@ export default function LoginPage() {
                 Quên mật khẩu?
               </Link>
               <Link
-                component="button"
+                component="span"
                 variant="body2"
                 underline="hover"
+                sx={{ cursor: "pointer" }}
                 onClick={(e) => {
                   e.preventDefault();
                   navigate("/register");
@@ -288,6 +312,46 @@ export default function LoginPage() {
         open={forgotPasswordOpen}
         handleClose={() => setForgotPasswordOpen(false)}
       />
+
+      {/* Success/Error Dialog */}
+      <Dialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle sx={{ textAlign: "center", pt: 3 }}>
+          {dialogType === "success" ? (
+            <CheckCircleIcon sx={{ fontSize: 60, color: "#4caf50" }} />
+          ) : (
+            <ErrorIcon sx={{ fontSize: 60, color: "#f44336" }} />
+          )}
+        </DialogTitle>
+        <DialogContent sx={{ textAlign: "center", pb: 2 }}>
+          <Typography variant="h6" fontWeight="bold">
+            {dialogType === "success" ? "Thành công!" : "Lỗi!"}
+          </Typography>
+          <Typography variant="body1" color="text.secondary" mt={1}>
+            {dialogMessage}
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: "center", pb: 3 }}>
+          <Button
+            onClick={() => setDialogOpen(false)}
+            variant="contained"
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              px: 4,
+              background: dialogType === "success"
+                ? "linear-gradient(135deg, #4caf50 0%, #45a049 100%)"
+                : "linear-gradient(135deg, #f44336 0%, #e53935 100%)",
+            }}
+          >
+            Đóng
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
