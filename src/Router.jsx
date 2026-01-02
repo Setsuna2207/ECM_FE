@@ -1,5 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
+// Scroll to top component
+import ScrollToTop from "./components/ScrollToTop";
+
 // Các trang chính (guest & user)
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
@@ -35,6 +38,7 @@ import ManageAIRcm from "./pages/admin/ai-rcm";
 export default function AppRouter() {
   return (
     <Router>
+      <ScrollToTop />
       <Routes>
         {/* Trang khách & người dùng */}
         <Route path="/" element={<HomePage />} />
