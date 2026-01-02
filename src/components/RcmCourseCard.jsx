@@ -309,7 +309,11 @@ export default function RcmCourseCard({ course }) {
                     fullWidth
                     size="large"
                     startIcon={<PlayCircleOutlineIcon />}
-                    onClick={() => navigate(`/course/${course.courseId}`)}
+                    onClick={() => {
+                        const courseId = course.courseId || course.CourseID || course.courseID;
+                        console.log("Navigating to course:", courseId);
+                        navigate(`/course/${courseId}`);
+                    }}
                     sx={{
                         borderRadius: 2,
                         py: 1.5,

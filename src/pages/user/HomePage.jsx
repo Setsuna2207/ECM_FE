@@ -155,11 +155,19 @@ export default function HomePage() {
     const fetchRecommendedCourses = async () => {
       if (aiRecommendedCourses.length > 0) {
         console.log("=== FETCHING RECOMMENDED COURSES ===");
-        console.log("AI recommendations:", aiRecommendedCourses.length);
+        console.log("AI recommendations:", aiRecommendedCourses);
+        console.log("Number of recommendations:", aiRecommendedCourses.length);
 
         const coursePromises = aiRecommendedCourses.map(async (aiCourse, index) => {
-          const courseId = aiCourse.courseID || aiCourse.courseId || aiCourse.CourseID || aiCourse.courseid;
-          console.log(`Fetching course ${index + 1}: courseId=${courseId}`);
+          // Try all possible property name variations
+          const courseId = aiCourse.courseId || aiCourse.CourseId || aiCourse.CourseID || aiCourse.courseID;
+          console.log(`[${index + 1}] AI Course object:`, aiCourse);
+          console.log(`[${index + 1}] Extracted courseId:`, courseId);
+
+          if (!courseId) {
+            console.error(`[${index + 1}] ✗ No courseId found in AI recommendation:`, aiCourse);
+            return null;
+          }
 
           try {
             const response = await GetCourseById(courseId);
@@ -167,7 +175,7 @@ export default function HomePage() {
 
             // Normalize property names
             const normalizedCourse = {
-              courseId: courseData.CourseID || courseData.courseId,
+              courseId: courseData.CourseID || courseData.courseId || courseId,
               title: courseData.Title || courseData.title,
               description: courseData.Description || courseData.description,
               thumbnailUrl: courseData.ThumbnailUrl || courseData.thumbnailUrl,
@@ -180,10 +188,10 @@ export default function HomePage() {
               aiPriority: index + 1
             };
 
-            console.log(`✓ Fetched course: ${normalizedCourse.title}`);
+            console.log(`[${index + 1}] ✓ Fetched course:`, normalizedCourse.title, `(ID: ${normalizedCourse.courseId})`);
             return normalizedCourse;
           } catch (err) {
-            console.error(`✗ Error fetching course ${courseId}:`, err);
+            console.error(`[${index + 1}] ✗ Error fetching course ${courseId}:`, err);
             return null;
           }
         });
@@ -192,6 +200,7 @@ export default function HomePage() {
         const validCourses = fetchedCourses.filter(c => c !== null);
 
         console.log("Successfully fetched courses:", validCourses.length);
+        console.log("Valid courses:", validCourses);
         setDisplayedAiCourses(validCourses);
       } else {
         console.log("No AI recommendations to fetch");
