@@ -19,6 +19,7 @@ import QuizIcon from "@mui/icons-material/Quiz";
 import PeopleIcon from "@mui/icons-material/People";
 import RateReviewIcon from "@mui/icons-material/RateReview";
 import CategoryIcon from "@mui/icons-material/Category";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 
 export const drawerWidth = 200;
 
@@ -40,6 +41,7 @@ const menuItems = [
   { text: "Quiz", icon: <QuizIcon />, path: "/admin/quizzes" },
   { text: "Đánh giá", icon: <RateReviewIcon />, path: "/admin/reviews" },
   { text: "Test", icon: <QuizIcon />, path: "/admin/tests" },
+  { text: "Gợi ý AI", icon: <AutoAwesomeIcon />, path: "/admin/ai-rcm" },
   { text: "Chuyển đổi File", icon: <QuizIcon />, path: "/admin/converter" },
 ];
 
@@ -49,29 +51,29 @@ export default function Sidebar() {
   const [currentUser, setCurrentUser] = useState(null);
 
   // Lấy thông tin user đăng nhập từ localStorage
-useEffect(() => {
-  const loadUser = () => {
-    const user = JSON.parse(localStorage.getItem("currentUser"));
-    console.log("Sidebar - Loading user:", user);
-    console.log("Sidebar - Avatar:", user?.avatar);
-    if (user) setCurrentUser(user);
-  };
+  useEffect(() => {
+    const loadUser = () => {
+      const user = JSON.parse(localStorage.getItem("currentUser"));
+      console.log("Sidebar - Loading user:", user);
+      console.log("Sidebar - Avatar:", user?.avatar);
+      if (user) setCurrentUser(user);
+    };
 
-  loadUser();
-
-  const handleUserUpdate = () => {
-    console.log("🔍 Sidebar - User updated event received");
     loadUser();
-  };
 
-  window.addEventListener('storage', handleUserUpdate);
-  window.addEventListener('userUpdated', handleUserUpdate);
+    const handleUserUpdate = () => {
+      console.log("🔍 Sidebar - User updated event received");
+      loadUser();
+    };
 
-  return () => {
-    window.removeEventListener('storage', handleUserUpdate);
-    window.removeEventListener('userUpdated', handleUserUpdate);
-  };
-}, []);
+    window.addEventListener('storage', handleUserUpdate);
+    window.addEventListener('userUpdated', handleUserUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleUserUpdate);
+      window.removeEventListener('userUpdated', handleUserUpdate);
+    };
+  }, []);
 
   const isActive = (path) => location.pathname.startsWith(path);
 

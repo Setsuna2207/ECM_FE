@@ -30,6 +30,7 @@ import ManageQuizz from "./pages/admin/quizzes";
 import ManageUser from "./pages/admin/users";
 import ManageTests from "./pages/admin/tests";
 import FileConverter from "./pages/admin/converter";
+import ManageAIRcm from "./pages/admin/ai-rcm";
 
 export default function AppRouter() {
   return (
@@ -64,6 +65,7 @@ export default function AppRouter() {
           <Route path="users" element={<ManageUser />} />
           <Route path="tests" element={<ManageTests />} />
           <Route path="converter" element={<FileConverter />} />
+          <Route path="ai-rcm" element={<ManageAIRcm />} />
         </Route>
       </Routes>
     </Router>
