@@ -78,6 +78,7 @@ export default function ManageLessons() {
   const [previewVideoUrl, setPreviewVideoUrl] = useState(null);
   const [openPreviewVideoDialog, setOpenPreviewVideoDialog] = useState(false);
   const [previewFileUrl, setPreviewFileUrl] = useState(null);
+  const [selectedPreviewFile, setSelectedPreviewFile] = useState(null);
   const [openPreviewFileDialog, setOpenPreviewFileDialog] = useState(false);
   const [previewVideoError, setPreviewVideoError] = useState(false);
   const [previewFileError, setPreviewFileError] = useState(false);
@@ -157,11 +158,13 @@ export default function ManageLessons() {
             // Handle different documentUrl formats
             if (!lesson.documentUrl) return [];
             if (Array.isArray(lesson.documentUrl)) {
-              // If it's an array, map each URL
-              return lesson.documentUrl.map(url => ({
-                name: url.split("/").pop(),
-                url: url
-              }));
+              // If it's an array, map each URL and filter out empty strings
+              return lesson.documentUrl
+                .filter(url => url && url.trim().length > 0)
+                .map(url => ({
+                  name: url.split("/").pop(),
+                  url: url
+                }));
             }
             if (typeof lesson.documentUrl === 'string' && lesson.documentUrl.length > 0) {
               // If it's a string, create single material
@@ -456,17 +459,14 @@ export default function ManageLessons() {
     const fullUrl = getFullUrl(file.url);
     console.log("Preview file URL:", file.url, "->", fullUrl);
 
-    // Check if it's a Google Drive URL
-    if (!isGoogleDriveUrl(fullUrl)) {
-      // Not a Google Drive URL, show error immediately
-      setPreviewFileError(true);
-      setPreviewFileUrl(null);
-      setOpenPreviewFileDialog(true);
-      return;
-    }
+    // Extract file extension
+    const fileName = file.name || file.url.split("/").pop();
+    const ext = fileName.split(".").pop().toLowerCase();
 
-    setPreviewFileError(false);
+    // Store file info for preview
+    setSelectedPreviewFile({ url: fullUrl, fileName, ext });
     setPreviewFileUrl(fullUrl);
+    setPreviewFileError(false);
     setOpenPreviewFileDialog(true);
   };
 
@@ -491,9 +491,9 @@ export default function ManageLessons() {
     }
     // If it's a relative URL starting with /, prepend the API base URL
     if (url.startsWith("/")) {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://localhost:7264/api/v1";
-      // Remove /api/v1 from base URL to get the server root
-      const serverRoot = baseUrl.replace("/api/v1", "");
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://localhost:7264/api";
+      // Remove /api or /api/v1 from base URL to get the server root
+      const serverRoot = baseUrl.replace(/\/api.*$/, "");
       return `${serverRoot}${url}`;
     }
     // Otherwise return as is
@@ -1362,6 +1362,7 @@ export default function ManageLessons() {
         onClose={() => {
           setOpenPreviewFileDialog(false);
           setPreviewFileError(false);
+          setSelectedPreviewFile(null);
         }}
         maxWidth="md"
         fullWidth
@@ -1378,21 +1379,230 @@ export default function ManageLessons() {
           gap: 1,
         }}>
           <DescriptionIcon color="info" />
-          <Typography variant="h6" fontWeight={600}>Xem trước tài liệu</Typography>
+          <Typography variant="h6" fontWeight={600}>
+            Xem trước: {selectedPreviewFile?.fileName || 'Tài liệu'}
+          </Typography>
         </DialogTitle>
-        <DialogContent sx={{ p: 0 }}>
-          {previewFileError ? (
-            <Box sx={{ p: 4, textAlign: "center" }}>
-              <DescriptionIcon sx={{ fontSize: 48, color: "text.secondary", mb: 2 }} />
-              <Typography color="text.secondary">Tài liệu không hỗ trợ preview</Typography>
-            </Box>
-          ) : previewFileUrl ? (
-            <iframe
-              src={previewFileUrl}
-              title="Preview Document"
-              style={{ width: "100%", height: "80vh", border: "none" }}
-              onError={() => setPreviewFileError(true)}
-            />
+        <DialogContent sx={{ p: 0, minHeight: "60vh" }}>
+          {selectedPreviewFile ? (
+            <>
+              {/* PDF Preview */}
+              {selectedPreviewFile.ext === "pdf" && (
+                selectedPreviewFile.url.includes("drive.google.com") ? (
+                  <iframe
+                    src={selectedPreviewFile.url}
+                    title={selectedPreviewFile.fileName}
+                    style={{ width: "100%", height: "70vh", border: "none" }}
+                    onError={() => setPreviewFileError(true)}
+                  />
+                ) : (
+                  <Box
+                    sx={{
+                      width: "100%",
+                      height: "70vh",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: "#f5f5f5",
+                      gap: 3,
+                      p: 4,
+                    }}
+                  >
+                    <PictureAsPdfIcon sx={{ fontSize: 80, color: "#E53935" }} />
+                    <Typography variant="h5" fontWeight={700} color="text.primary">
+                      {selectedPreviewFile.fileName}
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary" textAlign="center">
+                      Tài liệu PDF sẵn sàng để xem. Nhấn nút bên dưới để mở trong tab mới hoặc tải xuống.
+                    </Typography>
+                    <Box display="flex" gap={2}>
+                      <Button
+                        variant="outlined"
+                        size="large"
+                        startIcon={<PlayCircleOutlineIcon />}
+                        href={selectedPreviewFile.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{
+                          borderRadius: 2,
+                          textTransform: "none",
+                          fontWeight: 600,
+                          borderColor: "#E53935",
+                          color: "#E53935",
+                          "&:hover": {
+                            borderColor: "#C62828",
+                            backgroundColor: alpha("#E53935", 0.1)
+                          },
+                        }}
+                      >
+                        Mở trong tab mới
+                      </Button>
+                      <Button
+                        variant="contained"
+                        size="large"
+                        startIcon={<CloudUploadIcon />}
+                        href={selectedPreviewFile.url}
+                        download
+                        sx={{
+                          borderRadius: 2,
+                          textTransform: "none",
+                          fontWeight: 600,
+                          backgroundColor: "#E53935",
+                          "&:hover": { backgroundColor: "#C62828" },
+                        }}
+                      >
+                        Tải xuống
+                      </Button>
+                    </Box>
+                  </Box>
+                )
+              )}
+
+              {/* Word Document Preview */}
+              {(selectedPreviewFile.ext === "docx" || selectedPreviewFile.ext === "doc") && (
+                selectedPreviewFile.url.includes("drive.google.com") ? (
+                  <iframe
+                    src={selectedPreviewFile.url}
+                    title={selectedPreviewFile.fileName}
+                    style={{ width: "100%", height: "70vh", border: "none" }}
+                    onError={() => setPreviewFileError(true)}
+                  />
+                ) : (
+                  <Box
+                    sx={{
+                      width: "100%",
+                      height: "70vh",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: "#f5f5f5",
+                      gap: 3,
+                      p: 4,
+                    }}
+                  >
+                    <DescriptionIcon sx={{ fontSize: 80, color: "#1E88E5" }} />
+                    <Typography variant="h5" fontWeight={700} color="text.primary">
+                      {selectedPreviewFile.fileName}
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary" textAlign="center">
+                      Tài liệu Word không thể xem trước trực tiếp trong trình duyệt.
+                      Vui lòng tải xuống để xem toàn bộ nội dung.
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      size="large"
+                      startIcon={<CloudUploadIcon />}
+                      href={selectedPreviewFile.url}
+                      download
+                      sx={{
+                        borderRadius: 2,
+                        textTransform: "none",
+                        fontWeight: 600,
+                        backgroundColor: "#1E88E5",
+                        "&:hover": { backgroundColor: "#1565C0" },
+                      }}
+                    >
+                      Tải xuống tài liệu
+                    </Button>
+                  </Box>
+                )
+              )}
+
+              {/* PowerPoint Preview */}
+              {(selectedPreviewFile.ext === "pptx" || selectedPreviewFile.ext === "ppt") && (
+                selectedPreviewFile.url.includes("drive.google.com") ? (
+                  <iframe
+                    src={selectedPreviewFile.url}
+                    title={selectedPreviewFile.fileName}
+                    style={{ width: "100%", height: "70vh", border: "none" }}
+                    onError={() => setPreviewFileError(true)}
+                  />
+                ) : (
+                  <Box
+                    sx={{
+                      width: "100%",
+                      height: "70vh",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: "#f5f5f5",
+                      gap: 3,
+                      p: 4,
+                    }}
+                  >
+                    <SlideshowIcon sx={{ fontSize: 80, color: "#FB8C00" }} />
+                    <Typography variant="h5" fontWeight={700} color="text.primary">
+                      {selectedPreviewFile.fileName}
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary" textAlign="center">
+                      Tài liệu PowerPoint không thể xem trước trực tiếp trong trình duyệt.
+                      Vui lòng tải xuống để xem toàn bộ nội dung.
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      size="large"
+                      startIcon={<CloudUploadIcon />}
+                      href={selectedPreviewFile.url}
+                      download
+                      sx={{
+                        borderRadius: 2,
+                        textTransform: "none",
+                        fontWeight: 600,
+                        backgroundColor: "#FB8C00",
+                        "&:hover": { backgroundColor: "#F57C00" },
+                      }}
+                    >
+                      Tải xuống tài liệu
+                    </Button>
+                  </Box>
+                )
+              )}
+
+              {/* Other file types */}
+              {!["pdf", "docx", "doc", "pptx", "ppt"].includes(selectedPreviewFile.ext) && (
+                <Box
+                  sx={{
+                    width: "100%",
+                    height: "70vh",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "#f5f5f5",
+                    gap: 3,
+                    p: 4,
+                  }}
+                >
+                  <DescriptionIcon sx={{ fontSize: 80, color: "#6D4C41" }} />
+                  <Typography variant="h5" fontWeight={700} color="text.primary">
+                    {selectedPreviewFile.fileName}
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" textAlign="center">
+                    Định dạng {selectedPreviewFile.ext.toUpperCase()} không hỗ trợ xem trước.
+                    Vui lòng tải xuống để xem tài liệu.
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    size="large"
+                    startIcon={<CloudUploadIcon />}
+                    href={selectedPreviewFile.url}
+                    download
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: "none",
+                      fontWeight: 600,
+                      backgroundColor: "#6D4C41",
+                      "&:hover": { backgroundColor: "#5D4037" },
+                    }}
+                  >
+                    Tải xuống tài liệu
+                  </Button>
+                </Box>
+              )}
+            </>
           ) : (
             <Box sx={{ p: 4, textAlign: "center" }}>
               <Typography>Không có tài liệu để xem</Typography>
@@ -1404,6 +1614,7 @@ export default function ManageLessons() {
             onClick={() => {
               setOpenPreviewFileDialog(false);
               setPreviewFileError(false);
+              setSelectedPreviewFile(null);
             }}
             sx={{ borderRadius: 2, textTransform: "none" }}
           >

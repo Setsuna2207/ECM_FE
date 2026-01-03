@@ -33,6 +33,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import DownloadIcon from "@mui/icons-material/Download";
 import WarningIcon from "@mui/icons-material/Warning";
+import SlideshowIcon from "@mui/icons-material/Slideshow";
 
 export default function LessonPage() {
     const navigate = useNavigate();
@@ -236,20 +237,68 @@ export default function LessonPage() {
                         mb: 4,
                     }}
                 >
-                    <video
-                        src={lesson.videoUrl}
-                        title={lesson.title}
-                        style={{
-                            position: "absolute",
-                            top: 0,
-                            left: 0,
-                            width: "100%",
-                            height: "100%",
-                            border: 0,
-                        }}
-                        controls
-                        controlsList="nodownload"
-                    />
+                    {lesson.videoUrl && lesson.videoUrl.trim() !== "" ? (
+                        lesson.videoUrl.includes('youtube.com') || lesson.videoUrl.includes('youtu.be') ? (
+                            <iframe
+                                src={lesson.videoUrl}
+                                title={lesson.title}
+                                style={{
+                                    position: "absolute",
+                                    top: 0,
+                                    left: 0,
+                                    width: "100%",
+                                    height: "100%",
+                                    border: 0,
+                                }}
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                            />
+                        ) : (
+                            <video
+                                src={(() => {
+                                    const url = lesson.videoUrl;
+                                    if (url.startsWith("http://") || url.startsWith("https://")) {
+                                        return url;
+                                    }
+                                    if (url.startsWith("/")) {
+                                        const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://localhost:7264/api";
+                                        const serverRoot = baseUrl.replace(/\/api.*$/, "");
+                                        return `${serverRoot}${url}`;
+                                    }
+                                    return url;
+                                })()}
+                                title={lesson.title}
+                                style={{
+                                    position: "absolute",
+                                    top: 0,
+                                    left: 0,
+                                    width: "100%",
+                                    height: "100%",
+                                    border: 0,
+                                }}
+                                controls
+                                controlsList="nodownload"
+                            />
+                        )
+                    ) : (
+                        <Box
+                            sx={{
+                                position: "absolute",
+                                top: 0,
+                                left: 0,
+                                width: "100%",
+                                height: "100%",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                backgroundColor: "#f5f5f5",
+                            }}
+                        >
+                            <Typography variant="h6" color="text.secondary">
+                                📹 Chưa có video cho bài giảng này
+                            </Typography>
+                        </Box>
+                    )}
                 </Paper>
 
                 {/* Documents Section */}
@@ -266,22 +315,35 @@ export default function LessonPage() {
                     {lesson.documentUrl && lesson.documentUrl.length > 0 ? (
                         <Box display="flex" flexDirection="column" gap={1}>
                             {lesson.documentUrl.map((url, index) => {
+                                // Skip empty URLs
+                                if (!url || url.trim() === "") return null;
+
+                                // Convert relative URLs to absolute URLs
+                                let fullUrl = url;
+                                if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                                    if (url.startsWith("/")) {
+                                        const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://localhost:7264/api";
+                                        const serverRoot = baseUrl.replace(/\/api.*$/, "");
+                                        fullUrl = `${serverRoot}${url}`;
+                                    }
+                                }
+
                                 // Detect if it's a Google Drive URL
-                                const isGoogleDrive = url.includes("docs.google.com") || url.includes("drive.google.com");
+                                const isGoogleDrive = fullUrl.includes("docs.google.com") || fullUrl.includes("drive.google.com");
 
                                 let fileName;
                                 let ext;
-                                let previewUrl = url;
+                                let previewUrl = fullUrl;
 
                                 if (isGoogleDrive) {
                                     // Extract file type from Google Drive URL
-                                    if (url.includes("/presentation/")) {
+                                    if (fullUrl.includes("/presentation/")) {
                                         ext = "pptx";
                                         fileName = `Tài liệu ${index + 1}.pptx`;
-                                    } else if (url.includes("/document/")) {
+                                    } else if (fullUrl.includes("/document/")) {
                                         ext = "docx";
                                         fileName = `Tài liệu ${index + 1}.docx`;
-                                    } else if (url.includes("/spreadsheets/")) {
+                                    } else if (fullUrl.includes("/spreadsheets/")) {
                                         ext = "xlsx";
                                         fileName = `Tài liệu ${index + 1}.xlsx`;
                                     } else {
@@ -290,7 +352,7 @@ export default function LessonPage() {
                                     }
 
                                     // Extract the file ID from Google Drive URL
-                                    const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                                    const fileIdMatch = fullUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
                                     if (fileIdMatch) {
                                         const fileId = fileIdMatch[1];
                                         // Convert to direct preview URL
@@ -298,7 +360,7 @@ export default function LessonPage() {
                                     }
                                 } else {
                                     // Regular file URL
-                                    fileName = url.split("/").pop();
+                                    fileName = fullUrl.split("/").pop();
                                     if (fileName.includes("?")) {
                                         fileName = fileName.split("?")[0];
                                     }
@@ -370,7 +432,7 @@ export default function LessonPage() {
                                                 size="large"
                                                 startIcon={<VisibilityIcon />}
                                                 onClick={() => {
-                                                    setSelectedFile({ url: previewUrl, fileName, ext: displayExt, originalUrl: url });
+                                                    setSelectedFile({ url: previewUrl, fileName, ext: displayExt, originalUrl: fullUrl });
                                                     setPreviewOpen(true);
                                                 }}
                                                 sx={{
@@ -394,7 +456,7 @@ export default function LessonPage() {
                                                 variant="contained"
                                                 size="large"
                                                 startIcon={<DownloadIcon />}
-                                                href={url}
+                                                href={fullUrl}
                                                 download
                                                 target="_blank"
                                                 rel="noopener noreferrer"
@@ -737,25 +799,7 @@ export default function LessonPage() {
 
                             {/* PDF Preview */}
                             {selectedFile.ext === "pdf" && (
-                                <iframe
-                                    src={selectedFile.url.includes("drive.google.com")
-                                        ? selectedFile.url
-                                        : `${selectedFile.url}#page=1&view=FitH&toolbar=0&navpanes=0&scrollbar=0`}
-                                    style={{
-                                        width: "100%",
-                                        height: "100%",
-                                        border: "none",
-                                        display: previewLoading || previewError ? "none" : "block",
-                                    }}
-                                    title={selectedFile.fileName}
-                                    onLoad={handleIframeLoad}
-                                    onError={handleIframeError}
-                                />
-                            )}
-
-                            {/* Word Document Preview */}
-                            {(selectedFile.ext === "docx" || selectedFile.ext === "doc") && (
-                                <Box sx={{ width: "100%", height: "100%" }}>
+                                selectedFile.url.includes("drive.google.com") ? (
                                     <iframe
                                         src={selectedFile.url}
                                         style={{
@@ -768,24 +812,197 @@ export default function LessonPage() {
                                         onLoad={handleIframeLoad}
                                         onError={handleIframeError}
                                     />
+                                ) : (
+                                    <Box
+                                        sx={{
+                                            width: "100%",
+                                            height: "100%",
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            backgroundColor: "#f5f5f5",
+                                            gap: 3,
+                                            p: 4,
+                                        }}
+                                    >
+                                        <DescriptionIcon sx={{ fontSize: 80, color: "#E53935" }} />
+                                        <Typography variant="h5" fontWeight={700} color="text.primary">
+                                            {selectedFile.fileName}
+                                        </Typography>
+                                        <Alert severity="info" sx={{ maxWidth: 600 }}>
+                                            Tài liệu PDF sẵn sàng để xem. Nhấn nút bên dưới để mở trong tab mới hoặc tải xuống.
+                                        </Alert>
+                                        <Box display="flex" gap={2}>
+                                            <Button
+                                                variant="outlined"
+                                                size="large"
+                                                startIcon={<VisibilityIcon />}
+                                                href={selectedFile.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                sx={{
+                                                    borderRadius: 3,
+                                                    textTransform: "none",
+                                                    fontWeight: 700,
+                                                    fontSize: 16,
+                                                    px: 4,
+                                                    py: 1.5,
+                                                    borderColor: "#E53935",
+                                                    color: "#E53935",
+                                                    "&:hover": {
+                                                        borderColor: "#C62828",
+                                                        backgroundColor: "#FFEBEE"
+                                                    },
+                                                }}
+                                            >
+                                                Mở trong tab mới
+                                            </Button>
+                                            <Button
+                                                variant="contained"
+                                                size="large"
+                                                startIcon={<DownloadIcon />}
+                                                href={selectedFile.url}
+                                                download
+                                                sx={{
+                                                    borderRadius: 3,
+                                                    textTransform: "none",
+                                                    fontWeight: 700,
+                                                    fontSize: 16,
+                                                    px: 4,
+                                                    py: 1.5,
+                                                    backgroundColor: "#E53935",
+                                                    "&:hover": { backgroundColor: "#C62828" },
+                                                }}
+                                            >
+                                                Tải xuống
+                                            </Button>
+                                        </Box>
+                                    </Box>
+                                )
+                            )}
+
+                            {/* Word Document Preview */}
+                            {(selectedFile.ext === "docx" || selectedFile.ext === "doc") && (
+                                <Box sx={{ width: "100%", height: "100%" }}>
+                                    {selectedFile.url.includes("drive.google.com") ? (
+                                        <iframe
+                                            src={selectedFile.url}
+                                            style={{
+                                                width: "100%",
+                                                height: "100%",
+                                                border: "none",
+                                                display: previewLoading || previewError ? "none" : "block",
+                                            }}
+                                            title={selectedFile.fileName}
+                                            onLoad={handleIframeLoad}
+                                            onError={handleIframeError}
+                                        />
+                                    ) : (
+                                        <Box
+                                            sx={{
+                                                width: "100%",
+                                                height: "100%",
+                                                display: "flex",
+                                                flexDirection: "column",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                backgroundColor: "#f5f5f5",
+                                                gap: 3,
+                                                p: 4,
+                                            }}
+                                        >
+                                            <DescriptionIcon sx={{ fontSize: 80, color: "#1E88E5" }} />
+                                            <Typography variant="h5" fontWeight={700} color="text.primary">
+                                                {selectedFile.fileName}
+                                            </Typography>
+                                            <Alert severity="info" sx={{ maxWidth: 600 }}>
+                                                Tài liệu Word không thể xem trước trực tiếp trong trình duyệt.
+                                                Vui lòng tải xuống để xem toàn bộ nội dung.
+                                            </Alert>
+                                            <Button
+                                                variant="contained"
+                                                size="large"
+                                                startIcon={<DownloadIcon />}
+                                                href={selectedFile.url}
+                                                download
+                                                sx={{
+                                                    borderRadius: 3,
+                                                    textTransform: "none",
+                                                    fontWeight: 700,
+                                                    fontSize: 18,
+                                                    px: 5,
+                                                    py: 2,
+                                                    backgroundColor: "#1E88E5",
+                                                    "&:hover": { backgroundColor: "#1565C0" },
+                                                }}
+                                            >
+                                                Tải xuống tài liệu
+                                            </Button>
+                                        </Box>
+                                    )}
                                 </Box>
                             )}
 
                             {/* PowerPoint Preview */}
                             {(selectedFile.ext === "pptx" || selectedFile.ext === "ppt") && (
                                 <Box sx={{ width: "100%", height: "100%" }}>
-                                    <iframe
-                                        src={selectedFile.url}
-                                        style={{
-                                            width: "100%",
-                                            height: "100%",
-                                            border: "none",
-                                            display: previewLoading || previewError ? "none" : "block",
-                                        }}
-                                        title={selectedFile.fileName}
-                                        onLoad={handleIframeLoad}
-                                        onError={handleIframeError}
-                                    />
+                                    {selectedFile.url.includes("drive.google.com") ? (
+                                        <iframe
+                                            src={selectedFile.url}
+                                            style={{
+                                                width: "100%",
+                                                height: "100%",
+                                                border: "none",
+                                                display: previewLoading || previewError ? "none" : "block",
+                                            }}
+                                            title={selectedFile.fileName}
+                                            onLoad={handleIframeLoad}
+                                            onError={handleIframeError}
+                                        />
+                                    ) : (
+                                        <Box
+                                            sx={{
+                                                width: "100%",
+                                                height: "100%",
+                                                display: "flex",
+                                                flexDirection: "column",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                backgroundColor: "#f5f5f5",
+                                                gap: 3,
+                                                p: 4,
+                                            }}
+                                        >
+                                            <SlideshowIcon sx={{ fontSize: 80, color: "#FB8C00" }} />
+                                            <Typography variant="h5" fontWeight={700} color="text.primary">
+                                                {selectedFile.fileName}
+                                            </Typography>
+                                            <Alert severity="info" sx={{ maxWidth: 600 }}>
+                                                Tài liệu PowerPoint không thể xem trước trực tiếp trong trình duyệt.
+                                                Vui lòng tải xuống để xem toàn bộ nội dung.
+                                            </Alert>
+                                            <Button
+                                                variant="contained"
+                                                size="large"
+                                                startIcon={<DownloadIcon />}
+                                                href={selectedFile.url}
+                                                download
+                                                sx={{
+                                                    borderRadius: 3,
+                                                    textTransform: "none",
+                                                    fontWeight: 700,
+                                                    fontSize: 18,
+                                                    px: 5,
+                                                    py: 2,
+                                                    backgroundColor: "#FB8C00",
+                                                    "&:hover": { backgroundColor: "#F57C00" },
+                                                }}
+                                            >
+                                                Tải xuống tài liệu
+                                            </Button>
+                                        </Box>
+                                    )}
                                 </Box>
                             )}
 
