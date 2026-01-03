@@ -161,15 +161,28 @@ export default function ManageLessons() {
               // If it's an array, map each URL and filter out empty strings
               return lesson.documentUrl
                 .filter(url => url && url.trim().length > 0)
-                .map(url => ({
-                  name: url.split("/").pop(),
-                  url: url
-                }));
+                .map((url, idx) => {
+                  const fileName = url.split("/").pop();
+                  const extension = fileName.split(".").pop();
+                  // If filename is a GUID (32 chars + 4 hyphens = 36 chars before extension)
+                  const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'));
+                  const isGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(nameWithoutExt);
+
+                  return {
+                    name: isGuid ? `Tài liệu ${idx + 1}.${extension}` : fileName,
+                    url: url
+                  };
+                });
             }
             if (typeof lesson.documentUrl === 'string' && lesson.documentUrl.length > 0) {
               // If it's a string, create single material
+              const fileName = lesson.documentUrl.split("/").pop();
+              const extension = fileName.split(".").pop();
+              const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'));
+              const isGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(nameWithoutExt);
+
               return [{
-                name: lesson.documentUrl.split("/").pop(),
+                name: isGuid ? `Tài liệu 1.${extension}` : fileName,
                 url: lesson.documentUrl
               }];
             }

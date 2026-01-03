@@ -100,12 +100,19 @@ export default function LessonPage() {
 
     // Reset preview state when dialog opens
     useEffect(() => {
-        if (previewOpen) {
-            setPreviewLoading(true);
-            setPreviewError(false);
+        if (previewOpen && selectedFile) {
+            // For local files (not Google Drive), skip loading state and show buttons immediately
+            const isLocalFile = !selectedFile.url.includes("drive.google.com");
+            if (isLocalFile) {
+                setPreviewLoading(false);
+                setPreviewError(false);
+            } else {
+                setPreviewLoading(true);
+                setPreviewError(false);
+            }
             setShowBlur(false);
         }
-    }, [previewOpen]);
+    }, [previewOpen, selectedFile]);
 
     // Cleanup scroll listener
     useEffect(() => {
@@ -360,11 +367,15 @@ export default function LessonPage() {
                                     }
                                 } else {
                                     // Regular file URL
-                                    fileName = fullUrl.split("/").pop();
-                                    if (fileName.includes("?")) {
-                                        fileName = fileName.split("?")[0];
-                                    }
-                                    ext = fileName.split(".").pop().toLowerCase();
+                                    const rawFileName = fullUrl.split("/").pop();
+                                    const cleanFileName = rawFileName.includes("?") ? rawFileName.split("?")[0] : rawFileName;
+                                    ext = cleanFileName.split(".").pop().toLowerCase();
+
+                                    // Check if filename is a GUID
+                                    const nameWithoutExt = cleanFileName.substring(0, cleanFileName.lastIndexOf('.'));
+                                    const isGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(nameWithoutExt);
+
+                                    fileName = isGuid ? `Tài liệu ${index + 1}.${ext}` : cleanFileName;
                                 }
 
                                 const displayExt = ext;
@@ -743,7 +754,7 @@ export default function LessonPage() {
                             </Box>
 
                             {/* Loading Indicator */}
-                            {previewLoading && (
+                            {previewLoading && selectedFile?.url.includes("drive.google.com") && (
                                 <Box
                                     sx={{
                                         position: "absolute",
