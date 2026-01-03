@@ -34,9 +34,14 @@ instance.interceptors.response.use(function (response) {
 }, function (error) {
     // Any status codes that falls outside the range of 2xx cause this function to trigger
     // Do something with response error
-    console.error("Response error:", error.response?.status, error.response?.data);
+    console.error("=== RESPONSE ERROR ===");
+    console.error("Error object:", error);
+    console.error("Response status:", error.response?.status);
+    console.error("Response data:", error.response?.data);
     console.error("Request URL:", error.config?.url);
+    console.error("Request method:", error.config?.method);
     console.error("Request headers:", error.config?.headers);
+    console.error("Error message:", error.message);
 
     // Handle 401 Unauthorized
     if (error.response?.status === 401) {

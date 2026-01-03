@@ -40,7 +40,8 @@ export const UploadMultipleFiles = async (files, type = "document", onUploadProg
     onUploadProgress: onUploadProgress,
     timeout: 300000, // 5 minutes timeout
   });
-ждать};
+  ждать
+};
 
 /**
  * Delete a file from server
@@ -62,11 +63,14 @@ export const GetFileUploadInfo = async () => {
 };
 
 // Convenience functions
-export const UploadVideo = (file, onUploadProgress) => 
+export const UploadVideo = (file, onUploadProgress) =>
   UploadFile(file, "video", onUploadProgress);
 
-export const UploadDocument = (file, onUploadProgress) => 
+export const UploadDocument = (file, onUploadProgress) =>
   UploadFile(file, "document", onUploadProgress);
 
-export const UploadMultipleDocuments = (files, onUploadProgress) => 
+export const UploadImage = (file, onUploadProgress) =>
+  UploadFile(file, "image", onUploadProgress);
+
+export const UploadMultipleDocuments = (files, onUploadProgress) =>
   UploadMultipleFiles(files, "document", onUploadProgress);

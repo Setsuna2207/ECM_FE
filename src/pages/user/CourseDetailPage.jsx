@@ -25,6 +25,7 @@ import { GetLessonByCourseId } from "../../services/lessonService";
 import { GetReviewByCourseId } from "../../services/reviewService";
 import { ToggleFollowing, GetAllFollowing } from "../../services/followingService";
 import { CreateHistory } from "../../services/historyService";
+import { getFullImageUrl } from "../../utils/imageUtils";
 
 export default function CourseDetailPage() {
   const { courseId } = useParams();
@@ -157,9 +158,35 @@ export default function CourseDetailPage() {
 
   const thumbnailUrl = useMemo(() => {
     if (!course || !course.thumbnail) return "";
-    const thumbnail = course.thumbnail;
+    let thumbnail = course.thumbnail;
+
+    // Convert Google Drive URLs to direct image URLs
+    if (thumbnail.includes('drive.google.com')) {
+      // Extract file ID from various Google Drive URL formats
+      let fileId = null;
+
+      // Format: https://drive.google.com/file/d/FILE_ID/view
+      const match1 = thumbnail.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+      if (match1) {
+        fileId = match1[1];
+      }
+
+      // Format: https://drive.google.com/open?id=FILE_ID
+      const match2 = thumbnail.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (match2) {
+        fileId = match2[1];
+      }
+
+      // If we found a file ID, convert to direct image URL
+      if (fileId) {
+        return `https://drive.google.com/uc?export=view&id=${fileId}`;
+      }
+    }
+
+    // If already a full URL, return as is
     if (thumbnail.startsWith('http')) return thumbnail;
 
+    // Otherwise, construct URL from backend
     const baseUrl = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://localhost:7264';
     return `${baseUrl}${thumbnail.startsWith('/') ? '' : '/'}${thumbnail}`;
   }, [course]);

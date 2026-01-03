@@ -15,6 +15,7 @@ import {
   FormControl,
   Autocomplete,
   CircularProgress,
+  Typography,
 } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import AddIcon from "@mui/icons-material/Add";
@@ -24,6 +25,8 @@ import { tokens } from "../../../theme";
 import Header from "../../../components/Header";
 import { GetAllCourses, CreateCourse, UpdateCourse, DeleteCourse } from "../../../services/courseService";
 import { GetAllCategory } from "../../../services/categoryService";
+import { convertGoogleDriveUrl } from "../../../utils/imageUtils";
+import { UploadFile } from "../../../services/fileUploadService";
 
 const ManageCourses = () => {
   const theme = useTheme();
@@ -41,6 +44,8 @@ const ManageCourses = () => {
   const [loading, setLoading] = useState(false);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [selectedFilterCourse, setSelectedFilterCourse] = useState(null);
+  const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+  const [thumbnailPreview, setThumbnailPreview] = useState(null);
 
   // Load categories and courses from backend
   useEffect(() => {
@@ -112,7 +117,10 @@ const ManageCourses = () => {
       setLoading(true);
       const response = await GetAllCourses();
 
+      console.log("Courses API response:", response);
+
       if (!response.data || !Array.isArray(response.data)) {
+        console.error("Invalid response format:", response);
         setCourses([]);
         return;
       }
@@ -135,10 +143,12 @@ const ManageCourses = () => {
         };
       });
 
+      console.log("Formatted courses:", formatted);
       setCourses(formatted);
     } catch (error) {
       console.error("Lỗi khi tải khóa học:", error);
-      alert("Không thể tải danh sách khóa học!");
+      console.error("Error details:", error.response?.data);
+      alert("Không thể tải danh sách khóa học! Vui lòng kiểm tra console để biết chi tiết.");
       setCourses([]);
     } finally {
       setLoading(false);
@@ -171,7 +181,58 @@ const ManageCourses = () => {
       description: "",
       thumbnail: "",
     });
+    setThumbnailPreview(null);
     setOpenAddDialog(true);
+  };
+
+  // Handle thumbnail upload
+  const handleThumbnailUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      alert('Vui lòng chọn file ảnh (JPG, PNG, GIF, WEBP)');
+      e.target.value = '';
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert('Kích thước ảnh tối đa là 10MB');
+      e.target.value = '';
+      return;
+    }
+
+    try {
+      setUploadingThumbnail(true);
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setThumbnailPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+
+      // Upload to server
+      const response = await UploadFile(file, "image");
+
+      setSelectedCourse(prev => ({
+        ...prev,
+        thumbnail: response.data.url
+      }));
+
+      alert('✅ Tải ảnh thành công!');
+    } catch (error) {
+      console.error('Error uploading thumbnail:', error);
+      alert('❌ Không thể tải ảnh lên. Vui lòng thử lại!');
+      setThumbnailPreview(null);
+    } finally {
+      setUploadingThumbnail(false);
+      e.target.value = '';
+    }
   };
 
   const handleAddSubmit = async () => {
@@ -229,6 +290,14 @@ const ManageCourses = () => {
       level: validLevel,
       skill: validSkill
     });
+
+    // Set thumbnail preview if exists
+    if (row.thumbnail) {
+      setThumbnailPreview(convertGoogleDriveUrl(row.thumbnail));
+    } else {
+      setThumbnailPreview(null);
+    }
+
     setOpenEditDialog(true);
   };
 
@@ -332,24 +401,6 @@ const ManageCourses = () => {
       align: "center",
       headerAlign: "center",
       valueGetter: (value, row) => row.skill || "N/A"
-    },
-    {
-      field: "thumbnail",
-      headerName: "Ảnh minh họa",
-      flex: 0.8,
-      align: "center",
-      headerAlign: "center",
-      renderCell: (params) => {
-        const imgSrc = params.row.thumbnail || "https://picsum.photos/300/200";
-        return (
-          <img
-            src={imgSrc}
-            alt="thumbnail"
-            style={{ width: 80, height: 50, borderRadius: 6, objectFit: "cover", border: "1px solid #ddd" }}
-            onError={(e) => { e.target.src = "https://picsum.photos/300/200"; }}
-          />
-        );
-      },
     },
     {
       field: "description",
@@ -513,13 +564,62 @@ const ManageCourses = () => {
             value={selectedCourse?.description || ""}
             onChange={(e) => setSelectedCourse({ ...selectedCourse, description: e.target.value })}
           />
-          <TextField
-            margin="dense"
-            label="Link ảnh (Thumbnail)"
-            fullWidth
-            value={selectedCourse?.thumbnail || ""}
-            onChange={(e) => setSelectedCourse({ ...selectedCourse, thumbnail: e.target.value })}
-          />
+
+          {/* Thumbnail Upload */}
+          <Box sx={{ mt: 2, mb: 1 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+              Ảnh minh họa (Thumbnail)
+            </Typography>
+
+            {thumbnailPreview && (
+              <Box sx={{ mb: 2, textAlign: 'center' }}>
+                <img
+                  src={thumbnailPreview}
+                  alt="Preview"
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '200px',
+                    borderRadius: '8px',
+                    border: '2px solid #e0e0e0'
+                  }}
+                />
+              </Box>
+            )}
+
+            <Button
+              variant="outlined"
+              component="label"
+              fullWidth
+              disabled={uploadingThumbnail}
+              sx={{
+                borderRadius: 2,
+                textTransform: 'none',
+                borderStyle: 'dashed',
+                py: 1.5
+              }}
+            >
+              {uploadingThumbnail ? (
+                <>
+                  <CircularProgress size={20} sx={{ mr: 1 }} />
+                  Đang tải lên...
+                </>
+              ) : (
+                <>
+                  {thumbnailPreview ? '📷 Thay đổi ảnh' : '📷 Tải ảnh lên'}
+                </>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={handleThumbnailUpload}
+                disabled={uploadingThumbnail}
+              />
+            </Button>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+              Định dạng: JPG, PNG, GIF, WEBP (Tối đa 5MB)
+            </Typography>
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenAddDialog(false)}>Hủy</Button>
@@ -574,13 +674,62 @@ const ManageCourses = () => {
             value={selectedCourse?.description || ""}
             onChange={(e) => setSelectedCourse({ ...selectedCourse, description: e.target.value })}
           />
-          <TextField
-            margin="dense"
-            label="Link ảnh (Thumbnail)"
-            fullWidth
-            value={selectedCourse?.thumbnail || ""}
-            onChange={(e) => setSelectedCourse({ ...selectedCourse, thumbnail: e.target.value })}
-          />
+
+          {/* Thumbnail Upload */}
+          <Box sx={{ mt: 2, mb: 1 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+              Ảnh minh họa (Thumbnail)
+            </Typography>
+
+            {thumbnailPreview && (
+              <Box sx={{ mb: 2, textAlign: 'center' }}>
+                <img
+                  src={thumbnailPreview}
+                  alt="Preview"
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '200px',
+                    borderRadius: '8px',
+                    border: '2px solid #e0e0e0'
+                  }}
+                />
+              </Box>
+            )}
+
+            <Button
+              variant="outlined"
+              component="label"
+              fullWidth
+              disabled={uploadingThumbnail}
+              sx={{
+                borderRadius: 2,
+                textTransform: 'none',
+                borderStyle: 'dashed',
+                py: 1.5
+              }}
+            >
+              {uploadingThumbnail ? (
+                <>
+                  <CircularProgress size={20} sx={{ mr: 1 }} />
+                  Đang tải lên...
+                </>
+              ) : (
+                <>
+                  {thumbnailPreview ? '📷 Thay đổi ảnh' : '📷 Tải ảnh lên'}
+                </>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={handleThumbnailUpload}
+                disabled={uploadingThumbnail}
+              />
+            </Button>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+              Định dạng: JPG, PNG, GIF, WEBP (Tối đa 5MB)
+            </Typography>
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenEditDialog(false)}>Hủy</Button>
