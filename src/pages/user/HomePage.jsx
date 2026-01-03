@@ -211,10 +211,10 @@ export default function HomePage() {
     fetchRecommendedCourses();
   }, [aiRecommendedCourses]);
 
-  // New Courses - Sort by createdAt (newest first), max 6
+  // New Courses - Sort by createdAt (newest first), max 3
   const newCourses = [...courses]
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .slice(0, 6);
+    .slice(0, 3);
 
   // Lọc khóa học theo từng nhóm LEVEL (categories là array of strings từ backend)
   const toeicCourses = courses.filter((c) => {
@@ -496,7 +496,7 @@ export default function HomePage() {
   const renderCourseSection = (title, courses, route, description, icon) => {
     const topCourses = courses
       .sort((a, b) => b.rating - a.rating)
-      .slice(0, 4);
+      .slice(0, 3);
 
     if (topCourses.length === 0) return null;
 
