@@ -183,6 +183,13 @@ export default function RegisterPage() {
           <Box component="form" onSubmit={handleSubmit} sx={{ width: "100%" }}>
             <TextField
               fullWidth
+              label="Họ và tên"
+              margin="normal"
+              value={form.fullName}
+              onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+            />
+            <TextField
+              fullWidth
               label="Tên đăng nhập"
               margin="normal"
               value={form.userName}
