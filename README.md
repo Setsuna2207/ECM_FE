@@ -1,37 +1,38 @@
 # ECM_FE - English Course Management Frontend
 
-Frontend application built with **React 19** and **Vite**.
+Frontend application built with **React 19** and **Vite** for managing English courses, lessons, quizzes, and user progress.
 
-Backend: [https://github.com/Setsuna2207/ECM_BE]
+Backend: [ECM_BE](https://github.com/Setsuna2207/ECM_BE)
 
 ---
 
 ## 🚀 Tech Stack
-- React 19
-- Vite
-- Material-UI
-- React Router
-- Axios
+- **React 19** + **Vite**
+- **Material-UI (MUI)** + **MUI X Data Grid**
+- **React Router v7**
+- **Axios** + **Framer Motion**
 
 ---
 
 ## 📂 Project Structure
 
 ```
-.
+ECM_FE/
 ├── src/
-│   ├── components/           # Reusable UI Components
-│   ├── pages/                # Page Components
-│   │   ├── admin/            # Admin Pages
-│   │   ├── auth/             # Authentication Pages
-│   │   └── user/             # User Pages
-│   ├── data/                 # Usable data for testing
-│   ├── services/             # API Service Modules
-│   ├── App.jsx               # Main App Component with Routes
-│   └── main.jsx              # Application Entry Point
-├── public/                   # Static Assets
-├── .env                      # Environment Variables
-└── vite.config.js            # Vite Configuration
+│   ├── components/       # Reusable UI components
+│   ├── pages/
+│   │   ├── admin/        # Admin dashboard
+│   │   ├── auth/         # Login, register
+│   │   └── user/         # User pages
+│   ├── services/         # API calls
+│   │   └── axios/        # Axios config
+│   ├── contexts/         # AuthContext
+│   ├── utils/            # Helper functions
+│   ├── assets/           # Images, icons
+│   ├── Router.jsx        # Route config
+│   └── theme.js          # MUI theme
+├── .env                  # Environment vars
+└── vite.config.js
 ```
 
 ---
@@ -39,8 +40,9 @@ Backend: [https://github.com/Setsuna2207/ECM_BE]
 ## 📦 Setup
 
 ### Prerequisites
-- Node.js (v18+)
-- Yarn or npm
+- **Node.js** v18+ - [Download](https://nodejs.org/)
+- **Yarn** or **npm**
+- **Backend API** running
 
 ### Installation
 ```bash
@@ -52,52 +54,75 @@ yarn install
 ### Configuration
 Create `.env`:
 ```env
-VITE_API_BASE_URL=https://localhost:7264
+VITE_API_BASE_URL=https://localhost:7264/api
+VITE_API_TIMEOUT=60000
+VITE_AUTH_STORAGE_KEY=ecm_token
 ```
+
+**Note**: Restart dev server after changing `.env`
 
 ### Run
 ```bash
 yarn dev
 ```
-Available at [http://localhost:5173](http://localhost:5173)
+Available at http://localhost:5173
 
 ### Build
 ```bash
 yarn build
+yarn preview
 ```
 
 ---
 
 ## 🔑 Authentication
 
-Uses **JWT tokens** stored in localStorage. Axios interceptor handles token injection and 401 errors.
+JWT token stored in `localStorage` (key: `ecm_token`)
+
+**Roles**: 
+- **Admin** - Full dashboard access (`/admin/*`)
+- **User** - Browse courses, take lessons/quizzes/tests
+
+**Flow**: Login → Token saved → Auto-injected in API requests → 401 redirects to login
 
 ---
 
-## 👥 User Roles
+## 🔌 API Services
 
-**Admin**: Manage courses, lessons, quizzes, tests, users, reviews
+Located in `services/`:
+- `userService.js`                  - Auth & user management
+- `courseService.js`                - Course operations
+- `lessonService.js`                - Lesson management
+- `quizService.js`                  - Quiz operations
+- `fileUploadService.js`            - File uploads (video/document/image)
+- `historyService.js`               - Learning progress
+- `aiService.js`                    - AI recommendations
 
-**User**: Browse courses, enroll, complete lessons/quizzes, take tests, write reviews, track progress
+**Axios Config**: Auto-injects JWT token, handles 401 errors, 60s timeout
 
 ---
 
-## 🌐 API Integration
+## 📁 File Upload
 
-Services in `services/` directory:
+**Supported**:
+- Videos: MP4, AVI, MOV, WebM (Max: 5GB)
+- Documents: PDF, DOC, DOCX, PPT (Max: 100MB)
+- Images: JPG, PNG, GIF, WebP (Max: 10MB)
+
+**Google Drive**: Auto-converts sharing URLs to direct URLs (`imageUtils.js`)
 
 ---
 
 ## 🐛 Troubleshooting
 
-- **API Connection Failed**:    Verify backend running and `.env` configured
-- **Login Issues**:             Check console and localStorage token
-- **Media Not Loading**:        Verify backend URL and file paths
-- **Build Errors**:             Clear cache and reinstall dependencies
+- **API Connection**: Check backend running + `.env` URL includes `/api`
+- **Timeout**: Increase `VITE_API_TIMEOUT` in `.env`
+- **Login Issues**: Clear `localStorage` token
+- **Media Not Loading**: Check file URLs + CORS settings
+- **Build Errors**: Clear cache + reinstall: `yarn cache clean && yarn install`
 
 ---
 
 ## 🔗 Links
-- Backend: [https://github.com/Setsuna2207/ECM_BE]
-- React: [https://react.dev/]
-- Vite: [https://vitejs.dev/]
+- Backend: [ECM_BE](https://github.com/Setsuna2207/ECM_BE)
+- [React](https://react.dev/) | [Vite](https://vitejs.dev/) | [MUI](https://mui.com/)
