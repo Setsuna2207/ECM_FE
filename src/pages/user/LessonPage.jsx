@@ -61,7 +61,7 @@ export default function LessonPage() {
             setLoading(true);
             setError(null);
 
-            // Fetch course, lesson, lessons in course, and quizzes in parallel
+            // Fetch essential data in parallel
             const [courseRes, lessonRes, lessonsRes, quizzesRes] = await Promise.all([
                 GetCourseById(courseId),
                 GetLessonById(lessonId),
@@ -83,12 +83,10 @@ export default function LessonPage() {
             setHasQuiz(!!quiz);
             setRelatedQuiz(quiz);
 
-            // Update history access time in backend
-            try {
-                await UpdateHistoryAccess(courseId);
-            } catch (err) {
-                console.error("Error updating history access:", err);
-            }
+            // Update history access in background (non-blocking)
+            UpdateHistoryAccess(courseId).catch(err =>
+                console.error("Error updating history access:", err)
+            );
 
         } catch (err) {
             console.error("Error fetching lesson data:", err);

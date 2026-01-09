@@ -47,22 +47,7 @@ export default function ProfilePage() {
     fetchUserData();
   }, [navigate]);
 
-  const loadUserGoals = async () => {
-    try {
-      const response = await GetAllUserGoals();
-      const goals = response.data;
 
-      if (goals && goals.length > 0) {
-        // Get the most recent goal
-        const latestGoal = goals[goals.length - 1];
-        setLearningGoal(latestGoal.Content || latestGoal.content || "");
-        setUserGoalId(latestGoal.UserGoalID || latestGoal.userGoalID);
-      }
-    } catch (err) {
-      console.error("Error loading user goals:", err);
-      // If API fails, user can still set a new goal
-    }
-  };
 
   const fetchUserData = async () => {
     try {
@@ -74,44 +59,48 @@ export default function ProfilePage() {
         return;
       }
 
-      // Fetch fresh user data from backend
-      const response = await GetUser(savedUser.userName);
-      const userData = response.data;
+      // Show cached data immediately for faster perceived performance
+      setUser(savedUser);
+      setLoading(false);
 
-      // Normalize property names to camelCase for frontend consistency
-      const normalizedUser = {
-        userID: userData.UserID || userData.UserId || userData.userId || userData.userID,
-        userName: userData.UserName || userData.userName,
-        email: userData.Email || userData.email,
-        fullName: userData.FullName || userData.fullName || "",
-        avatar: userData.Avatar || userData.avatar || "",
-        roles: userData.Roles || userData.roles || savedUser.roles || "",
-      };
+      // Fetch fresh data in parallel (non-blocking UI)
+      const [userResponse, goalsResponse] = await Promise.all([
+        GetUser(savedUser.userName).catch(err => {
+          console.error("Error fetching user data:", err);
+          return null;
+        }),
+        GetAllUserGoals().catch(err => {
+          console.error("Error loading user goals:", err);
+          return null;
+        })
+      ]);
 
-      setUser(normalizedUser);
+      // Update user data if fetch succeeded
+      if (userResponse?.data) {
+        const userData = userResponse.data;
+        const normalizedUser = {
+          userID: userData.UserID || userData.UserId || userData.userId || userData.userID,
+          userName: userData.UserName || userData.userName,
+          email: userData.Email || userData.email,
+          fullName: userData.FullName || userData.fullName || "",
+          avatar: userData.Avatar || userData.avatar || "",
+          roles: userData.Roles || userData.roles || savedUser.roles || "",
+        };
 
-      // Update localStorage with fresh data
-      localStorage.setItem("currentUser", JSON.stringify(normalizedUser));
+        setUser(normalizedUser);
+        localStorage.setItem("currentUser", JSON.stringify(normalizedUser));
+      }
 
-      console.log("ProfilePage - Saved user to localStorage:", normalizedUser);
-      console.log("ProfilePage - userID:", normalizedUser.userID);
-
-      // Load user goals from backend
-      await loadUserGoals();
+      // Update goals if fetch succeeded
+      if (goalsResponse?.data && goalsResponse.data.length > 0) {
+        const latestGoal = goalsResponse.data[goalsResponse.data.length - 1];
+        setLearningGoal(latestGoal.Content || latestGoal.content || "");
+        setUserGoalId(latestGoal.UserGoalID || latestGoal.userGoalID);
+      }
 
     } catch (err) {
-      console.error("Error fetching user data:", err);
-      setErrorMessage("Không thể tải thông tin người dùng");
-
-      // Fallback to localStorage if API fails
-      const savedUser = JSON.parse(localStorage.getItem("currentUser"));
-      if (savedUser) {
-        setUser(savedUser);
-      } else {
-        navigate("/login");
-      }
-    } finally {
-      setLoading(false);
+      console.error("Error in fetchUserData:", err);
+      // User already set from localStorage, so page still works
     }
   };
 

@@ -31,8 +31,6 @@ export default function CoursePage() {
 
   // State for data
   const [courses, setCourses] = useState([]);
-  const [lessons, setLessons] = useState([]);
-  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -55,22 +53,29 @@ export default function CoursePage() {
   const [page, setPage] = useState(1);
   const coursesPerPage = 6;
 
-  // Fetch data from backend
+  // Fetch data from backend - courses already have stats from backend
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        const [coursesRes, lessonsRes, reviewsRes] = await Promise.all([
-          GetAllCourses(),
-          GetAllLessons(),
-          GetAllReview(),
-        ]);
+        // Only fetch courses - they should already include lesson count and ratings from backend
+        const coursesRes = await GetAllCourses();
+        const coursesData = coursesRes.data || [];
 
-        setCourses(coursesRes.data || []);
-        setLessons(lessonsRes.data || []);
-        setReviews(reviewsRes.data || []);
+        // Normalize course data
+        const normalizedCourses = coursesData.map(course => ({
+          ...course,
+          courseId: course.CourseID || course.courseId,
+          lessonCount: course.TotalLessons || course.totalLessons || 0,
+          rating: course.AverageRating || course.averageRating || 0,
+          reviewCount: course.TotalReviews || course.totalReviews || 0,
+          thumbnailUrl: course.ThumbnailUrl || course.thumbnailUrl,
+          categories: course.Categories || course.categories || [],
+        }));
+
+        setCourses(normalizedCourses);
       } catch (err) {
         console.error("Error fetching data:", err);
         setError("Không thể tải dữ liệu khóa học. Vui lòng thử lại sau.");
@@ -122,34 +127,10 @@ export default function CoursePage() {
     setAnchorEl(null);
   };
 
-  //  Số bài giảng + đánh giá 
+  // Courses already have stats from backend, just use them directly
   const coursesWithStats = useMemo(() => {
-    return courses.map((course) => {
-      const courseId = course.courseID || course.courseId;
-
-      const lessonCount = lessons.filter(
-        (l) => (l.courseID || l.courseId) === courseId
-      ).length;
-
-      const courseReviews = reviews.filter(
-        (r) => (r.courseID || r.courseId) === courseId
-      );
-
-      const rating = course.averageRating ||
-        (courseReviews.length > 0
-          ? courseReviews.reduce((sum, r) => sum + (r.reviewScore || r.ratingScore || 0), 0) / courseReviews.length
-          : 0);
-
-      return {
-        ...course,
-        courseId: courseId,
-        thumbnail: course.thumbnailUrl || course.ThumbnailUrl || course.thumbnail,
-        lessonCount,
-        rating,
-        reviewCount: courseReviews.length
-      };
-    });
-  }, [courses, lessons, reviews]);
+    return courses; // Already normalized with stats in fetchData
+  }, [courses]);
 
   //  Lọc và sắp xếp 
   const filteredCourses = useMemo(() => {

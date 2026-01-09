@@ -1,6 +1,6 @@
 import { Grid, Container, Typography, Button, Box, Chip, Avatar, CircularProgress, Alert, Paper } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import CourseCard from "../../components/CourseCard";
 import RcmCourseCard from "../../components/RcmCourseCard";
 import { GetAllCourses, GetCourseById } from "../../services/courseService";
@@ -26,12 +26,14 @@ export default function HomePage() {
     const user = JSON.parse(localStorage.getItem("currentUser"));
     setCurrentUser(user);
 
-    // Fetch courses first, then AI recommendations
+    // Load data in parallel for faster performance
     const loadData = async () => {
-      await fetchCourses();
-      if (user) {
-        fetchAIRecommendations();
-      }
+      // Start both fetches simultaneously
+      const coursesPromise = fetchCourses();
+      const aiPromise = user ? fetchAIRecommendations() : Promise.resolve();
+
+      // Wait for both to complete
+      await Promise.all([coursesPromise, aiPromise]);
     };
 
     loadData();
@@ -126,20 +128,30 @@ export default function HomePage() {
       const response = await GetAllCourses();
       const coursesData = response.data || [];
 
-      // Normalize property names for consistency
-      const normalizedCourses = coursesData.map(course => ({
-        ...course,
-        courseId: course.CourseID || course.courseId,
-        title: course.Title || course.title,
-        description: course.Description || course.description,
-        thumbnailUrl: course.ThumbnailUrl || course.thumbnailUrl,
-        createdAt: course.CreatedAt || course.createdAt,
-        totalLessons: course.TotalLessons || course.totalLessons || 0,
-        totalReviews: course.TotalReviews || course.totalReviews || 0,
-        rating: course.AverageRating || course.averageRating || 0,
-        categories: course.Categories || course.categories || [],
-      }));
+      console.log("Raw courses data sample:", coursesData[0]);
+      console.log("Course keys:", coursesData[0] ? Object.keys(coursesData[0]) : "No courses");
 
+      // Normalize property names for consistency
+      const normalizedCourses = coursesData.map(course => {
+        // Try all possible variations of courseID
+        const courseId = course.CourseID || course.courseID || course.courseId || course.id || course.ID;
+
+        return {
+          ...course,
+          courseId: courseId,
+          title: course.Title || course.title,
+          description: course.Description || course.description,
+          thumbnailUrl: course.ThumbnailUrl || course.thumbnailUrl,
+          createdAt: course.CreatedAt || course.createdAt,
+          totalLessons: course.TotalLessons || course.totalLessons || 0,
+          totalReviews: course.TotalReviews || course.totalReviews || 0,
+          rating: course.AverageRating || course.averageRating || 0,
+          categories: course.Categories || course.categories || [],
+        };
+      });
+
+      console.log("Normalized courses sample:", normalizedCourses[0]);
+      console.log("Normalized course IDs:", normalizedCourses.map(c => c.courseId));
       setCourses(normalizedCourses);
     } catch (err) {
       console.error("Error fetching courses:", err);
@@ -149,105 +161,94 @@ export default function HomePage() {
     }
   };
 
-  // Map AI recommendations to full course details whenever courses or recommendations change
-  // Fetch full course details for each AI recommendation
+  // Map AI recommendations to courses from already-loaded courses list (no extra API calls)
   useEffect(() => {
-    const fetchRecommendedCourses = async () => {
-      if (aiRecommendedCourses.length > 0) {
-        console.log("=== FETCHING RECOMMENDED COURSES ===");
-        console.log("AI recommendations:", aiRecommendedCourses);
-        console.log("Number of recommendations:", aiRecommendedCourses.length);
+    if (aiRecommendedCourses.length > 0 && courses.length > 0) {
+      console.log("=== MAPPING AI RECOMMENDATIONS TO COURSES ===");
+      console.log("AI Recommendations:", aiRecommendedCourses);
+      console.log("Available courses:", courses.length);
+      console.log("Course IDs in list:", courses.map(c => c.courseId));
 
-        const coursePromises = aiRecommendedCourses.map(async (aiCourse, index) => {
+      const mappedCourses = aiRecommendedCourses
+        .map((aiCourse, index) => {
           // Try all possible property name variations
           const courseId = aiCourse.courseId || aiCourse.CourseId || aiCourse.CourseID || aiCourse.courseID;
-          console.log(`[${index + 1}] AI Course object:`, aiCourse);
-          console.log(`[${index + 1}] Extracted courseId:`, courseId);
+          console.log(`[${index + 1}] Looking for courseId:`, courseId, "Type:", typeof courseId);
 
           if (!courseId) {
             console.error(`[${index + 1}] ✗ No courseId found in AI recommendation:`, aiCourse);
             return null;
           }
 
-          try {
-            const response = await GetCourseById(courseId);
-            const courseData = response.data;
+          // Find course in already-loaded courses list - compare as numbers
+          const course = courses.find(c => {
+            const cId = c.courseId;
+            // Compare both as numbers to handle type mismatches
+            return Number(cId) === Number(courseId);
+          });
 
-            // Normalize property names
-            const normalizedCourse = {
-              courseId: courseData.CourseID || courseData.courseId || courseId,
-              title: courseData.Title || courseData.title,
-              description: courseData.Description || courseData.description,
-              thumbnailUrl: courseData.ThumbnailUrl || courseData.thumbnailUrl,
-              createdAt: courseData.CreatedAt || courseData.createdAt,
-              totalLessons: courseData.TotalLessons || courseData.totalLessons || 0,
-              totalReviews: courseData.TotalReviews || courseData.totalReviews || 0,
-              rating: courseData.AverageRating || courseData.averageRating || 0,
-              categories: courseData.Categories || courseData.categories || [],
-              aiReason: aiCourse.reason || aiCourse.Reason,
-              aiPriority: index + 1
-            };
-
-            console.log(`[${index + 1}] ✓ Fetched course:`, normalizedCourse.title, `(ID: ${normalizedCourse.courseId})`);
-            return normalizedCourse;
-          } catch (err) {
-            console.error(`[${index + 1}] ✗ Error fetching course ${courseId}:`, err);
+          if (!course) {
+            console.warn(`[${index + 1}] ⚠ Course ${courseId} not found in loaded courses`);
+            console.warn("Available course IDs:", courses.map(c => c.courseId));
             return null;
           }
-        });
 
-        const fetchedCourses = await Promise.all(coursePromises);
-        const validCourses = fetchedCourses.filter(c => c !== null);
+          console.log(`[${index + 1}] ✓ Mapped course:`, course.title);
+          return {
+            ...course,
+            aiReason: aiCourse.reason || aiCourse.Reason,
+            aiPriority: index + 1
+          };
+        })
+        .filter(c => c !== null);
 
-        console.log("Successfully fetched courses:", validCourses.length);
-        console.log("Valid courses:", validCourses);
-        setDisplayedAiCourses(validCourses);
-      } else {
-        console.log("No AI recommendations to fetch");
-        setDisplayedAiCourses([]);
-      }
+      console.log("Successfully mapped courses:", mappedCourses.length);
+      console.log("Mapped courses:", mappedCourses);
+      setDisplayedAiCourses(mappedCourses);
+    } else if (aiRecommendedCourses.length === 0) {
+      console.log("No AI recommendations to map");
+      setDisplayedAiCourses([]);
+    } else {
+      console.log("Waiting for data - AI recs:", aiRecommendedCourses.length, "Courses:", courses.length);
+    }
+  }, [aiRecommendedCourses, courses]);
+
+  // Memoize filtered courses to avoid recalculating on every render
+  const { newCourses, toeicCourses, ieltsCourses, toeflCourses, generalCourses } = useMemo(() => {
+    // Helper function to check category
+    const hasCategory = (course, categoryName) => {
+      const categories = course.categories || [];
+      return categories.some(cat => {
+        const catName = typeof cat === 'string' ? cat : cat.name || '';
+        return catName.toUpperCase().includes(categoryName);
+      });
     };
 
-    fetchRecommendedCourses();
-  }, [aiRecommendedCourses]);
+    // Filter courses once and categorize them
+    const categorized = {
+      newCourses: [],
+      toeicCourses: [],
+      ieltsCourses: [],
+      toeflCourses: [],
+      generalCourses: []
+    };
 
-  // New Courses - Sort by createdAt (newest first), max 3
-  const newCourses = [...courses]
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .slice(0, 3);
+    // Sort by date once for new courses
+    const sortedByDate = [...courses].sort((a, b) =>
+      new Date(b.createdAt) - new Date(a.createdAt)
+    );
+    categorized.newCourses = sortedByDate.slice(0, 3);
 
-  // Lọc khóa học theo từng nhóm LEVEL (categories là array of strings từ backend)
-  const toeicCourses = courses.filter((c) => {
-    const categories = c.categories || [];
-    return categories.some(cat => {
-      const catName = typeof cat === 'string' ? cat : cat.name || '';
-      return catName.toUpperCase().includes("TOEIC");
+    // Single pass through courses to categorize
+    courses.forEach(course => {
+      if (hasCategory(course, "TOEIC")) categorized.toeicCourses.push(course);
+      if (hasCategory(course, "IELTS")) categorized.ieltsCourses.push(course);
+      if (hasCategory(course, "TOEFL")) categorized.toeflCourses.push(course);
+      if (hasCategory(course, "GENERAL")) categorized.generalCourses.push(course);
     });
-  });
 
-  const ieltsCourses = courses.filter((c) => {
-    const categories = c.categories || [];
-    return categories.some(cat => {
-      const catName = typeof cat === 'string' ? cat : cat.name || '';
-      return catName.toUpperCase().includes("IELTS");
-    });
-  });
-
-  const toeflCourses = courses.filter((c) => {
-    const categories = c.categories || [];
-    return categories.some(cat => {
-      const catName = typeof cat === 'string' ? cat : cat.name || '';
-      return catName.toUpperCase().includes("TOEFL");
-    });
-  });
-
-  const generalCourses = courses.filter((c) => {
-    const categories = c.categories || [];
-    return categories.some(cat => {
-      const catName = typeof cat === 'string' ? cat : cat.name || '';
-      return catName.toUpperCase().includes("GENERAL");
-    });
-  });
+    return categorized;
+  }, [courses]);
 
   // Hàm hiển thị AI Recommendations
   const renderAIRecommendations = () => {

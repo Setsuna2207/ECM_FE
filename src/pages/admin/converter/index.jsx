@@ -308,39 +308,6 @@ export default function FileConverter() {
                 {result.message || "Chuyển đổi thành công!"}
               </Alert>
 
-              {/* Summary */}
-              <Paper sx={{ p: 2, mb: 2, backgroundColor: "#f9fafb" }}>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  Thông tin tóm tắt
-                </Typography>
-                <Box display="flex" gap={3} flexWrap="wrap">
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Tổng số câu hỏi
-                    </Typography>
-                    <Typography variant="h6" fontWeight="bold">
-                      {result.data?.totalQuestions || 0}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Số phần
-                    </Typography>
-                    <Typography variant="h6" fontWeight="bold">
-                      {result.data?.sections?.length || 0}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Thời gian
-                    </Typography>
-                    <Typography variant="h6" fontWeight="bold">
-                      {result.data?.duration || 0} phút
-                    </Typography>
-                  </Box>
-                </Box>
-              </Paper>
-
               <Divider sx={{ my: 2 }} />
 
               {/* Actions */}
