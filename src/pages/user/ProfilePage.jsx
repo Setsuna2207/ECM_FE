@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Avatar,
   Box,
@@ -12,6 +12,7 @@ import {
   Alert,
   IconButton,
   CircularProgress,
+  Skeleton,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
@@ -43,28 +44,67 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchUserData();
-  }, [navigate]);
+  // Memoize user info to prevent unnecessary re-renders
+  const displayName = useMemo(() => 
+    user?.fullName || user?.userName || "", 
+    [user?.fullName, user?.userName]
+  );
 
-  const loadUserGoals = async () => {
-    try {
-      const response = await GetAllUserGoals();
-      const goals = response.data;
+  const avatarUrl = useMemo(() => 
+    user?.avatar || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+    [user?.avatar]
+  );
 
-      if (goals && goals.length > 0) {
-        // Get the most recent goal
-        const latestGoal = goals[goals.length - 1];
-        setLearningGoal(latestGoal.Content || latestGoal.content || "");
-        setUserGoalId(latestGoal.UserGoalID || latestGoal.userGoalID);
-      }
-    } catch (err) {
-      console.error("Error loading user goals:", err);
-      // If API fails, user can still set a new goal
-    }
-  };
+  // Optimize image compression for avatar
+  const compressImage = useCallback((file, maxSizeMB = 0.5) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          // Resize if too large (max 800x800)
+          const maxDimension = 800;
+          if (width > maxDimension || height > maxDimension) {
+            if (width > height) {
+              height = (height / width) * maxDimension;
+              width = maxDimension;
+            } else {
+              width = (width / height) * maxDimension;
+              height = maxDimension;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Start with quality 0.8 and reduce if needed
+          let quality = 0.8;
+          let base64 = canvas.toDataURL('image/jpeg', quality);
+          
+          // Reduce quality if file is still too large
+          while (base64.length > maxSizeMB * 1024 * 1024 * 1.37 && quality > 0.1) {
+            quality -= 0.1;
+            base64 = canvas.toDataURL('image/jpeg', quality);
+          }
+          
+          resolve(base64);
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }, []);
 
-  const fetchUserData = async () => {
+  // Parallel data fetching
+  const fetchUserData = useCallback(async () => {
     try {
       setLoading(true);
       const savedUser = JSON.parse(localStorage.getItem("currentUser"));
@@ -74,11 +114,20 @@ export default function ProfilePage() {
         return;
       }
 
-      // Fetch fresh user data from backend
-      const response = await GetUser(savedUser.userName);
-      const userData = response.data;
+      // PARALLEL API CALLS - This is the key optimization
+      const [userResponse, goalsResponse] = await Promise.all([
+        GetUser(savedUser.userName).catch(err => {
+          console.error("Error fetching user:", err);
+          return { data: savedUser }; // Fallback to cached data
+        }),
+        GetAllUserGoals().catch(err => {
+          console.error("Error loading user goals:", err);
+          return { data: [] }; // Fallback to empty array
+        })
+      ]);
 
-      // Normalize property names to camelCase for frontend consistency
+      // Process user data
+      const userData = userResponse.data;
       const normalizedUser = {
         userID: userData.UserID || userData.UserId || userData.userId || userData.userID,
         userName: userData.UserName || userData.userName,
@@ -89,21 +138,21 @@ export default function ProfilePage() {
       };
 
       setUser(normalizedUser);
-
-      // Update localStorage with fresh data
       localStorage.setItem("currentUser", JSON.stringify(normalizedUser));
 
-      console.log("ProfilePage - Saved user to localStorage:", normalizedUser);
-      console.log("ProfilePage - userID:", normalizedUser.userID);
-
-      // Load user goals from backend
-      await loadUserGoals();
+      // Process goals data
+      const goals = goalsResponse.data;
+      if (goals && goals.length > 0) {
+        const latestGoal = goals[goals.length - 1];
+        setLearningGoal(latestGoal.Content || latestGoal.content || "");
+        setUserGoalId(latestGoal.UserGoalID || latestGoal.userGoalID);
+      }
 
     } catch (err) {
       console.error("Error fetching user data:", err);
       setErrorMessage("Không thể tải thông tin người dùng");
 
-      // Fallback to localStorage if API fails
+      // Fallback to localStorage
       const savedUser = JSON.parse(localStorage.getItem("currentUser"));
       if (savedUser) {
         setUser(savedUser);
@@ -113,65 +162,67 @@ export default function ProfilePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate]);
 
-  const handleAvatarChange = async (event) => {
+  useEffect(() => {
+    fetchUserData();
+  }, [fetchUserData]);
+
+  const handleAvatarChange = useCallback(async (event) => {
     const file = event.target.files[0];
-    if (file) {
-      if (!file.type.startsWith('image/')) {
-        alert('Vui lòng chọn file ảnh!');
-        return;
-      }
+    if (!file) return;
 
-      if (file.size > 5 * 1024 * 1024) {
-        alert('Kích thước ảnh không được vượt quá 5MB!');
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64String = reader.result;
-
-        try {
-          setSaving(true);
-          setErrorMessage("");
-
-          // Call backend API to update avatar
-          await UpdateAvatar(user.userName, base64String);
-
-          // Update local state
-          const updatedUser = { ...user, avatar: base64String };
-          setUser(updatedUser);
-          localStorage.setItem("currentUser", JSON.stringify(updatedUser));
-
-          // Dispatch event to notify other components
-          window.dispatchEvent(new Event('userUpdated'));
-
-          setConfirmMessage("Ảnh đại diện đã được cập nhật!");
-          setTimeout(() => setConfirmMessage(""), 4000);
-        } catch (err) {
-          console.error("Error updating avatar:", err);
-          setErrorMessage(err.response?.data?.message || "Không thể cập nhật ảnh đại diện");
-        } finally {
-          setSaving(false);
-        }
-      };
-      reader.readAsDataURL(file);
+    if (!file.type.startsWith('image/')) {
+      alert('Vui lòng chọn file ảnh!');
+      return;
     }
-  };
 
-  const handleSave = async () => {
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Kích thước ảnh không được vượt quá 5MB!');
+      return;
+    }
+
     try {
       setSaving(true);
       setErrorMessage("");
 
-      // Update user info (fullName and avatar)
+      // Compress image before uploading
+      const compressedBase64 = await compressImage(file);
+
+      // Call backend API to update avatar
+      await UpdateAvatar(user.userName, compressedBase64);
+
+      // Update local state
+      const updatedUser = { ...user, avatar: compressedBase64 };
+      setUser(updatedUser);
+      localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+
+      // Dispatch event to notify other components
+      window.dispatchEvent(new Event('userUpdated'));
+
+      setConfirmMessage("Ảnh đại diện đã được cập nhật!");
+      setTimeout(() => setConfirmMessage(""), 4000);
+    } catch (err) {
+      console.error("Error updating avatar:", err);
+      setErrorMessage(err.response?.data?.message || "Không thể cập nhật ảnh đại diện");
+    } finally {
+      setSaving(false);
+    }
+  }, [user, compressImage]);
+
+  const handleSave = useCallback(async () => {
+    try {
+      setSaving(true);
+      setErrorMessage("");
+
+      const promises = [];
+
+      // Update user info
       const updateData = {
         FullName: user.fullName,
         Avatar: user.avatar,
       };
-
-      await UpdateUser(user.userName, updateData);
+      promises.push(UpdateUser(user.userName, updateData));
 
       // Change password if provided
       if (currentPassword && newPassword) {
@@ -180,11 +231,15 @@ export default function ProfilePage() {
           CurrentPassword: currentPassword,
           NewPassword: newPassword,
         };
-
-        await ChangePassword(passwordData);
-        setCurrentPassword("");
-        setNewPassword("");
+        promises.push(ChangePassword(passwordData));
       }
+
+      // Execute both operations in parallel
+      await Promise.all(promises);
+
+      // Clear password fields
+      setCurrentPassword("");
+      setNewPassword("");
 
       // Update localStorage
       localStorage.setItem("currentUser", JSON.stringify(user));
@@ -201,40 +256,27 @@ export default function ProfilePage() {
     } finally {
       setSaving(false);
     }
-  };
+  }, [user, currentPassword, newPassword]);
 
-  const handleSaveGoal = async () => {
+  const handleSaveGoal = useCallback(async () => {
     try {
       setSaving(true);
       setErrorMessage("");
 
-      // Always delete old goal and create new one
-      let goalResponse;
-
-      // Delete existing goal if it exists
+      // Delete old goal if exists, then create new one
       if (userGoalId) {
-        console.log("[SaveGoal] Deleting old goal:", userGoalId);
         try {
-          // Assuming there's a DeleteUserGoal function in userGoalService
-          // If not, you'll need to add it to the service file
           await DeleteUserGoal(userGoalId);
-          console.log("[SaveGoal] Old goal deleted successfully");
         } catch (deleteErr) {
           console.error("[SaveGoal] Error deleting old goal:", deleteErr);
-          // Continue to create new goal even if delete fails
         }
       }
 
-      // Always create new goal
-      console.log("[SaveGoal] Creating new goal");
-      console.log("[SaveGoal] Sending data:", { Content: learningGoal });
-      goalResponse = await CreateUserGoal({ Content: learningGoal });
-
+      // Create new goal
+      const goalResponse = await CreateUserGoal({ Content: learningGoal });
       const goalData = goalResponse.data;
       const newGoalId = goalData.userGoalID || goalData.UserGoalID;
       setUserGoalId(newGoalId);
-
-      console.log("[SaveGoal] New goal created with ID:", newGoalId);
 
       setEditingGoal(false);
       setConfirmMessage("✅ Mục tiêu đã được lưu thành công!");
@@ -245,15 +287,61 @@ export default function ProfilePage() {
     } finally {
       setSaving(false);
     }
-  };
+  }, [userGoalId, learningGoal]);
+
+  // Loading skeleton component
+  const LoadingSkeleton = () => (
+    <Container sx={{ mt: -18, mb: 6, position: "relative", zIndex: 1 }}>
+      <Paper sx={{ p: 4, borderRadius: 4, mb: 4 }}>
+        <Box display="flex" flexDirection={{ xs: "column", md: "row" }} gap={4} alignItems="center">
+          <Box display="flex" flexDirection="column" alignItems="center">
+            <Skeleton variant="circular" width={180} height={180} sx={{ mb: 2 }} />
+            <Skeleton variant="text" width={150} height={32} />
+            <Skeleton variant="text" width={100} height={24} />
+          </Box>
+          <Box sx={{ flex: 1, width: "100%" }}>
+            <Skeleton variant="text" width={200} height={40} sx={{ mb: 2 }} />
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <Skeleton variant="rectangular" height={56} sx={{ borderRadius: 2, mb: 2 }} />
+                <Skeleton variant="rectangular" height={56} sx={{ borderRadius: 2 }} />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Skeleton variant="rectangular" height={56} sx={{ borderRadius: 2, mb: 2 }} />
+                <Skeleton variant="rectangular" height={56} sx={{ borderRadius: 2 }} />
+              </Grid>
+            </Grid>
+          </Box>
+        </Box>
+      </Paper>
+      <Paper sx={{ p: 4, borderRadius: 4 }}>
+        <Skeleton variant="text" width={200} height={32} sx={{ mb: 3 }} />
+        <Skeleton variant="rectangular" height={120} sx={{ borderRadius: 2 }} />
+      </Paper>
+    </Container>
+  );
 
   if (loading) {
     return (
       <>
         <Navbar />
-        <Container sx={{ mt: 6, mb: 6, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
-          <CircularProgress />
-        </Container>
+        <Box
+          sx={{
+            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            height: 200,
+            position: "relative",
+            "&::after": {
+              content: '""',
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: "100px",
+              background: "linear-gradient(to top, #f8fafc, transparent)",
+            },
+          }}
+        />
+        <LoadingSkeleton />
         <Footer />
       </>
     );
