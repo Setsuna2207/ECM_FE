@@ -44,6 +44,7 @@ export default function TestDetailPage() {
   const [isForcedSubmit, setIsForcedSubmit] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [openResultDialog, setOpenResultDialog] = useState(false);
+  const [sectionScores, setSectionScores] = useState({});
   const navigate = useNavigate();
 
   const questionRefs = useRef({});
@@ -295,12 +296,15 @@ export default function TestDetailPage() {
     const sectionScoresFormatted = {};
     Object.keys(sectionScoresMap).forEach(sectionTitle => {
       const section = sectionScoresMap[sectionTitle];
-      sectionScoresFormatted[sectionTitle] = section.max > 0
-        ? Math.round((section.earned / section.max) * 100)
-        : 0;
+      sectionScoresFormatted[sectionTitle] = {
+        earned: parseFloat(section.earned.toFixed(2)),
+        max: section.max,
+        percentage: section.max > 0 ? Math.round((section.earned / section.max) * 100) : 0
+      };
     });
 
     setScore({ total: totalScore, max: maxScore, percentage });
+    setSectionScores(sectionScoresFormatted);
     setIsSubmitting(false);
     setOpenResultDialog(true);
 
@@ -315,6 +319,12 @@ export default function TestDetailPage() {
         }
       });
 
+      // Convert section scores to simple percentage format for backend
+      const sectionScoresForBackend = {};
+      Object.keys(sectionScoresFormatted).forEach(sectionTitle => {
+        sectionScoresForBackend[sectionTitle] = sectionScoresFormatted[sectionTitle].percentage;
+      });
+
       const testResultData = {
         TestID: parseInt(testId),
         UserAnswers: JSON.stringify(cleanAnswers),
@@ -322,7 +332,7 @@ export default function TestDetailPage() {
         IncorrectAnswers: incorrectCount,
         SkippedAnswers: skippedCount,
         OverallScore: parseFloat(totalScore.toFixed(2)),
-        SectionScores: JSON.stringify(sectionScoresFormatted),
+        SectionScores: JSON.stringify(sectionScoresForBackend),
         LevelDetected: levelDetected,
         TimeSpent: timeSpentSeconds,
         // Don't send UserID - backend controller will set it from authenticated user
@@ -680,89 +690,48 @@ export default function TestDetailPage() {
                       />
                     )}
 
-                    {/* Answer Feedback */}
+                    {/* Answer Feedback - Only show for correct answers */}
                     {score !== null && !isForcedSubmit && (
                       <>
-                        {q.type === "multiple-choice" && (
+                        {q.type === "multiple-choice" && answers[q.questionId] === q.correctAnswer && (
                           <Paper
                             elevation={0}
                             sx={{
                               mt: 2,
                               p: 2,
-                              backgroundColor: answers[q.questionId] === q.correctAnswer ? "#e8f5e9" : "#ffebee",
+                              backgroundColor: "#e8f5e9",
                               borderRadius: 2,
-                              border: answers[q.questionId] === q.correctAnswer ? "1px solid #4caf50" : "1px solid #f44336"
+                              border: "1px solid #4caf50"
                             }}
                           >
                             <Typography
                               variant="body1"
                               fontWeight="600"
-                              sx={{ color: answers[q.questionId] === q.correctAnswer ? "#2e7d32" : "#c62828" }}
+                              sx={{ color: "#2e7d32" }}
                             >
-                              {answers[q.questionId] === q.correctAnswer
-                                ? "✅ Chính xác!"
-                                : `❌ Không chính xác. Đáp án đúng: ${q.options[q.correctAnswer]}`}
+                              ✅ Chính xác!
                             </Typography>
                           </Paper>
                         )}
 
-                        {q.type === "sentence-completion" && (
+                        {q.type === "multiple-choice" && answers[q.questionId] !== q.correctAnswer && (
                           <Paper
                             elevation={0}
                             sx={{
                               mt: 2,
                               p: 2,
-                              backgroundColor: "#e3f2fd",
+                              backgroundColor: "#ffebee",
                               borderRadius: 2,
-                              border: "1px solid #2196f3"
+                              border: "1px solid #f44336"
                             }}
                           >
-                            <Typography variant="body2" fontWeight="600" color="primary" mb={1}>
-                              📝 Đáp án mẫu:
+                            <Typography
+                              variant="body1"
+                              fontWeight="600"
+                              sx={{ color: "#c62828" }}
+                            >
+                              ❌ Không chính xác
                             </Typography>
-                            <Typography variant="body1">
-                              {q.sampleAnswer || q.correctAnswer}
-                            </Typography>
-                            {answers[q.questionId] && (
-                              <>
-                                <Typography variant="body2" fontWeight="600" color="text.secondary" mt={1} mb={0.5}>
-                                  Câu trả lời của bạn:
-                                </Typography>
-                                <Typography variant="body1" color="text.secondary">
-                                  {answers[q.questionId]}
-                                </Typography>
-                              </>
-                            )}
-                          </Paper>
-                        )}
-
-                        {q.type === "error-correction" && (
-                          <Paper
-                            elevation={0}
-                            sx={{
-                              mt: 2,
-                              p: 2,
-                              backgroundColor: "#e3f2fd",
-                              borderRadius: 2,
-                              border: "1px solid #2196f3"
-                            }}
-                          >
-                            <Typography variant="body2" fontWeight="600" color="primary" mb={1}>
-                              📝 Đáp án đúng:
-                            </Typography>
-                            <Typography variant="body1">
-                              {q.correctAnswer}
-                            </Typography>
-                            {answers[q.questionId] && (
-                              <>
-                                <Typography variant="body2" fontWeight="600" color="text.secondary" mt={1} mb={0.5}>
-                                  Câu trả lời của bạn:
-                                </Typography>
-                                <Typography variant="body1" color="text.secondary">
-                                  {answers[q.questionId]}
-                                </Typography>
-                              </>
-                            )}
                           </Paper>
                         )}
                       </>
@@ -959,7 +928,7 @@ export default function TestDetailPage() {
       </Box>
 
       {/* Result Dialog */}
-      <Dialog open={openResultDialog} onClose={() => setOpenResultDialog(false)} maxWidth="sm" fullWidth>
+      <Dialog open={openResultDialog} onClose={() => setOpenResultDialog(false)} maxWidth="md" fullWidth>
         <DialogTitle>
           <Box textAlign="center">
             {score?.percentage >= 85 ? "🌟 Xuất sắc!" : score?.percentage >= 70 ? "👍 Khá tốt" : "⚠️ Cần cải thiện"}
@@ -974,13 +943,14 @@ export default function TestDetailPage() {
               background: "linear-gradient(135deg, #e0f7fa 0%, #e1bee7 100%)",
               borderRadius: 3,
               boxShadow: 3,
+              mb: 3
             }}
           >
             <Typography variant="h2" fontWeight="bold" color="primary" mb={2}>
               {score?.percentage}%
             </Typography>
             <Typography variant="h5" mb={1}>
-              Điểm: {score?.total?.toFixed(1)} / {score?.max}
+              Điểm tổng: {score?.total?.toFixed(1)} / {score?.max}
             </Typography>
 
             <Typography variant="body1" color="text.secondary" mb={2}>
@@ -999,7 +969,53 @@ export default function TestDetailPage() {
             />
           </Box>
 
-          <Alert severity="info" sx={{ mt: 3, borderRadius: 2 }}>
+          {/* Section Scores */}
+          <Paper elevation={0} sx={{ p: 3, backgroundColor: "#f8f9fa", borderRadius: 2, mb: 3 }}>
+            <Typography variant="h6" fontWeight="700" mb={2} textAlign="center" color="primary">
+              📊 Điểm theo từng phần
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+            <Grid container spacing={2}>
+              {Object.entries(sectionScores).map(([sectionTitle, scores]) => (
+                <Grid item xs={12} sm={6} key={sectionTitle}>
+                  <Paper
+                    elevation={1}
+                    sx={{
+                      p: 2,
+                      borderRadius: 2,
+                      border: "2px solid",
+                      borderColor: scores.percentage >= 70 ? "#4caf50" : scores.percentage >= 50 ? "#ff9800" : "#f44336",
+                      backgroundColor: "white"
+                    }}
+                  >
+                    <Typography variant="subtitle1" fontWeight="600" mb={1} noWrap title={sectionTitle}>
+                      {sectionTitle}
+                    </Typography>
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                      <Typography variant="h5" fontWeight="700" color="primary">
+                        {scores.percentage}%
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {scores.earned.toFixed(1)} / {scores.max}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ mt: 1, height: 8, backgroundColor: "#e0e0e0", borderRadius: 1, overflow: "hidden" }}>
+                      <Box
+                        sx={{
+                          height: "100%",
+                          width: `${scores.percentage}%`,
+                          backgroundColor: scores.percentage >= 70 ? "#4caf50" : scores.percentage >= 50 ? "#ff9800" : "#f44336",
+                          transition: "width 0.5s ease"
+                        }}
+                      />
+                    </Box>
+                  </Paper>
+                </Grid>
+              ))}
+            </Grid>
+          </Paper>
+
+          <Alert severity="info" sx={{ borderRadius: 2 }}>
             <Typography variant="body2" fontWeight="600" mb={0.5}>
               🎯 AI đang phân tích kết quả của bạn
             </Typography>

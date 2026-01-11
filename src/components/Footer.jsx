@@ -88,7 +88,7 @@ const Footer = () => {
                             </Link>
                             <br />
                             <Link href="#" color="inherit" underline="hover">
-                                Chính sách giao hàng
+                                Chính sách người dùng
                             </Link>
                             <br />
                             <Link href="#" color="inherit" underline="hover">
