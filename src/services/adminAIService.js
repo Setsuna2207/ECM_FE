@@ -4,7 +4,7 @@ import axios from "./axios/axios.customize";
 // @returns {Promise} - API response with all user goals
 
 export const getAllUserGoalsForAdmin = async () => {
-    return axios.get("/UserGoal");
+    return axios.get("/UserGoal/admin/all");
 };
 
 
